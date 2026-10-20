@@ -1,0 +1,14 @@
+package ru.urfu.exchangeProject.dto.exceptions;
+
+public enum ErrorCode {
+    EMAIL_EXISTS_EXCEPTION,
+    NAME_EXISTS_EXCEPTION,
+    INVALID_CREDENTIALS,
+    INVALID_EXCEPTION,
+    ACCOUNT_FROZEN,
+    VALIDATION_ERROR,
+    NOT_FOUND_EXCEPTION,
+    UNKNOWN_EXCEPTION,
+    TOKEN_EXPIRED,
+    TOKEN_INVALID
+}

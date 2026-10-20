@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/changeset/001-create-users.yml
+  - include:
+      file: db/changelog/changeset/002-create-refresh-token.yml
+  - include:
+      file: db/changelog/changeset/003-add-fields-to-users.yml
+  - include:
+      file: db/changelog/changeset/004-add-fields-to-users.yml

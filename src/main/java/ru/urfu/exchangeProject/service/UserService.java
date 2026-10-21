@@ -24,6 +24,8 @@ public interface UserService {
 
     User getByEmail(String email) throws UserNotFoundException;
 
+    void changeRole(User user);
+
     User getByPasswordResetToken(String token);
 
     User update(UserUpdateRequest userUpdateRequest, User user);

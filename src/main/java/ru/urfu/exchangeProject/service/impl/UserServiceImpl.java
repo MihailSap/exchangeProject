@@ -76,6 +76,17 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserNotFoundException("Ошибка поиска пользователя"));
     }
 
+    @Transactional
+    @Override
+    public void changeRole(User user) {
+        if(Role.ADMIN.equals(user.getRole())){
+            user.setRole(Role.USER);
+        } else {
+            user.setRole(Role.ADMIN);
+        }
+        userRepository.save(user);
+    }
+
     @Override
     public User getById(long id) throws UserNotFoundException {
         return userRepository.findById(id)

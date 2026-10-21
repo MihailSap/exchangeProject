@@ -7,3 +7,5 @@ databaseChangeLog:
       file: db/changelog/changeset/003-add-fields-to-users.yml
   - include:
       file: db/changelog/changeset/004-add-fields-to-users.yml
+  - include:
+      file: db/changelog/changeset/005-create-categories.yml

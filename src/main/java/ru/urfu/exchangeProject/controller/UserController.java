@@ -72,6 +72,14 @@ public class UserController {
         return new BaseResponse<>(userPublicProfileResponse);
     }
 
+    @Operation(description = "Смена роли (админ/пользователь)")
+    @PatchMapping("/me/role")
+    public void role() throws UserNotFoundException {
+        String email = authService.getAuthenticatedUserEmail();
+        User user = userService.getByEmail(email);
+        userService.changeRole(user);
+    }
+
 
 
 //    @Operation(description = "Смена пароля пользователя")

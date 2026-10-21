@@ -35,6 +35,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ExceptionResponse(exceptionErrorResponse));
     }
 
+    @ExceptionHandler(SlugExistsException.class)
+    public ResponseEntity<ExceptionResponse> handleSlugExistsException(SlugExistsException ex){
+        logger.error("SlugExistsException");
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ErrorCode.SLUG_EXISTS_EXCEPTION, null, null);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
+    @ExceptionHandler(CategoryCircularHierarchyException.class)
+    public ResponseEntity<ExceptionResponse> handleSlugExistsException(CategoryCircularHierarchyException ex){
+        logger.error("CategoryCircularHierarchyException");
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ErrorCode.CATEGORY_CIRCULAR_HIERARCHY_EXCEPTION, null, null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ExceptionResponse> handleInvalidCredentialsException(InvalidCredentialsException ex){
         logger.error("InvalidCredentialsException");

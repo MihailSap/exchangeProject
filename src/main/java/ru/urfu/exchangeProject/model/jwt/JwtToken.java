@@ -1,4 +1,4 @@
-package ru.urfu.exchangeProject.model;
+package ru.urfu.exchangeProject.model.jwt;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

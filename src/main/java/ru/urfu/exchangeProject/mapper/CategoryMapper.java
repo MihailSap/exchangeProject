@@ -2,7 +2,8 @@ package ru.urfu.exchangeProject.mapper;
 
 import org.springframework.stereotype.Component;
 import ru.urfu.exchangeProject.dto.category.CategoryResponse;
-import ru.urfu.exchangeProject.model.Category;
+import ru.urfu.exchangeProject.dto.category.CategoryTargetResponse;
+import ru.urfu.exchangeProject.model.category.Category;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +25,13 @@ public class CategoryMapper {
                 category.getName(),
                 category.getSlug(),
                 mapToCategoryResponses(category.getChildren())
+        );
+    }
+
+    public CategoryTargetResponse mapToCategoryShortResponse(Category category) {
+        return new CategoryTargetResponse(
+                category.getId(),
+                category.getName()
         );
     }
 }

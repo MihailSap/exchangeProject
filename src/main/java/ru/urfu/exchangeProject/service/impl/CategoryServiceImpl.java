@@ -7,7 +7,7 @@ import ru.urfu.exchangeProject.dto.category.CategoryRequest;
 import ru.urfu.exchangeProject.exception.customEx.news.CategoryCircularHierarchyException;
 import ru.urfu.exchangeProject.exception.customEx.news.CategoryNotFound;
 import ru.urfu.exchangeProject.exception.customEx.news.SlugExistsException;
-import ru.urfu.exchangeProject.model.Category;
+import ru.urfu.exchangeProject.model.category.Category;
 import ru.urfu.exchangeProject.repository.CategoryRepository;
 import ru.urfu.exchangeProject.service.CategoryService;
 

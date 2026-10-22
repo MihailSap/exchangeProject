@@ -27,6 +27,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(new ExceptionResponse(exceptionErrorResponse));
     }
 
+    @ExceptionHandler(EmailNotConfirmedException.class)
+    public ResponseEntity<ExceptionResponse> handleEmailNotConfirmed(EmailNotConfirmedException ex){
+        logger.error("EmailNotConfirmed");
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ErrorCode.EMAIL_NOT_CONFIRMED, null, null);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
     @ExceptionHandler(NameExistsException.class)
     public ResponseEntity<ExceptionResponse> handleNameExistsException(NameExistsException ex){
         logger.error("NameExistsException");

@@ -2,7 +2,7 @@ package ru.urfu.exchangeProject.dto.user;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
-import ru.urfu.exchangeProject.model.UserStatus;
+import ru.urfu.exchangeProject.model.user.UserStatus;
 
 import java.time.Instant;
 

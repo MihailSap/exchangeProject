@@ -1,0 +1,80 @@
+databaseChangeLog:
+  - changeSet:
+      id: 6
+      author: SapeginMihail
+      changes:
+        - createTable:
+            tableName: lots
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_lots
+                    nullable: false
+              - column:
+                  name: title
+                  type: VARCHAR(255)
+              - column:
+                  name: description
+                  type: TEXT
+              - column:
+                  name: region
+                  type: VARCHAR(255)
+              - column:
+                  name: type
+                  type: VARCHAR(50)
+              - column:
+                  name: delivery_method
+                  type: VARCHAR(50)
+              - column:
+                  name: estimated_cost
+                  type: NUMERIC(19, 2)
+              - column:
+                  name: status
+                  type: VARCHAR(50)
+              - column:
+                  name: reject_reason
+                  type: TEXT
+              - column:
+                  name: published_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: expires_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: archived_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: updated_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: deleted_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: user_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: lots
+            baseColumnNames: user_id
+            constraintName: fk_lots_user
+            referencedTableName: users
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: lots
+            baseColumnNames: category_id
+            constraintName: fk_lots_category
+            referencedTableName: categories
+            referencedColumnNames: id

@@ -3,7 +3,7 @@ package ru.urfu.exchangeProject.specification;
 import jakarta.persistence.criteria.Expression;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
-import ru.urfu.exchangeProject.model.User;
+import ru.urfu.exchangeProject.model.user.User;
 
 @Component
 public class UserSpecification {

@@ -5,8 +5,8 @@ import ru.urfu.exchangeProject.dto.auth.*;
 import ru.urfu.exchangeProject.exception.customEx.InvalidRefreshTokenException;
 import ru.urfu.exchangeProject.exception.customEx.RefreshTokenNotFoundException;
 import ru.urfu.exchangeProject.exception.customEx.UserNotFoundException;
-import ru.urfu.exchangeProject.model.JwtToken;
-import ru.urfu.exchangeProject.model.User;
+import ru.urfu.exchangeProject.model.jwt.JwtToken;
+import ru.urfu.exchangeProject.model.user.User;
 
 public interface AuthService {
 

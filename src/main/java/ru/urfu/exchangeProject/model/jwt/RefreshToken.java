@@ -1,5 +1,7 @@
-package ru.urfu.exchangeProject.model;
+package ru.urfu.exchangeProject.model.jwt;
 import jakarta.persistence.*;
+import ru.urfu.exchangeProject.model.BaseEntity;
+import ru.urfu.exchangeProject.model.user.User;
 
 @Entity
 @Table(name = "refresh_token")

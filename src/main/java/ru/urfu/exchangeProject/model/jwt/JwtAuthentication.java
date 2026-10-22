@@ -1,7 +1,8 @@
-package ru.urfu.exchangeProject.model;
+package ru.urfu.exchangeProject.model.jwt;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import ru.urfu.exchangeProject.model.user.Role;
 
 import java.util.Collection;
 import java.util.List;

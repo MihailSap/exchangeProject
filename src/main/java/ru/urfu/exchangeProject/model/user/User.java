@@ -1,13 +1,18 @@
-package ru.urfu.exchangeProject.model;
+package ru.urfu.exchangeProject.model.user;
 
 import jakarta.persistence.*;
+import ru.urfu.exchangeProject.model.BaseEntity;
+import ru.urfu.exchangeProject.model.jwt.RefreshToken;
+import ru.urfu.exchangeProject.model.lot.Lot;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "users")
-public class User extends BaseEntity{
+public class User extends BaseEntity {
 
     private String email;
     private String password;
@@ -28,6 +33,8 @@ public class User extends BaseEntity{
     private LocalDateTime passwordResetTokenExpiresAt;
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private RefreshToken refreshToken;
+    @OneToMany(mappedBy = "user")
+    private List<Lot> lots = new ArrayList<>();
 
     public User(String name, String email, String password, Role role) {
         this.name = name;
@@ -173,5 +180,13 @@ public class User extends BaseEntity{
 
     public void setPasswordResetTokenExpiresAt(LocalDateTime passwordResetTokenExpiresAt) {
         this.passwordResetTokenExpiresAt = passwordResetTokenExpiresAt;
+    }
+
+    public List<Lot> getLots() {
+        return lots;
+    }
+
+    public void setLots(List<Lot> lots) {
+        this.lots = lots;
     }
 }

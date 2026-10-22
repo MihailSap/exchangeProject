@@ -10,7 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.GenericFilterBean;
-import ru.urfu.exchangeProject.model.JwtAuthentication;
+import ru.urfu.exchangeProject.model.jwt.JwtAuthentication;
 import ru.urfu.exchangeProject.service.impl.JwtProvider;
 import ru.urfu.exchangeProject.utils.JwtUtils;
 

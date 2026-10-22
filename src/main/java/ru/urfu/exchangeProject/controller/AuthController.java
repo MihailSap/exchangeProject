@@ -17,9 +17,9 @@ import ru.urfu.exchangeProject.exception.customEx.news.AccountFrozenException;
 import ru.urfu.exchangeProject.exception.customEx.news.EmailExistsException;
 import ru.urfu.exchangeProject.exception.customEx.news.InvalidCredentialsException;
 import ru.urfu.exchangeProject.mapper.UserMapper;
-import ru.urfu.exchangeProject.model.JwtToken;
-import ru.urfu.exchangeProject.model.User;
-import ru.urfu.exchangeProject.model.UserStatus;
+import ru.urfu.exchangeProject.model.jwt.JwtToken;
+import ru.urfu.exchangeProject.model.user.User;
+import ru.urfu.exchangeProject.model.user.UserStatus;
 import ru.urfu.exchangeProject.service.AuthService;
 import ru.urfu.exchangeProject.service.UserService;
 

@@ -14,7 +14,7 @@ import ru.urfu.exchangeProject.dto.category.CategoryRequest;
 import ru.urfu.exchangeProject.dto.category.CategoryResponse;
 import ru.urfu.exchangeProject.exception.customEx.news.CategoryNotFound;
 import ru.urfu.exchangeProject.mapper.CategoryMapper;
-import ru.urfu.exchangeProject.model.Category;
+import ru.urfu.exchangeProject.model.category.Category;
 import ru.urfu.exchangeProject.service.CategoryService;
 
 import java.util.List;

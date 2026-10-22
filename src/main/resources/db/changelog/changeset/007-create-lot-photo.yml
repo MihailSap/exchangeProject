@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 7
+      author: SapeginMihail
+      changes:
+        - createTable:
+            tableName: lot_photo
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_lot_photo
+                    nullable: false
+              - column:
+                  name: photo_order
+                  type: INTEGER
+                  constraints:
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lot_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+
+        - addForeignKeyConstraint:
+            baseTableName: lot_photo
+            baseColumnNames: lot_id
+            constraintName: fk_lot_photo_lot
+            referencedTableName: lots
+            referencedColumnNames: id

@@ -1,4 +1,4 @@
-package ru.urfu.exchangeProject.model;
+package ru.urfu.exchangeProject.model.user;
 
 import org.springframework.security.core.GrantedAuthority;
 

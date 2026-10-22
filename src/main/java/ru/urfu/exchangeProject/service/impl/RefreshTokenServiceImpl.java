@@ -4,8 +4,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.urfu.exchangeProject.exception.customEx.RefreshTokenNotFoundException;
-import ru.urfu.exchangeProject.model.RefreshToken;
-import ru.urfu.exchangeProject.model.User;
+import ru.urfu.exchangeProject.model.jwt.RefreshToken;
+import ru.urfu.exchangeProject.model.user.User;
 import ru.urfu.exchangeProject.repository.RefreshTokenRepository;
 import ru.urfu.exchangeProject.service.RefreshTokenService;
 

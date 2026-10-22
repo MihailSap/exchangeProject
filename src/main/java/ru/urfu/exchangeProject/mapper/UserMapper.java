@@ -5,7 +5,8 @@ import ru.urfu.exchangeProject.dto.auth.UserLoginResponse;
 import ru.urfu.exchangeProject.dto.user.UserProfileResponse;
 import ru.urfu.exchangeProject.dto.user.UserPublicProfileResponse;
 import ru.urfu.exchangeProject.dto.user.UserResponse;
-import ru.urfu.exchangeProject.model.User;
+import ru.urfu.exchangeProject.dto.user.UserShortResponse;
+import ru.urfu.exchangeProject.model.user.User;
 
 import java.util.List;
 
@@ -63,6 +64,14 @@ public class UserMapper {
                 user.getId(),
                 user.getName(),
                 user.getStatus()
+        );
+    }
+
+    public UserShortResponse mapToUserShortResponse(User user) {
+        return new UserShortResponse(
+                user.getId(),
+                user.getName(),
+                null //TODO
         );
     }
 }

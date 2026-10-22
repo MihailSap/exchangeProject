@@ -1,8 +1,8 @@
 package ru.urfu.exchangeProject.service;
 
 import ru.urfu.exchangeProject.exception.customEx.RefreshTokenNotFoundException;
-import ru.urfu.exchangeProject.model.RefreshToken;
-import ru.urfu.exchangeProject.model.User;
+import ru.urfu.exchangeProject.model.jwt.RefreshToken;
+import ru.urfu.exchangeProject.model.user.User;
 
 public interface RefreshTokenService {
 

@@ -1,6 +1,10 @@
-package ru.urfu.exchangeProject.model;
+package ru.urfu.exchangeProject.model.category;
 
 import jakarta.persistence.*;
+import ru.urfu.exchangeProject.model.BaseEntity;
+import ru.urfu.exchangeProject.model.lot.Lot;
+import ru.urfu.exchangeProject.model.lot.want.Want;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +22,10 @@ public class Category extends BaseEntity {
     private Category parent;
     @OneToMany(mappedBy = "parent", cascade = CascadeType.REMOVE)
     private List<Category> children = new ArrayList<>();
+    @OneToMany(mappedBy = "category")
+    private List<Lot> lots = new ArrayList<>();
+    @OneToMany(mappedBy = "category")
+    private List<Want> wants = new ArrayList<>();
 
     public String getName() {
         return name;
@@ -61,5 +69,33 @@ public class Category extends BaseEntity {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
+    }
+
+    public void setChildren(List<Category> children) {
+        this.children = children;
+    }
+
+    public List<Lot> getLots() {
+        return lots;
+    }
+
+    public void setLots(List<Lot> lots) {
+        this.lots = lots;
+    }
+
+    public List<Want> getWants() {
+        return wants;
+    }
+
+    public void setWants(List<Want> wants) {
+        this.wants = wants;
     }
 }

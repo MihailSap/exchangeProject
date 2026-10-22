@@ -2,7 +2,7 @@ package ru.urfu.exchangeProject.service;
 
 import ru.urfu.exchangeProject.dto.category.CategoryRequest;
 import ru.urfu.exchangeProject.exception.customEx.news.CategoryNotFound;
-import ru.urfu.exchangeProject.model.Category;
+import ru.urfu.exchangeProject.model.category.Category;
 
 import java.util.List;
 

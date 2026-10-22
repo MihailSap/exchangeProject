@@ -1,7 +1,7 @@
 package ru.urfu.exchangeProject.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import ru.urfu.exchangeProject.model.Category;
+import ru.urfu.exchangeProject.model.category.Category;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
 

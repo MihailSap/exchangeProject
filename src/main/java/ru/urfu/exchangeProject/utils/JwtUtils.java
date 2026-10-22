@@ -1,8 +1,8 @@
 package ru.urfu.exchangeProject.utils;
 
 import io.jsonwebtoken.Claims;
-import ru.urfu.exchangeProject.model.JwtAuthentication;
-import ru.urfu.exchangeProject.model.Role;
+import ru.urfu.exchangeProject.model.jwt.JwtAuthentication;
+import ru.urfu.exchangeProject.model.user.Role;
 
 public class JwtUtils {
 

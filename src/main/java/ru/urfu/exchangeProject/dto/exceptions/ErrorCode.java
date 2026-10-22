@@ -2,6 +2,7 @@ package ru.urfu.exchangeProject.dto.exceptions;
 
 public enum ErrorCode {
     EMAIL_EXISTS_EXCEPTION,
+    EMAIL_NOT_CONFIRMED,
     NAME_EXISTS_EXCEPTION,
     SLUG_EXISTS_EXCEPTION,
     CATEGORY_CIRCULAR_HIERARCHY_EXCEPTION,

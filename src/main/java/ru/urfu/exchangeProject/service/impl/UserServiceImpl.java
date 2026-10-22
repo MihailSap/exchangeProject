@@ -20,17 +20,15 @@ import ru.urfu.exchangeProject.exception.customEx.news.EmailExistsException;
 import ru.urfu.exchangeProject.exception.customEx.news.NameExistsException;
 import ru.urfu.exchangeProject.exception.customEx.news.TokenExpiredException;
 import ru.urfu.exchangeProject.exception.customEx.news.TokenInvalidException;
-import ru.urfu.exchangeProject.model.Role;
-import ru.urfu.exchangeProject.model.User;
-import ru.urfu.exchangeProject.model.UserStatus;
+import ru.urfu.exchangeProject.model.user.Role;
+import ru.urfu.exchangeProject.model.user.User;
+import ru.urfu.exchangeProject.model.user.UserStatus;
 import ru.urfu.exchangeProject.repository.UserRepository;
 import ru.urfu.exchangeProject.service.FileService;
 import ru.urfu.exchangeProject.service.UserService;
 import ru.urfu.exchangeProject.specification.UserSpecification;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {

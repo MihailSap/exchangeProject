@@ -9,3 +9,9 @@ databaseChangeLog:
       file: db/changelog/changeset/004-add-fields-to-users.yml
   - include:
       file: db/changelog/changeset/005-create-categories.yml
+  - include:
+      file: db/changelog/changeset/006-create-lots.yml
+  - include:
+      file: db/changelog/changeset/007-create-lot-photo.yml
+  - include:
+      file: db/changelog/changeset/008-create-want.yml

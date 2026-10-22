@@ -1,7 +1,7 @@
 package ru.urfu.exchangeProject.service.impl;
 
 import ru.urfu.exchangeProject.dto.auth.*;
-import ru.urfu.exchangeProject.model.JwtToken;
+import ru.urfu.exchangeProject.model.jwt.JwtToken;
 import ru.urfu.exchangeProject.service.AuthService;
 
 import io.jsonwebtoken.Claims;
@@ -13,8 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.urfu.exchangeProject.exception.customEx.InvalidRefreshTokenException;
 import ru.urfu.exchangeProject.exception.customEx.RefreshTokenNotFoundException;
 import ru.urfu.exchangeProject.exception.customEx.UserNotFoundException;
-import ru.urfu.exchangeProject.model.RefreshToken;
-import ru.urfu.exchangeProject.model.User;
+import ru.urfu.exchangeProject.model.jwt.RefreshToken;
+import ru.urfu.exchangeProject.model.user.User;
 import ru.urfu.exchangeProject.service.EmailService;
 import ru.urfu.exchangeProject.service.RefreshTokenService;
 import ru.urfu.exchangeProject.service.UserService;

@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.user.UserFreezeRequest;
 import ru.urfu.exchangeProject.exception.customEx.UserNotFoundException;
-import ru.urfu.exchangeProject.model.User;
+import ru.urfu.exchangeProject.model.user.User;
 import ru.urfu.exchangeProject.service.UserService;
 
 @Tag(name = "Панель администратора")

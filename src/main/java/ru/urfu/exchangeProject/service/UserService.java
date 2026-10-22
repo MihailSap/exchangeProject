@@ -4,7 +4,7 @@ import org.springframework.data.domain.Page;
 import ru.urfu.exchangeProject.dto.auth.RegisterRequest;
 import ru.urfu.exchangeProject.dto.user.UserUpdateRequest;
 import ru.urfu.exchangeProject.exception.customEx.UserNotFoundException;
-import ru.urfu.exchangeProject.model.User;
+import ru.urfu.exchangeProject.model.user.User;
 
 public interface UserService {
 

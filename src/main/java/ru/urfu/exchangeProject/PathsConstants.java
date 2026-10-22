@@ -8,4 +8,5 @@ public interface PathsConstants {
     String REGIONS = "/regions";
     String FILES = "/files";
     String ADMIN = "/admin";
+    String LOTS = "/lots";
 }

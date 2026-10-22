@@ -4,7 +4,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import java.util.List;
 
-@ConfigurationProperties(prefix = "regions")
+@ConfigurationProperties
 public class RegionsProperties {
     private List<String> regions;
 

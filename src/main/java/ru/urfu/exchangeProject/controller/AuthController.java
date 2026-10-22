@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.*;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.BaseResponse;
 import ru.urfu.exchangeProject.dto.auth.*;
+import ru.urfu.exchangeProject.dto.email.EmailConfirmRequest;
+import ru.urfu.exchangeProject.dto.user.UserRegisterResponse;
 import ru.urfu.exchangeProject.dto.user.UserResponse;
 import ru.urfu.exchangeProject.exception.customEx.*;
 import ru.urfu.exchangeProject.exception.customEx.news.AccountFrozenException;
@@ -23,7 +25,7 @@ import ru.urfu.exchangeProject.model.user.UserStatus;
 import ru.urfu.exchangeProject.service.AuthService;
 import ru.urfu.exchangeProject.service.UserService;
 
-@Tag(name = "Управление аутентификацией")
+@Tag(name = "Аутентификация")
 @RestController
 @RequestMapping(PathsConstants.ROOT + PathsConstants.AUTH)
 public class AuthController {
@@ -46,20 +48,25 @@ public class AuthController {
     @Operation(description = "Регистрация нового пользователя по электронной почте")
     @ResponseStatus(HttpStatus.CREATED)
     @PostMapping("/register")
-    public BaseResponse<UserResponse> register(@RequestBody @Valid RegisterRequest request) {
+    public BaseResponse<UserRegisterResponse> register(@RequestBody @Valid RegisterRequest request) {
         if(userService.isExistsByEmail(request.email())){
             throw new EmailExistsException();
         }
         User user = userService.create(request);
-        UserResponse userResponse = userMapper.mapToUserResponse(user);
+        UserRegisterResponse userResponse = userMapper.mapToUserRegisterResponse(user);
         return new BaseResponse<>(userResponse);
     }
 
     @Operation(description = "Вход пользователя в существующий аккаунт, получение токенов")
     @PostMapping("/login")
-    public BaseResponse<LoginResponse> login(@RequestBody LoginRequest authRequest)
-            throws AuthException, UserNotFoundException {
-        User user = userService.getByEmail(authRequest.email());
+    public BaseResponse<LoginResponse> login(@RequestBody LoginRequest authRequest) {
+        User user;
+        try {
+            user = userService.getByEmail(authRequest.email());
+        } catch (UserNotFoundException exception){
+            throw new InvalidCredentialsException();
+        }
+
         if(!authService.isCredentialsValid(authRequest, user)){
             throw new InvalidCredentialsException();
         }
@@ -111,18 +118,29 @@ public class AuthController {
         authService.resetPassword(resetPasswordDTO);
     }
 
-//    @SecurityRequirement(name = "bearerAuth")
-//    @Operation(description = "Подтверждение email по токену")
-//    @PostMapping("/confirm-email")
-//    public EmailConfirmResponse confirmEmail(){
-//        //TODO
-//        return null;
-//    }
-//
-//    @SecurityRequirement(name = "bearerAuth")
-//    @Operation(description = "Повторная отправка письма")
-//    @PostMapping("/resend-confirmation")
-//    public void resendConfirmation(){
-//        //TODO
-//    }
+    @Operation(description = "Подтверждение email по токену")
+    @PostMapping("/confirm-email")
+    public BaseResponse<EmailConfirmResponse> confirmEmail(
+            @RequestBody @Valid EmailConfirmRequest request) {
+        EmailConfirmResponse response = authService.confirmEmail(request.token());
+        return new BaseResponse<>(response);
+    }
+
+    @Operation(description = "Повторная отправка письма для подтверждения email")
+    @PostMapping("/resend-confirmation")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void resendConfirmation() throws UserNotFoundException {
+        authService.resendConfirmation();
+    }
+
+    @SecurityRequirement(name = "bearerAuth")
+    @Operation(description = "Моковое подтверждение email")
+    @PostMapping("/confirm-email/mock")
+    public BaseResponse<EmailConfirmResponse> confirmEmailMock() throws UserNotFoundException {
+        String email = authService.getAuthenticatedUserEmail();
+        User user = userService.getByEmail(email);
+
+        EmailConfirmResponse response = authService.confirmEmail(user);
+        return new BaseResponse<>(response);
+    }
 }

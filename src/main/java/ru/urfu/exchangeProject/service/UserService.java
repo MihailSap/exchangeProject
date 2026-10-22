@@ -41,4 +41,6 @@ public interface UserService {
     void delete(User user);
 
     boolean isExistsByEmail(String email);
+
+    User getByEmailConfirmationToken(String token);
 }

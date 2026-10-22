@@ -16,10 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import ru.urfu.exchangeProject.dto.auth.RegisterRequest;
 import ru.urfu.exchangeProject.dto.user.UserUpdateRequest;
 import ru.urfu.exchangeProject.exception.customEx.UserNotFoundException;
-import ru.urfu.exchangeProject.exception.customEx.news.EmailExistsException;
-import ru.urfu.exchangeProject.exception.customEx.news.NameExistsException;
-import ru.urfu.exchangeProject.exception.customEx.news.TokenExpiredException;
-import ru.urfu.exchangeProject.exception.customEx.news.TokenInvalidException;
+import ru.urfu.exchangeProject.exception.customEx.news.*;
 import ru.urfu.exchangeProject.model.user.Role;
 import ru.urfu.exchangeProject.model.user.User;
 import ru.urfu.exchangeProject.model.user.UserStatus;
@@ -55,6 +52,11 @@ public class UserServiceImpl implements UserService {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userSpecification = userSpecification;
+    }
+
+    public User getByEmailConfirmationToken(String token) {
+        return userRepository.findByEmailConfirmationToken(token)
+                .orElseThrow(EmailConfirmationTokenInvalidException::new);
     }
 
     @Override

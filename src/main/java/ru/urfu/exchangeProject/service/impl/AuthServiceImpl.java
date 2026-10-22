@@ -1,6 +1,9 @@
 package ru.urfu.exchangeProject.service.impl;
 
 import ru.urfu.exchangeProject.dto.auth.*;
+import ru.urfu.exchangeProject.exception.customEx.news.EmailConfirmationTokenExpiredException;
+import ru.urfu.exchangeProject.exception.customEx.news.EmailConfirmationTokenInvalidException;
+import ru.urfu.exchangeProject.exception.customEx.news.RateLimitExceededException;
 import ru.urfu.exchangeProject.model.jwt.JwtToken;
 import ru.urfu.exchangeProject.service.AuthService;
 
@@ -19,8 +22,18 @@ import ru.urfu.exchangeProject.service.EmailService;
 import ru.urfu.exchangeProject.service.RefreshTokenService;
 import ru.urfu.exchangeProject.service.UserService;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.UUID;
+
 @Service
 public class AuthServiceImpl implements AuthService {
+
+    private static final Duration EMAIL_CONFIRMATION_TOKEN_TTL =
+            Duration.ofHours(24);
+
+    private static final Duration RESEND_CONFIRMATION_INTERVAL =
+            Duration.ofMinutes(5);
 
     private final UserService userService;
     private final EmailService emailService;
@@ -40,6 +53,66 @@ public class AuthServiceImpl implements AuthService {
         this.jwtProvider = jwtProvider;
         this.refreshTokenService = refreshTokenService;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    @Transactional
+    @Override
+    public EmailConfirmResponse confirmEmail(String token) {
+        User user = userService.getByEmailConfirmationToken(token);
+
+        if (user == null) {
+            throw new EmailConfirmationTokenInvalidException();
+        }
+
+        if (user.getEmailConfirmationTokenExpiry() == null
+                || !user.getEmailConfirmationTokenExpiry().isAfter(Instant.now())) {
+            throw new EmailConfirmationTokenExpiredException();
+        }
+
+        user.setEmailConfirmed(true);
+        user.setEmailConfirmationToken(null);
+        user.setEmailConfirmationTokenExpiry(null);
+        userService.save(user);
+
+        return new EmailConfirmResponse(true);
+    }
+
+    @Transactional
+    @Override
+    public EmailConfirmResponse confirmEmail(User user) {
+        user.setEmailConfirmed(true);
+        user.setEmailConfirmationToken(null);
+        user.setEmailConfirmationTokenExpiry(null);
+        userService.save(user);
+        return new EmailConfirmResponse(true);
+    }
+
+    @Transactional
+    @Override
+    public void resendConfirmation() throws UserNotFoundException {
+        String email = getAuthenticatedUserEmail();
+        User user = userService.getByEmail(email);
+
+        if (user.isEmailConfirmed()) {
+            return;
+        }
+
+        Instant now = Instant.now();
+        Instant lastSentAt = user.getEmailConfirmationLastSentAt();
+
+        if (lastSentAt != null
+                && now.isBefore(lastSentAt.plus(RESEND_CONFIRMATION_INTERVAL))) {
+            throw new RateLimitExceededException();
+        }
+
+        String token = UUID.randomUUID().toString();
+
+        user.setEmailConfirmationToken(token);
+        user.setEmailConfirmationTokenExpiry(now.plus(EMAIL_CONFIRMATION_TOKEN_TTL));
+        user.setEmailConfirmationLastSentAt(now);
+
+        userService.save(user);
+        emailService.sendEmailConfirmEmail(user.getEmail(), token);
     }
 
     @Override

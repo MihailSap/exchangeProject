@@ -35,6 +35,9 @@ public class User extends BaseEntity {
     private RefreshToken refreshToken;
     @OneToMany(mappedBy = "user")
     private List<Lot> lots = new ArrayList<>();
+    private String emailConfirmationToken;
+    private Instant emailConfirmationTokenExpiry;
+    private Instant emailConfirmationLastSentAt;
 
     public User(String name, String email, String password, Role role) {
         this.name = name;
@@ -188,5 +191,29 @@ public class User extends BaseEntity {
 
     public void setLots(List<Lot> lots) {
         this.lots = lots;
+    }
+
+    public String getEmailConfirmationToken() {
+        return emailConfirmationToken;
+    }
+
+    public void setEmailConfirmationToken(String emailConfirmationToken) {
+        this.emailConfirmationToken = emailConfirmationToken;
+    }
+
+    public Instant getEmailConfirmationTokenExpiry() {
+        return emailConfirmationTokenExpiry;
+    }
+
+    public void setEmailConfirmationTokenExpiry(Instant emailConfirmationTokenExpiry) {
+        this.emailConfirmationTokenExpiry = emailConfirmationTokenExpiry;
+    }
+
+    public Instant getEmailConfirmationLastSentAt() {
+        return emailConfirmationLastSentAt;
+    }
+
+    public void setEmailConfirmationLastSentAt(Instant emailConfirmationLastSentAt) {
+        this.emailConfirmationLastSentAt = emailConfirmationLastSentAt;
     }
 }

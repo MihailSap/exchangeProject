@@ -27,4 +27,10 @@ public interface AuthService {
     void requestPasswordReset(String email);
 
     void resetPassword(PasswordResetRequest request);
+
+    EmailConfirmResponse confirmEmail(String token);
+
+    EmailConfirmResponse confirmEmail(User user);
+
+    void resendConfirmation() throws UserNotFoundException;
 }

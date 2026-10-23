@@ -1,0 +1,124 @@
+.region {
+  position: fixed;
+  z-index: 1000;
+  top: 20px;
+  right: max(20px, calc((100vw - 1920px) / 2 + 20px));
+  display: grid;
+  width: min(380px, calc(100vw - 32px));
+  gap: 12px;
+  pointer-events: none;
+}
+
+.toast {
+  --toast-in-duration: 260ms;
+  --toast-out-duration: 240ms;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow:
+    0 1px 2px rgb(15 39 28 / 10%),
+    0 12px 32px rgb(15 39 28 / 16%);
+  color: var(--color-text);
+  transform-origin: right center;
+  will-change: transform, opacity;
+  animation: toast-in var(--toast-in-duration) cubic-bezier(0.16, 1, 0.3, 1) both;
+  pointer-events: auto;
+}
+
+.leaving {
+  animation: toast-out var(--toast-out-duration) cubic-bezier(0.4, 0, 0.68, 0.24) both;
+}
+
+.success {
+  border-color: var(--color-success-border);
+  background: var(--color-success-bg);
+}
+
+.error {
+  border-color: var(--color-error-border);
+  background: var(--color-error-bg);
+}
+
+.info {
+  border-color: var(--color-info-border);
+  background: var(--color-info-bg);
+}
+
+.copy {
+  display: grid;
+  gap: 5px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.copy strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.copy p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.close {
+  display: grid;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  transition: background-color 180ms ease, transform 180ms ease;
+}
+
+.close:hover {
+  background: rgb(23 39 30 / 8%);
+}
+
+.close:active {
+  transform: scale(0.9);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 12px)) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(calc(100% + 12px)) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    --toast-in-duration: 1ms;
+    --toast-out-duration: 1ms;
+  }
+}

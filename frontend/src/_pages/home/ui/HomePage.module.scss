@@ -1,0 +1,139 @@
+.main {
+  display: grid;
+  flex: 1 0 auto;
+  place-items: center;
+  width: 100%;
+  padding: 64px 24px;
+}
+
+.card {
+  width: min(760px, 100%);
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid var(--color-border);
+  border-radius: 24px;
+  background: var(--color-surface);
+  box-shadow: 0 14px 40px rgb(20 62 44 / 6%);
+}
+
+.eyebrow {
+  color: var(--color-brand);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.card h1 {
+  margin: 16px 0 24px;
+  color: var(--color-text);
+  font-size: clamp(32px, 5vw, 48px);
+  letter-spacing: -1px;
+  line-height: 1.1;
+}
+
+.profile h2 {
+  margin: 0 0 16px;
+  color: var(--color-text);
+  font-size: 20px;
+}
+
+.profile dl {
+  display: grid;
+  gap: 0;
+  margin: 0 0 24px;
+  border-top: 1px solid var(--color-border);
+}
+
+.profile dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.profile dt {
+  color: var(--color-text-secondary);
+}
+
+.profile dd {
+  margin: 0;
+  color: var(--color-text);
+  font-weight: 650;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.muted,
+.guest p {
+  margin: 0 0 24px;
+  color: var(--color-text-secondary);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.button,
+.secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 12px 24px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 180ms ease, background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.button {
+  background: var(--color-brand);
+  color: #fff;
+}
+
+.button:hover {
+  background: var(--color-brand-hover);
+  box-shadow: 0 6px 16px rgb(23 107 77 / 18%);
+}
+
+.secondaryButton {
+  border-color: var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-brand);
+}
+
+.secondaryButton:hover {
+  background: var(--color-hover);
+}
+
+.button:active,
+.secondaryButton:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+@media (max-width: 600px) {
+  .main {
+    padding: 40px 20px;
+  }
+
+  .profile dl div {
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .profile dd {
+    text-align: left;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+}

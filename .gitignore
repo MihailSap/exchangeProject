@@ -1,8 +1,13 @@
 target/
+.env
+.env.*
+!.env.example
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 .kotlin
+frontend/FRONTEND_STRUCTURE.md
+backend/BACKEND_STRUCTURE.md
 
 ### IntelliJ IDEA ###
 .idea

@@ -1,13 +1,5 @@
-import { clearSession, readSession, writeSession } from "@/src/entities/session";
-import type { AuthSession } from "@/src/entities/session";
-
-type ApiErrorPayload = {
-  error?: {
-    code?: string;
-    message?: string | null;
-    details?: Array<{ message?: string | null }> | null;
-  };
-};
+import { clearStoredSession, readTokens, replaceTokens } from "@/src/shared/lib/session-storage";
+import { isNonEmptyString, isRecord } from "@/src/shared/lib/validation";
 
 export class ApiError extends Error {
   readonly code?: string;
@@ -23,46 +15,44 @@ export class ApiError extends Error {
 
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080").replace(/\/$/, "");
 let refreshInFlight: Promise<boolean> | null = null;
+let lastRenewal: { previousRefreshToken: string; accessToken: string; refreshToken: string } | null = null;
 
-function getErrorMessage(payload: ApiErrorPayload, fallback: string): string {
-  const serverMessage = payload.error?.message?.trim();
-  if (serverMessage) return serverMessage;
-
-  const detailMessage = payload.error?.details?.find((detail) => detail.message?.trim())?.message;
-  if (detailMessage) return detailMessage;
-
-  if (payload.error?.code === "INVALID_CREDENTIALS") return "Неверный email или пароль";
-  if (payload.error?.code === "ACCOUNT_FROZEN") return "Аккаунт заморожен. Обратитесь в поддержку.";
-  if (payload.error?.code === "EMAIL_EXISTS_EXCEPTION") return "Этот email уже зарегистрирован";
-
+function getErrorMessage(payload: unknown, fallback: string): string {
+  if (!isRecord(payload) || !isRecord(payload.error)) return fallback;
+  const error = payload.error;
+  if (isNonEmptyString(error.message)) return error.message.trim();
+  if (Array.isArray(error.details)) {
+    for (const detail of error.details) {
+      if (isRecord(detail) && isNonEmptyString(detail.message)) return detail.message.trim();
+    }
+  }
+  if (error.code === "INVALID_CREDENTIALS") return "Неверный email или пароль";
+  if (error.code === "ACCOUNT_FROZEN") return "Аккаунт заморожен. Обратитесь в поддержку.";
+  if (error.code === "EMAIL_EXISTS_EXCEPTION") return "Этот email уже зарегистрирован";
   return fallback;
 }
 
-async function readResponse<T>(response: Response, fallback: string): Promise<T> {
-  if (response.status === 204) return undefined as T;
-
+async function readResponse(response: Response, fallback: string): Promise<unknown> {
+  if (response.ok && response.status === 204) return undefined;
   const responseText = await response.text();
   let payload: unknown;
-
   try {
     payload = responseText ? JSON.parse(responseText) : undefined;
   } catch {
-    payload = undefined;
+    if (response.ok) throw new ApiError(fallback, response.status);
   }
-
   if (!response.ok) {
-    const errorPayload = (payload && typeof payload === "object" ? payload : {}) as ApiErrorPayload;
-    throw new ApiError(getErrorMessage(errorPayload, fallback), response.status, errorPayload.error?.code);
+    const code = isRecord(payload) && isRecord(payload.error) && typeof payload.error.code === "string" ? payload.error.code : undefined;
+    throw new ApiError(getErrorMessage(payload, fallback), response.status, code);
   }
-
-  return payload as T;
+  return payload;
 }
 
 async function renewSession(): Promise<boolean> {
   if (refreshInFlight) return refreshInFlight;
 
   refreshInFlight = (async () => {
-    const session = readSession();
+    const session = readTokens();
     if (!session?.refreshToken) return false;
 
     try {
@@ -71,18 +61,17 @@ async function renewSession(): Promise<boolean> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken: session.refreshToken }),
       });
-      const accessEnvelope = await readResponse<{ data?: { accessToken?: string | null } }>(
+      const accessEnvelope = await readResponse(
         accessResponse,
         "Не удалось обновить сессию. Войдите снова.",
       );
-      const accessToken = accessEnvelope.data?.accessToken;
-      if (!accessToken) {
-        clearSession();
+      const accessToken = isRecord(accessEnvelope) && isRecord(accessEnvelope.data) ? accessEnvelope.data.accessToken : undefined;
+      if (!isNonEmptyString(accessToken)) {
+        if (readTokens()?.refreshToken === session.refreshToken) clearStoredSession();
         return false;
       }
 
-      const accessSession = { ...session, accessToken };
-      writeSession(accessSession);
+      if (!replaceTokens(session.refreshToken, accessToken, session.refreshToken)) return false;
 
       try {
         const rotationResponse = await fetch(`${API_BASE_URL}/api/v1/auth/refresh`, {
@@ -93,26 +82,23 @@ async function renewSession(): Promise<boolean> {
           },
           body: JSON.stringify({ refreshToken: session.refreshToken }),
         });
-        const rotationEnvelope = await readResponse<{
-          data?: { accessToken?: string | null; refreshToken?: string | null };
-        }>(rotationResponse, "Не удалось обновить сессию.");
-        const rotatedAccessToken = rotationEnvelope.data?.accessToken;
-        const rotatedRefreshToken = rotationEnvelope.data?.refreshToken;
+        const rotationEnvelope = await readResponse(rotationResponse, "Не удалось обновить сессию.");
+        const data = isRecord(rotationEnvelope) && isRecord(rotationEnvelope.data) ? rotationEnvelope.data : null;
+        const rotatedAccessToken = data?.accessToken;
+        const rotatedRefreshToken = data?.refreshToken;
 
-        if (rotatedAccessToken && rotatedRefreshToken) {
-          writeSession({
-            ...accessSession,
-            accessToken: rotatedAccessToken,
-            refreshToken: rotatedRefreshToken,
-          });
+        if (isNonEmptyString(rotatedAccessToken) && isNonEmptyString(rotatedRefreshToken)) {
+          if (!replaceTokens(session.refreshToken, rotatedAccessToken, rotatedRefreshToken)) return false;
+          lastRenewal = { previousRefreshToken: session.refreshToken, accessToken: rotatedAccessToken, refreshToken: rotatedRefreshToken };
+          return true;
         }
       } catch {
-        writeSession(accessSession);
+        return readTokens()?.refreshToken === session.refreshToken;
       }
 
       return true;
     } catch {
-      clearSession();
+      if (readTokens()?.refreshToken === session.refreshToken) clearStoredSession();
       return false;
     }
   })();
@@ -127,14 +113,16 @@ async function renewSession(): Promise<boolean> {
 export type ApiRequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown;
   authenticated?: boolean;
+  responseType?: "json" | "blob";
   fallbackMessage?: string;
 };
 
-export async function apiRequest<T>(path: string, options: ApiRequestOptions = {}): Promise<T> {
-  const { body, authenticated = false, fallbackMessage = "Не удалось выполнить запрос. Попробуйте позже.", ...requestOptions } = options;
-  const session = readSession();
+export async function apiRequest(path: string, options: ApiRequestOptions = {}): Promise<unknown> {
+  const { body, authenticated = false, responseType = "json", fallbackMessage = "Не удалось выполнить запрос. Попробуйте позже.", ...requestOptions } = options;
+  const session = readTokens();
   const headers = new Headers(requestOptions.headers);
-  if (body !== undefined && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
+  const multipart = typeof FormData !== "undefined" && body instanceof FormData;
+  if (body !== undefined && !multipart && !headers.has("Content-Type")) headers.set("Content-Type", "application/json");
   if (authenticated && session?.accessToken) headers.set("Authorization", `Bearer ${session.accessToken}`);
 
   const send = (authorization?: string) => {
@@ -144,52 +132,41 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     return fetch(`${API_BASE_URL}/api/v1${path}`, {
       ...requestOptions,
       headers: attemptHeaders,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: multipart ? body : body === undefined ? undefined : JSON.stringify(body),
     });
   };
 
-  let response = await send();
+  const safeSend = async (authorization?: string) => {
+    try {
+      return await send(authorization);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") throw error;
+      throw new ApiError(fallbackMessage, 0);
+    }
+  };
+
+  let response = await safeSend();
+  let attemptedRefreshToken = session?.refreshToken;
   if (response.status === 401 && authenticated && session?.refreshToken) {
-    const renewed = await renewSession();
-    const renewedSession = readSession();
-    if (renewed && renewedSession?.accessToken) response = await send(renewedSession.accessToken);
+    const current = readTokens();
+    const alreadyRenewed = current && current.accessToken !== session.accessToken
+      && (current.refreshToken === session.refreshToken
+        || (lastRenewal?.previousRefreshToken === session.refreshToken
+          && lastRenewal.accessToken === current.accessToken && lastRenewal.refreshToken === current.refreshToken));
+    if (alreadyRenewed) {
+      attemptedRefreshToken = current.refreshToken;
+      response = await safeSend(current.accessToken);
+    } else if (current?.refreshToken === session.refreshToken) {
+      const renewed = await renewSession();
+      const renewedSession = readTokens();
+      if (renewed && renewedSession?.accessToken) {
+        attemptedRefreshToken = renewedSession.refreshToken;
+        response = await safeSend(renewedSession.accessToken);
+      }
+    }
   }
 
-  return readResponse<T>(response, fallbackMessage);
-}
-
-export async function updateSessionProfile(): Promise<AuthSession["user"]> {
-  type UserProfileDto = {
-    id: number;
-    email: string;
-    name: string;
-    avatar_url?: string | null;
-    region?: string | null;
-    contacts?: string | null;
-    email_confirmed: boolean;
-    status: AuthSession["user"]["status"];
-    rating?: number | null;
-    reviews_count?: number;
-  };
-
-  const envelope = await apiRequest<{ data: UserProfileDto }>("/users/me", {
-    authenticated: true,
-    fallbackMessage: "Не удалось загрузить профиль. Попробуйте позже.",
-  });
-
-  const user: AuthSession["user"] = {
-    id: envelope.data.id,
-    email: envelope.data.email,
-    name: envelope.data.name,
-    avatarUrl: envelope.data.avatar_url,
-    region: envelope.data.region,
-    contacts: envelope.data.contacts,
-    emailConfirmed: envelope.data.email_confirmed,
-    status: envelope.data.status,
-    rating: envelope.data.rating,
-    reviewsCount: envelope.data.reviews_count,
-  };
-  const session = readSession();
-  if (session) writeSession({ ...session, user });
-  return user;
+  if (response.status === 401 && authenticated && readTokens()?.refreshToken === attemptedRefreshToken) clearStoredSession();
+  if (response.ok && responseType === "blob") return response.blob();
+  return readResponse(response, fallbackMessage);
 }

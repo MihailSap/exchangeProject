@@ -20,7 +20,6 @@ export function AuthPageShell({ mode, token }: { mode: AuthMode; token?: string 
     }
   }, [ready, user, mode, token, router]);
 
-  // Пока сессия не загружена, пользователь авторизован или сброс пароля без токена — содержимое не показываем.
   if (!ready || user || (mode === "reset" && !token)) return null;
 
   return (

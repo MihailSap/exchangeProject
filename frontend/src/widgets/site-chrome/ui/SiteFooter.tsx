@@ -1,3 +1,4 @@
+import Link from "next/link";
 import styles from "./SiteFooter.module.scss";
 
 export function SiteFooter() {
@@ -7,10 +8,10 @@ export function SiteFooter() {
         <p className={styles.brand}>меняемся · Вещи и услуги по интересам</p>
         <nav className={styles.mobileNav} aria-label="Разделы сайта">
           <span>Каталог</span>
-          <span>FAQ</span>
+          <Link href="/faq">FAQ</Link>
           <span>Документация</span>
         </nav>
-        <span className={styles.rules}>Правила сервиса</span>
+        <Link href="/rules" className={styles.rules}>Правила сервиса</Link>
       </div>
     </footer>
   );

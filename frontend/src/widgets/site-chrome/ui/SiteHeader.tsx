@@ -1,6 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense, useCallback, useState } from "react";
+import { Avatar } from "@/src/shared/ui/avatar";
+import { useDismissable } from "@/src/shared/lib/use-dismissable";
+import { Icon } from "@/src/shared/ui/icon";
+import { HeaderNavigation, HeaderNavigationLinks } from "./HeaderNavigation";
+import { HeaderNotifications } from "./HeaderNotifications";
+import dropdown from "./HeaderDropdowns.module.scss";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/src/entities/session";
 import { useToast } from "@/src/shared/ui/toast/ToastProvider";
@@ -23,19 +30,28 @@ function MoonIcon() {
   );
 }
 
-export function SiteHeader() {
+export function SiteHeader({ ownLot = false }: { ownLot?: boolean }) {
   const { user, ready, signOut } = useSession();
   const { theme, toggleTheme } = useTheme();
   const { notify } = useToast();
   const router = useRouter();
+  const [panel, setPanel] = useState<"notifications" | "profile" | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+  const closePanel = useCallback(() => setPanel(null), []);
+  const menuRef = useDismissable<HTMLDivElement>(panel === "profile", closePanel);
 
   async function handleSignOut() {
+    if (signingOut) return;
+    setSigningOut(true);
     try {
       await signOut();
       notify({ kind: "success", title: "Вы вышли из аккаунта" });
       router.push("/");
-    } catch {
-      notify({ kind: "error", title: "Не удалось завершить сессию", description: "Попробуйте позже." });
+    } catch (error) {
+      notify({ kind: "error", title: error instanceof Error ? error.message : "Не удалось завершить сессию" });
+    } finally {
+      setPanel(null);
+      setSigningOut(false);
     }
   }
 
@@ -43,11 +59,7 @@ export function SiteHeader() {
     <header className={styles.header}>
       <div className={styles.inner}>
         <Link href="/" className={styles.logo} aria-label="Меняемся — на главную">меняемся.</Link>
-        <nav className={styles.nav} aria-label="Основная навигация">
-          <span>Каталог</span>
-          <span>FAQ</span>
-          <span>Документация</span>
-        </nav>
+        <Suspense fallback={<HeaderNavigationLinks authenticated={ready && Boolean(user)} />}><HeaderNavigation authenticated={ready && Boolean(user)} ownLot={ownLot} /></Suspense>
         <div className={styles.actions}>
           <button
             className={styles.themeButton}
@@ -62,8 +74,19 @@ export function SiteHeader() {
           </button>
           {ready && user ? (
             <>
-              <span className={styles.userName}>{user.name}</span>
-              <button className={styles.headerButton} type="button" onClick={handleSignOut}>Выйти</button>
+              <HeaderNotifications key={user.id} open={panel === "notifications"} onToggle={() => setPanel((value) => value === "notifications" ? null : "notifications")} onClose={closePanel} />
+              <div className={dropdown.anchor} ref={menuRef}>
+                <button type="button" className={dropdown.avatarButton} aria-label="Меню пользователя" aria-expanded={panel === "profile"} aria-controls="header-profile-menu" onClick={() => setPanel((value) => value === "profile" ? null : "profile")}><Avatar name={user.name} src={user.avatarUrl} small /></button>
+                {panel === "profile" && <nav id="header-profile-menu" className={`${dropdown.dropdown} ${dropdown.profile}`} aria-label="Меню пользователя">
+                  <div className={dropdown.user}><strong>{user.name}</strong><span>{user.email}</span></div>
+                  <Link href="/profile" onClick={closePanel}><Icon name="user" />Личный кабинет</Link>
+                  {user.role === "ADMIN" && user.status === "ACTIVE" && <Link href="/admin" className={dropdown.admin} onClick={closePanel}><Icon name="shield" />Админ-панель</Link>}
+                  <Link href="/faq" onClick={closePanel}><Icon name="search" />Частые вопросы</Link>
+                  {user.status === "ACTIVE" && user.emailConfirmed !== false && <Link href="/lots/new" onClick={closePanel}><Icon name="plus" />Новый лот</Link>}
+                  <button type="button" className={dropdown.logout} disabled={signingOut} onClick={handleSignOut}><Icon name="logout" />{signingOut ? "Выходим…" : "Выйти"}</button>
+                </nav>}
+              </div>
+              {user.status === "ACTIVE" && user.emailConfirmed !== false ? <Link className={`${styles.headerButton} ${styles.createButton}`} href="/lots/new">＋ Разместить лот</Link> : <button type="button" className={`${styles.headerButton} ${styles.createButton}`} disabled title={user.status === "FROZEN" ? "Действие недоступно — аккаунт заморожен" : "Подтвердите почту для публикации"}>＋ Разместить лот</button>}
             </>
           ) : (
             <Link className={styles.headerButton} href="/login">Войти</Link>

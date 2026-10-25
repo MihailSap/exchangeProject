@@ -7,6 +7,7 @@ target/
 !**/src/test/**/target/
 .kotlin
 frontend/FRONTEND_STRUCTURE.md
+frontend/BACKEND_TODO.md
 backend/BACKEND_STRUCTURE.md
 
 ### IntelliJ IDEA ###

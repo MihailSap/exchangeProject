@@ -1,6 +1,8 @@
 package ru.urfu.exchangeProject.dto.exceptions;
 
 public enum ErrorCode {
+    UNAUTHORIZED,
+    ACCESS_DENIED,
     EMAIL_EXISTS_EXCEPTION,
     EMAIL_NOT_CONFIRMED,
     NAME_EXISTS_EXCEPTION,

@@ -9,15 +9,10 @@ import { useSession } from "@/src/entities/session";
 import { ApiError } from "@/src/shared/api/client";
 import { useToast } from "@/src/shared/ui/toast/ToastProvider";
 import { registerAndSignIn, requestPasswordReset, resetPassword, signIn } from "../model/auth-api";
+import { INITIAL_VALUES, validate } from "../model/auth-validation";
+import type { AuthMode, FieldName, FormValues } from "../model/auth-validation";
 import styles from "./AuthFlow.module.scss";
 
-export type AuthMode = "login" | "register" | "forgot" | "reset";
-type FieldName = "name" | "email" | "password" | "repeatPassword";
-type FormValues = Record<FieldName, string>;
-type FieldErrors = Partial<Record<FieldName, string>>;
-
-const INITIAL_VALUES: FormValues = { name: "", email: "", password: "", repeatPassword: "" };
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const COPY: Record<AuthMode, { title: string; description: string; submit: string }> = {
   login: {
     title: "Рады видеть вас снова",
@@ -40,28 +35,6 @@ const COPY: Record<AuthMode, { title: string; description: string; submit: strin
     submit: "Сбросить пароль",
   },
 };
-
-function validate(values: FormValues, mode: AuthMode): FieldErrors {
-  const errors: FieldErrors = {};
-  const usesEmail = mode === "login" || mode === "register" || mode === "forgot";
-  const usesPassword = mode === "login" || mode === "register" || mode === "reset";
-
-  if (mode === "register" && !values.name.trim()) errors.name = "Поле обязательно";
-  else if (mode === "register" && values.name.trim().length < 2) errors.name = "Имя должно содержать не менее 2 символов";
-
-  if (usesEmail && !values.email.trim()) errors.email = "Поле обязательно";
-  else if (usesEmail && !EMAIL_PATTERN.test(values.email.trim())) errors.email = "Введите email в формате name@example.com";
-
-  if (usesPassword && !values.password) errors.password = "Поле обязательно";
-  else if (usesPassword && values.password.length < 8) errors.password = "Пароль должен содержать не менее 8 символов";
-
-  if ((mode === "register" || mode === "reset") && !values.repeatPassword) errors.repeatPassword = "Поле обязательно";
-  else if ((mode === "register" || mode === "reset") && values.repeatPassword !== values.password) {
-    errors.repeatPassword = "Пароли не совпадают";
-  }
-
-  return errors;
-}
 
 type FieldProps = {
   name: FieldName;
@@ -93,6 +66,7 @@ function FormField({ name, label, value, error, type, placeholder, maxLength, au
           value={value}
           placeholder={placeholder}
           maxLength={maxLength}
+          required
           autoComplete={autoComplete}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
@@ -278,7 +252,7 @@ export function AuthFlow({ mode, token }: { mode: AuthMode; token?: string }) {
                 {mode === "login" && (
                   <Link className={styles.forgotLink} href="/forgot-password">Забыли пароль?</Link>
                 )}
-                <button className={styles.submit} type="submit" disabled={submitting || (mode === "reset" && !token)}>
+                <button className={styles.submit} type="submit" disabled={hasErrors || submitting || (mode === "reset" && !token)}>
                   {submitting ? "Подождите…" : copy.submit}
                 </button>
               </form>

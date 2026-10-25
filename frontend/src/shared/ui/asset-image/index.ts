@@ -1,0 +1,1 @@
+export { AssetImage } from "./AssetImage";

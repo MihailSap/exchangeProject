@@ -3,6 +3,8 @@ package ru.urfu.exchangeProject.exception.handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -126,6 +128,18 @@ public class GlobalExceptionHandler {
         ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
                 ErrorCode.TOKEN_INVALID, null, null);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ExceptionResponse> handleAuthenticationException(AuthenticationException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ExceptionResponse(
+                new ExceptionErrorResponse(ErrorCode.UNAUTHORIZED, "Требуется авторизация. Войдите в аккаунт.", null)));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ExceptionResponse> handleAccessDeniedException(AccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ExceptionResponse(
+                new ExceptionErrorResponse(ErrorCode.ACCESS_DENIED, "Недостаточно прав для выполнения операции.", null)));
     }
 
     @ExceptionHandler(Exception.class)

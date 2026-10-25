@@ -8,8 +8,16 @@
   --color-text: #17271e;
   --color-text-secondary: #66746a;
   --color-border: #e1e8e0;
+  --color-admin: #7952b3;
   --color-brand: #176b4d;
   --color-brand-hover: #105d41;
+  --color-on-brand: #fff;
+  --color-warning-bg: #f7edc8;
+  --color-warning: #7d5b12;
+  --color-archive-bg: #dcecf8;
+  --color-archive: #25546f;
+  --color-completed-bg: #e8e1fc;
+  --color-completed: #655295;
   --color-brand-deep: #143e2c;
   --color-brand-lime: #d5f27b;
   --color-input: #f7f9f7;
@@ -34,7 +42,12 @@ html,
 body {
   min-height: 100%;
   margin: 0;
+}
+
+html {
   scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) var(--color-canvas);
 }
 
 body {
@@ -53,8 +66,9 @@ input {
 
 button:focus-visible,
 a:focus-visible,
-input:focus-visible {
-  outline: 3px solid rgb(23 107 77 / 38%);
+summary:focus-visible,
+[tabindex="0"]:not(input):not(textarea):not(select):focus-visible {
+  outline: 3px solid var(--color-brand);
   outline-offset: 3px;
 }
 
@@ -76,8 +90,16 @@ input:focus-visible {
     --color-text: #e6ece6;
     --color-text-secondary: #a0aea2;
     --color-border: #34433a;
+    --color-admin: #c6a4f7;
     --color-brand: #49a77d;
     --color-brand-hover: #60bb91;
+    --color-on-brand: #101711;
+    --color-warning-bg: #3c321a;
+    --color-warning: #edcc76;
+    --color-archive-bg: #1c3242;
+    --color-archive: #a9cfea;
+    --color-completed-bg: #31283f;
+    --color-completed: #d0b9f8;
     --color-brand-deep: #0e2b1f;
     --color-brand-lime: #d5f27b;
     --color-input: #202c24;
@@ -95,6 +117,7 @@ input:focus-visible {
 }
 
 :root[data-theme="dark"] {
+  --color-admin: #c6a4f7;
   color-scheme: dark;
   --color-canvas: #101711;
   --color-surface: #18231c;
@@ -103,6 +126,13 @@ input:focus-visible {
   --color-border: #34433a;
   --color-brand: #49a77d;
   --color-brand-hover: #60bb91;
+  --color-on-brand: #101711;
+  --color-warning-bg: #3c321a;
+  --color-warning: #edcc76;
+  --color-archive-bg: #1c3242;
+  --color-archive: #a9cfea;
+  --color-completed-bg: #31283f;
+  --color-completed: #d0b9f8;
   --color-brand-deep: #0e2b1f;
   --color-brand-lime: #d5f27b;
   --color-input: #202c24;
@@ -119,6 +149,7 @@ input:focus-visible {
 }
 
 :root[data-theme="light"] {
+  --color-admin: #7952b3;
   color-scheme: light;
   --color-canvas: #f5f7f3;
   --color-surface: #ffffff;
@@ -127,6 +158,13 @@ input:focus-visible {
   --color-border: #e1e8e0;
   --color-brand: #176b4d;
   --color-brand-hover: #105d41;
+  --color-on-brand: #fff;
+  --color-warning-bg: #f7edc8;
+  --color-warning: #7d5b12;
+  --color-archive-bg: #dcecf8;
+  --color-archive: #25546f;
+  --color-completed-bg: #e8e1fc;
+  --color-completed: #655295;
   --color-brand-deep: #143e2c;
   --color-brand-lime: #d5f27b;
   --color-input: #f7f9f7;
@@ -156,4 +194,17 @@ input:focus-visible {
     scroll-behavior: auto !important;
     transition-duration: 1ms !important;
   }
+}
+
+:where(input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select) {
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 500ms ease, color 500ms ease;
+}
+:where(input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select):focus {
+  outline: none;
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgb(23 107 77 / 12%);
+}
+:where(input[type=checkbox],input[type=radio],input[type=file]):focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 3px;
 }

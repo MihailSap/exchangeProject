@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/src/entities/session";
-import type { AuthUser } from "@/src/entities/session";
-import { ApiError, updateSessionProfile } from "@/src/shared/api/client";
+import { updateSessionProfile } from "@/src/entities/session";
+import { ApiError } from "@/src/shared/api/client";
 import { useToast } from "@/src/shared/ui/toast/ToastProvider";
 import { SiteFooter, SiteHeader } from "@/src/widgets/site-chrome";
 import styles from "./HomePage.module.scss";
@@ -23,7 +23,7 @@ export function HomePage() {
 
     updateSessionProfile()
       .then((profile) => {
-        if (active) setUser(profile as AuthUser);
+        if (active) setUser(profile);
       })
       .catch((error: unknown) => {
         if (error instanceof ApiError && error.status === 401 && active) {

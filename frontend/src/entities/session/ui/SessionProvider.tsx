@@ -2,6 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { SESSION_CHANGED_EVENT, SESSION_KEY } from "@/src/shared/lib/session-storage";
 import type { AuthUser } from "../model/session";
 import { clearSession, readSession, writeSession } from "../model/session";
 
@@ -19,8 +20,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setUserState(readSession()?.user ?? null);
+    const syncSession = () => setUserState(readSession()?.user ?? null);
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === SESSION_KEY || event.key === null) syncSession();
+    };
+    syncSession();
     setReady(true);
+    window.addEventListener(SESSION_CHANGED_EVENT, syncSession);
+    window.addEventListener("storage", handleStorage);
+    return () => {
+      window.removeEventListener(SESSION_CHANGED_EVENT, syncSession);
+      window.removeEventListener("storage", handleStorage);
+    };
   }, []);
 
   const setUser = useCallback((nextUser: AuthUser | null) => {
@@ -36,13 +47,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       try {
         const { apiRequest } = await import("@/src/shared/api/client");
         try {
-          await apiRequest<void>("/users/me", { authenticated: true });
+          await apiRequest("/users/me", { authenticated: true });
         } catch {
           if (!readSession()) return;
         }
         const activeSession = readSession();
         if (!activeSession) return;
-        await apiRequest<void>("/auth/logout", {
+        await apiRequest("/auth/logout", {
           method: "POST",
           body: { refreshToken: activeSession.refreshToken },
           authenticated: true,

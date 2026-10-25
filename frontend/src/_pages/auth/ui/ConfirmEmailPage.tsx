@@ -23,14 +23,16 @@ function confirmEmailOnce(token: string): Promise<boolean> {
 
 export function ConfirmEmailPage({ token }: { token?: string }) {
   const router = useRouter();
-  const { user } = useSession();
+  const { user, ready } = useSession();
+  const fallbackHref = user ? "/" : "/login";
   const { notify } = useToast();
   useEffect(() => {
+    if (!ready) return;
     let active = true;
 
     async function completeConfirmation() {
       if (!token) {
-        if (active) router.replace(user ? "/" : "/login");
+        if (active) router.replace(fallbackHref);
         return;
       }
       try {
@@ -51,7 +53,7 @@ export function ConfirmEmailPage({ token }: { token?: string }) {
     return () => {
       active = false;
     };
-  }, [user, notify, router, token]);
+  }, [fallbackHref, ready, notify, router, token]);
 
   return (
     <div className="sitePage">

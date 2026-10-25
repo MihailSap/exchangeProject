@@ -1,5 +1,11 @@
 package ru.urfu.exchangeProject.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import ru.urfu.exchangeProject.dto.exceptions.ErrorCode;
+import ru.urfu.exchangeProject.dto.exceptions.ExceptionErrorResponse;
+import ru.urfu.exchangeProject.dto.exceptions.ExceptionResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -36,13 +42,30 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, ObjectMapper objectMapper) throws Exception {
         return http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(errors -> errors
+                        .authenticationEntryPoint((request, response, exception) -> {
+                            response.setStatus(401);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.setCharacterEncoding("UTF-8");
+                            objectMapper.writeValue(response.getOutputStream(), new ExceptionResponse(
+                                    new ExceptionErrorResponse(ErrorCode.UNAUTHORIZED, "Требуется авторизация. Войдите в аккаунт.", null)));
+                        })
+                        .accessDeniedHandler((request, response, exception) -> {
+                            response.setStatus(403);
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.setCharacterEncoding("UTF-8");
+                            objectMapper.writeValue(response.getOutputStream(), new ExceptionResponse(
+                                    new ExceptionErrorResponse(ErrorCode.ACCESS_DENIED, "Недостаточно прав для выполнения операции.", null)));
+                        }))
                 .authorizeHttpRequests(authz -> authz
+                        .requestMatchers("/api/v1/users/me", "/api/v1/users/me/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/{userId:[0-9]+}").permitAll()
                         .requestMatchers(
                                 "/api/v1/auth/register",
                                 "/api/v1/auth/login",
@@ -51,7 +74,6 @@ public class SecurityConfig {
                                 "/api/v1/auth/forgot-password",
                                 "/api/v1/auth/reset-password",
                                 "/api/v1/regions",
-                                "api/v1/users/*",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()

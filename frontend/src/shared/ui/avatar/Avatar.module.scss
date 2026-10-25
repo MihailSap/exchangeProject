@@ -1,0 +1,33 @@
+.avatar  {
+  position: relative;
+  display: inline-grid;
+  flex: 0 0 54px;
+  width: 54px;
+  height: 54px;
+  place-items: center;
+  vertical-align: middle;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--color-border);
+}
+
+.small  {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
+.photo  {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.initial  {
+  position: absolute;
+  color: #143e2c;
+  font-weight: 700;
+  font-size: 20px;
+}
+
+.small .initial  {
+  font-size: 15px;
+}

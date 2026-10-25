@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 type Theme = "light" | "dark";
@@ -15,9 +15,15 @@ function systemTheme(): Theme {
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>("light");
+  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    const savedTheme = window.localStorage.getItem(THEME_KEY);
+    let savedTheme: string | null = null;
+    try {
+      savedTheme = window.localStorage.getItem(THEME_KEY);
+    } catch {
+      savedTheme = null;
+    }
     if (savedTheme === "light" || savedTheme === "dark") {
       document.documentElement.dataset.theme = savedTheme;
       setTheme(savedTheme);
@@ -25,6 +31,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       document.documentElement.removeAttribute("data-theme");
       setTheme(systemTheme());
     }
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const syncSystemTheme = () => {
+      if (!document.documentElement.dataset.theme) setTheme(systemTheme());
+    };
+    media.addEventListener("change", syncSystemTheme);
+    return () => {
+      media.removeEventListener("change", syncSystemTheme);
+      if (transitionTimer.current !== null) clearTimeout(transitionTimer.current);
+      document.documentElement.removeAttribute("data-theme-changing");
+    };
   }, []);
 
   const toggleTheme = useCallback(() => {
@@ -32,9 +48,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const root = document.documentElement;
     root.dataset.themeChanging = "true";
     root.dataset.theme = nextTheme;
-    window.localStorage.setItem(THEME_KEY, nextTheme);
+    try {
+      window.localStorage.setItem(THEME_KEY, nextTheme);
+    } catch {
+      root.dataset.theme = nextTheme;
+    }
     setTheme(nextTheme);
-    window.setTimeout(() => root.removeAttribute("data-theme-changing"), 500);
+    if (transitionTimer.current !== null) clearTimeout(transitionTimer.current);
+    transitionTimer.current = setTimeout(() => {
+      root.removeAttribute("data-theme-changing");
+      transitionTimer.current = null;
+    }, 500);
   }, [theme]);
 
   const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);

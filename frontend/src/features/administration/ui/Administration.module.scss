@@ -39,7 +39,8 @@
 .adminBadge { color:var(--color-admin); background:color-mix(in srgb,var(--color-admin) 10%,var(--color-surface)); }
 .active { color:var(--color-brand); background:var(--color-success-bg); }
 .frozen,.warning { color:var(--color-error); background:var(--color-error-bg); }
-.categoryCard { justify-content:space-between; }
+.categoryCard { justify-content:space-between; margin-inline-start:calc(var(--category-depth,0) * clamp(12px,3vw,24px)); }
+.subcategoryCard { border-inline-start:3px solid var(--color-admin); }
 .categoryCard h3 { font-size:15px; margin:0; }
 .rowActions,.actions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
 .rowActions { flex-shrink:0; }

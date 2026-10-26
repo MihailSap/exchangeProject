@@ -80,8 +80,9 @@ export function SiteHeader({ ownLot = false }: { ownLot?: boolean }) {
                 {panel === "profile" && <nav id="header-profile-menu" className={`${dropdown.dropdown} ${dropdown.profile}`} aria-label="Меню пользователя">
                   <div className={dropdown.user}><strong>{user.name}</strong><span>{user.email}</span></div>
                   <Link href="/profile" onClick={closePanel}><Icon name="user" />Личный кабинет</Link>
+                  <Link href="/profile?section=reviews" onClick={closePanel}><Icon name="star" />Отзывы и рейтинг</Link>
+                  <Link href="/profile?section=settings" onClick={closePanel}><Icon name="settings" />Настройки профиля</Link>
                   {user.role === "ADMIN" && user.status === "ACTIVE" && <Link href="/admin" className={dropdown.admin} onClick={closePanel}><Icon name="shield" />Админ-панель</Link>}
-                  <Link href="/faq" onClick={closePanel}><Icon name="search" />Частые вопросы</Link>
                   {user.status === "ACTIVE" && user.emailConfirmed !== false && <Link href="/lots/new" onClick={closePanel}><Icon name="plus" />Новый лот</Link>}
                   <button type="button" className={dropdown.logout} disabled={signingOut} onClick={handleSignOut}><Icon name="logout" />{signingOut ? "Выходим…" : "Выйти"}</button>
                 </nav>}

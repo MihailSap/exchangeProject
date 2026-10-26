@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { createLot, getFixtureLot, getLotCategories, updateLot } from "@/src/entities/lot";
@@ -19,6 +18,7 @@ import type { LotPhotoSelection } from "../model/photos";
 import { LotEstimate } from "./LotEstimate";
 import { LotPhotosField } from "./LotPhotosField";
 import { LotWants } from "./LotWants";
+import { LotStepper } from "./LotStepper";
 import styles from "./LotForm.module.scss";
 
 const FIRST_FIELDS: LotField[] = ["title", "description", "categoryId", "region", "type", "delivery", "cost", "photos"];
@@ -105,7 +105,7 @@ export function LotForm({ lot, user, onSaved }: { lot: Lot | null; user: AuthUse
         result = await updateLot(lot, { title: values.title.trim(), description: values.description.trim(), category_id: Number(values.categoryId), region: values.region, type: values.type, delivery_method: values.delivery, estimated_cost: Number(values.cost.replace(",", ".")) }, wants, photoChanges ? await serializePhotos(photos) : undefined);
       } else result = await createLot(toMultipart(values, files));
       try { localStorage.removeItem(draftKey); } catch { setSavedAt(""); }
-      notify({ kind: "success", title: "Лот отправлен на модерацию", description: "Сообщим о результате проверки в уведомлениях." }); onSaved(result);
+      onSaved(result);
     } catch (error) {
       notify({ kind: "error", title: error instanceof Error ? error.message : "Не удалось сохранить лот" });
       if (error instanceof ApiError && error.status === 401) window.location.assign("/login");
@@ -115,7 +115,7 @@ export function LotForm({ lot, user, onSaved }: { lot: Lot | null; user: AuthUse
   const canPublish = !busy && firstValid && wantsValid && dirty && !unsupportedPhotoChanges;
   return <>
     {savedDraft && <section className={styles.draftNotice} aria-label="Сохранённый черновик"><p>Есть сохранённый черновик изменений этого лота.</p><button type="button" onClick={() => { setValues(savedDraft); setSavedDraft(null); setSavedAt("Восстановлен сохранённый текст"); }}>Восстановить черновик</button><button type="button" onClick={() => { try { localStorage.removeItem(draftKey); setSavedDraft(null); } catch { notify({ kind: "error", title: "Не удалось удалить черновик" }); } }}>Удалить черновик</button></section>}
-    <ol className={styles.stepper} aria-label="Этапы публикации">{["Информация", "Оценка и обмен", "Публикация"].map((label, index) => <li key={label} data-state={index + 1 < step ? "completed" : index + 1 === step ? "current" : "upcoming"} aria-current={step === index + 1 ? "step" : undefined}><span role={index + 1 < step ? "img" : undefined} aria-label={index + 1 < step ? `Этап ${index + 1} завершён` : undefined}>{index + 1 < step ? <Image src="/images/lot-stepper/completed.svg" alt="" width={36} height={36} /> : index + 1}</span><strong>{label}</strong></li>)}</ol>
+    <LotStepper step={step} />
     <div className={styles.layout}><form id="lot-form" className={styles.form} noValidate onSubmit={submit}>
       {step === 1 ? <><h2>Основная информация</h2>{referenceError && <div className={styles.referenceError} role="status"><p>{referenceError}</p><button type="button" onClick={() => setReferenceAttempt((value) => value + 1)}>Повторить загрузку</button></div>}
         {field("title", "Название лота", 120)}<div className={styles.row}><FormField name="categoryId" label="Категория" maxLength={20} value={values.categoryId} required disabled={busy || !categories.length} error={touched.categoryId ? errors.categoryId : undefined} onChange={(value) => change("categoryId", value)} onBlur={() => touch("categoryId")}><option value="">Выберите категорию</option>{categories.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</FormField><fieldset className={styles.segmented}><legend>Тип предложения *</legend>{(["PRODUCT", "SERVICE"] as const).map((type) => <label key={type}><input type="radio" name="type" checked={values.type === type} disabled={busy} onChange={() => change("type", type)} /><span>{type === "PRODUCT" ? "Товар" : "Услуга"}</span></label>)}</fieldset></div>

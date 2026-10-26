@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { AdminCategory } from "../model/contracts";
 import { AdminUsers } from "./AdminUsers";
 import { AdminCategories } from "./AdminCategories";
@@ -9,7 +9,15 @@ import styles from "./Administration.module.scss";
 
 type Props = { userId: number; categories: AdminCategory[]; onDenied: (error: unknown) => boolean };
 export function AdminWorkspace({ userId, categories, onDenied }: Props) {
-  const [tab, setTab] = useState<"users" | "categories">("users");
+  const pathname = usePathname();
+  const router = useRouter();
+  const search = useSearchParams();
+  const tab = search.get("tab") === "categories" ? "categories" : "users";
+  function setTab(next: "users" | "categories") {
+    const params = new URLSearchParams(search.toString());
+    params.set("tab", next);
+    router.replace(`${pathname}?${params}`, { scroll: false });
+  }
   return <div className={styles.workspace}>
     <nav className={styles.tabs} aria-label="Разделы администрирования">
       <button type="button" aria-current={tab === "users" ? "page" : undefined} onClick={() => setTab("users")}><Icon name="user" />Пользователи</button>

@@ -569,6 +569,23 @@ test("existing lot restores every exchange choice and dirty state ignores select
   assert.equal(form.hasFormChanges({ ...values, wantTypes: ["ANY"], keywords: "Скрытый текст" }, { ...values, wantTypes: ["ANY"] }), false);
 });
 
+test("category rows group descendants beneath each parent with increasing depth", () => {
+  const { categoryRows } = environment().load("@/src/features/administration/model/category-tree");
+  const category = (id, parentId) => ({ id, parentId, name: `Category ${id}`, slug: `category-${id}` });
+  const rows = categoryRows([category(4, 3), category(2, 1), category(5, null), category(3, 2), category(1, null), category(6, 1)]);
+  assert.deepEqual(Array.from(rows, ({ category, depth }) => [category.id, depth]), [[5, 0], [1, 0], [2, 1], [3, 2], [4, 3], [6, 1]]);
+  assert.equal(rows.filter(({ category }) => category.id === 4)[0].depth, 3);
+});
+
+test("category rows keep orphaned and cyclic branches visible exactly once", () => {
+  const { categoryRows } = environment().load("@/src/features/administration/model/category-tree");
+  const categories = [{ id: 1, parentId: 2 }, { id: 2, parentId: 1 }, { id: 3, parentId: 99 }];
+  const rows = categoryRows(categories);
+  assert.equal(rows.length, 3);
+  assert.equal(new Set(rows.map(({ category }) => category.id)).size, 3);
+  assert.equal(rows.find(({ category }) => category.id === 3).depth, 0);
+});
+
 test("target lot references accept only positive safe identifiers and supported links", () => {
   const form = environment().load("@/src/_pages/lot/model/form");
   for (const value of ["42", " /lots/42/ ", "https://example.com/lots/42"]) assert.equal(form.parseTargetLot(value), "42");

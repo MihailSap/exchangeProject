@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { readSession, updateSessionProfile, useSession } from "@/src/entities/session";
 import { AdminWorkspace, getAdminCategories } from "@/src/features/administration";
@@ -42,6 +42,6 @@ export function AdminPage() {
   }, [ready, user?.id, user?.status, user?.role, attempt, router, onDenied]);
   const allowed = ready && user?.id === verified?.id && user?.role === "ADMIN" && user.status === "ACTIVE";
   return <div className="sitePage"><SiteHeader /><main className={styles.main}>
-    {allowed && verified ? <><Breadcrumbs items={[{ label: "Главная", href: "/" }, { label: "Админ-панель" }]} /><div className={styles.heading}><span><Icon name="shield" /></span><div><h1>Админ-панель</h1><p>Управление пользователями и справочниками сервиса</p></div></div><AdminWorkspace key={verified.id} userId={verified.id} categories={verified.categories} onDenied={onDenied} /></> : <div className={styles.state} role="status">{error ? <><p>{error}</p><button type="button" onClick={() => setAttempt((value) => value + 1)}>Повторить проверку доступа</button></> : "Проверяем доступ…"}</div>}
+    {allowed && verified ? <><Breadcrumbs items={[{ label: "Главная", href: "/" }, { label: "Админ-панель" }]} /><div className={styles.heading}><span><Icon name="shield" /></span><div><h1>Админ-панель</h1><p>Управление пользователями и справочниками сервиса</p></div></div><Suspense fallback={<p role="status">Загружаем раздел…</p>}><AdminWorkspace key={verified.id} userId={verified.id} categories={verified.categories} onDenied={onDenied} /></Suspense></> : <div className={styles.state} role="status">{error ? <><p>{error}</p><button type="button" onClick={() => setAttempt((value) => value + 1)}>Повторить проверку доступа</button></> : "Проверяем доступ…"}</div>}
   </main><SiteFooter /></div>;
 }

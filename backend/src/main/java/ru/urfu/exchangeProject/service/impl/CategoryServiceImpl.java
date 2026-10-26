@@ -26,8 +26,22 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Transactional
     @Override
-    public List<Category> findAll() {
-        return categoryRepository.findAll();
+    public List<Category> findParents() {
+        return categoryRepository.findByParentIsNull();
+    }
+
+    @Transactional
+    @Override
+    public List<Category> findParentsByActive(boolean active) {
+        return categoryRepository.findByActive(active);
+    }
+
+    @Override
+    public List<Category> filterParentsCategory(List<Category> categories) {
+        return categories.stream()
+                .filter(category -> category.getParent() == null
+                        || !category.getParent().isActive())
+                .toList();
     }
 
     @Transactional
@@ -96,7 +110,8 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Transactional
     @Override
-    public void delete(Category category) {
-        categoryRepository.delete(category);
+    public Category softDelete(Category category) {
+        category.setActive(false);
+        return categoryRepository.save(category);
     }
 }

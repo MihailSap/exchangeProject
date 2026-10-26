@@ -21,7 +21,6 @@ import java.util.List;
 
 @Tag(name = "Категории")
 @SecurityRequirement(name = "bearerAuth")
-@PreAuthorize("hasAuthority('ADMIN')")
 @RestController
 @RequestMapping(PathsConstants.ROOT + PathsConstants.CATEGORIES)
 public class CategoryController {
@@ -41,42 +40,67 @@ public class CategoryController {
     @Operation(description = "Получение всех категорий")
     @GetMapping
     public BaseResponse<List<CategoryResponse>> findAll() {
-        List<Category> categories = categoryService.findAll();
-        List<CategoryResponse> categoryResponses = categoryMapper.mapToCategoryResponses(categories);
+        List<Category> categories = categoryService.findParents();
+        List<Category> parentsCategories = categoryService.filterParentsCategory(categories);
+        List<CategoryResponse> categoryResponses = categoryMapper.mapToCategoryResponses(parentsCategories, null);
         return new BaseResponse<>(categoryResponses);
+    }
+
+    @Operation(description = "Получение всех активных категорий")
+    @GetMapping("/active")
+    public BaseResponse<List<CategoryResponse>> findActive() {
+        List<Category> categories = categoryService.findParentsByActive(true);
+        List<CategoryResponse> responses =
+                categoryMapper.mapToCategoryResponses(categories, true);
+
+        return new BaseResponse<>(responses);
+    }
+
+    @Operation(description = "Получение всех активных категорий")
+    @GetMapping("/inactive")
+    public BaseResponse<List<CategoryResponse>> findInactive() {
+        List<Category> categories = categoryService.findParentsByActive(false);
+        List<CategoryResponse> responses =
+                categoryMapper.mapToCategoryResponses(categories, false);
+
+        return new BaseResponse<>(responses);
     }
 
     @Operation(description = "Получение категории")
     @GetMapping("/{id}")
     public BaseResponse<CategoryResponse> findById(@PathVariable("id") Long id) throws CategoryNotFound {
         Category category = categoryService.findById(id);
-        CategoryResponse categoryResponse = categoryMapper.mapToCategoryResponse(category);
+        CategoryResponse categoryResponse = categoryMapper.mapToCategoryResponse(category, null);
         return new BaseResponse<>(categoryResponse);
     }
 
     @Operation(description = "Создание категории")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public BaseResponse<CategoryResponse> create(@Valid @RequestBody CategoryRequest request) throws CategoryNotFound {
         Category category = categoryService.create(request);
-        CategoryResponse categoryResponse = categoryMapper.mapToCategoryResponse(category);
+        CategoryResponse categoryResponse = categoryMapper.mapToCategoryResponse(category, null);
         return new BaseResponse<>(categoryResponse);
     }
 
     @Operation(description = "Обновление категории")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{id}")
-    public BaseResponse<CategoryResponse> update(@PathVariable("id") Long id, @Valid @RequestBody CategoryRequest request) throws CategoryNotFound {
+    public BaseResponse<CategoryResponse> update(@PathVariable("id") Long id, @RequestBody CategoryRequest request) throws CategoryNotFound {
         Category category = categoryService.findById(id);
         Category updatedCategory = categoryService.update(category, request);
-        CategoryResponse categoryResponse = categoryMapper.mapToCategoryResponse(updatedCategory);
+        CategoryResponse categoryResponse = categoryMapper.mapToCategoryResponse(updatedCategory, null);
         return new BaseResponse<>(categoryResponse);
     }
 
     @Operation(description = "Удаление категории")
+    @PreAuthorize("hasAuthority('ADMIN')")
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable("id") Long id) throws CategoryNotFound {
+    public BaseResponse<CategoryResponse> delete(@PathVariable("id") Long id) throws CategoryNotFound {
         Category category = categoryService.findById(id);
-        categoryService.delete(category);
+        Category inactiveCategory = categoryService.softDelete(category);
+        CategoryResponse categoryResponse = categoryMapper.mapToCategoryResponse(inactiveCategory, null);
+        return new BaseResponse<>(categoryResponse);
     }
 }

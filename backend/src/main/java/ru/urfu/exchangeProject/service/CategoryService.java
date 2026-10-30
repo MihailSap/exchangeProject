@@ -8,13 +8,17 @@ import java.util.List;
 
 public interface CategoryService {
 
-    List<Category> findAll();
+    List<Category> findParents();
+
+    List<Category> findParentsByActive(boolean active);
 
     Category findById(Long id) throws CategoryNotFound;
+
+    List<Category> filterParentsCategory(List<Category> categories);
 
     Category create(CategoryRequest request) throws CategoryNotFound;
 
     Category update(Category category, CategoryRequest request) throws CategoryNotFound;
 
-    void delete(Category category);
+    Category softDelete(Category category);
 }

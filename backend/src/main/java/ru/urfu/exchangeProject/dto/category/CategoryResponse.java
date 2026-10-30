@@ -6,6 +6,7 @@ public record CategoryResponse(
         Long id,
         String name,
         String slug,
+        boolean isActive,
         List<CategoryResponse> children
 ) {
 }

@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 10
+      author: SapeginMihail
+      changes:
+        - dropUniqueConstraint:
+            tableName: users
+            constraintName: users_name_key

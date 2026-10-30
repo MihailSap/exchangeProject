@@ -1,0 +1,39 @@
+.intro  {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.questions  {
+  display: grid;
+  gap: 10px;
+}
+
+.questions details  {
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.questions summary  {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.questions summary:hover,.questions summary:active  {
+  color: var(--color-brand);
+}
+
+.questions summary:focus-visible  {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 4px;
+}
+
+.questions p  {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 12px 0 0;
+}

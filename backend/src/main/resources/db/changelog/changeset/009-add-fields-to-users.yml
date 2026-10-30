@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 9
+      author: SapeginMihail
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: email_confirmation_token
+                  type: TEXT
+              - column:
+                  name: email_confirmation_token_expiry
+                  type: TIMESTAMPTZ
+              - column:
+                  name: email_confirmation_last_sent_at
+                  type: TIMESTAMPTZ

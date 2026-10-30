@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 5
+      author: SapeginMihail
+      changes:
+        - createTable:
+            tableName: categories
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_categories
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: slug
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_categories_slug
+              - column:
+                  name: active
+                  type: BOOLEAN
+                  defaultValueBoolean: true
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: parent_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+
+        - addForeignKeyConstraint:
+            baseTableName: categories
+            baseColumnNames: parent_id
+            constraintName: fk_categories_parent
+            referencedTableName: categories
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - createIndex:
+            tableName: categories
+            indexName: idx_categories_parent_id
+            columns:
+              - column:
+                  name: parent_id

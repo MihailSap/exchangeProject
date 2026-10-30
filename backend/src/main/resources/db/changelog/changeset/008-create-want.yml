@@ -1,0 +1,51 @@
+databaseChangeLog:
+  - changeSet:
+      id: 8
+      author: SapeginMihail
+      changes:
+        - createTable:
+            tableName: want
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_want
+                    nullable: false
+              - column:
+                  name: want_type
+                  type: VARCHAR(50)
+              - column:
+                  name: target_lot
+                  type: VARCHAR(255)
+              - column:
+                  name: keywords
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMPTZ
+              - column:
+                  name: lot_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: category_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+
+        - addForeignKeyConstraint:
+            baseTableName: want
+            baseColumnNames: lot_id
+            constraintName: fk_want_lot
+            referencedTableName: lots
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: want
+            baseColumnNames: category_id
+            constraintName: fk_want_category
+            referencedTableName: categories
+            referencedColumnNames: id

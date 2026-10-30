@@ -1,0 +1,9 @@
+package ru.urfu.exchangeProject.dto.exceptions;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import java.util.List;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record ExceptionErrorResponse(ErrorCode code, String message, List<ExceptionDetails> details) {
+}

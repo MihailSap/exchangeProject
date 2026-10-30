@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 4
+      author: SapeginMihail
+      changes:
+        - addColumn:
+            tableName: users
+            columns:
+              - column:
+                  name: password_reset_token
+                  type: TEXT
+              - column:
+                  name: password_reset_token_expires_at
+                  type: TIMESTAMP

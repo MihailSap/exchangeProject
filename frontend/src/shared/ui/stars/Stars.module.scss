@@ -1,0 +1,23 @@
+.stars  {
+  display: inline-flex;
+  gap: 3px;
+  color: var(--color-brand);
+  font-size: 22px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.star  {
+  position: relative;
+}
+
+.fill  {
+  position: absolute;
+  inset: 0 auto 0 0;
+  overflow: hidden;
+}
+
+.empty  {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}

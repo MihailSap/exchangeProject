@@ -35,7 +35,10 @@
 
 * {
   box-sizing: border-box;
-  transition: background-color 500ms ease, color 500ms ease, border-color 500ms ease;
+  transition:
+    background-color 500ms ease,
+    color 500ms ease,
+    border-color 500ms ease;
 }
 
 html,
@@ -55,7 +58,9 @@ body {
   min-height: 100svh;
   background: var(--color-canvas);
   color: var(--color-text);
-  transition: background-color 500ms ease, color 500ms ease;
+  transition:
+    background-color 500ms ease,
+    color 500ms ease;
 }
 
 button,
@@ -79,7 +84,9 @@ summary:focus-visible,
   min-height: 100svh;
   overflow-x: clip;
   background: var(--color-canvas);
-  transition: background-color 500ms ease, color 500ms ease;
+  transition:
+    background-color 500ms ease,
+    color 500ms ease;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -196,15 +203,23 @@ summary:focus-visible,
   }
 }
 
-:where(input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select) {
-  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 500ms ease, color 500ms ease;
+:where(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), textarea, select) {
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 500ms ease,
+    color 500ms ease;
 }
-:where(input:not([type=checkbox]):not([type=radio]):not([type=file]),textarea,select):focus {
+:where(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  textarea,
+  select
+):focus {
   outline: none;
   border-color: var(--color-brand);
   box-shadow: 0 0 0 3px rgb(23 107 77 / 12%);
 }
-:where(input[type=checkbox],input[type=radio],input[type=file]):focus-visible {
+:where(input[type="checkbox"], input[type="radio"], input[type="file"]):focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 3px;
 }

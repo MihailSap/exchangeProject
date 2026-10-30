@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
 import type { AuthMode } from "@/src/features/auth";
-import { AuthFlow } from "@/src/features/auth";
+
 import { useSession } from "@/src/entities/session";
+import { AuthFlow } from "@/src/features/auth";
 import { SiteFooter, SiteHeader } from "@/src/widgets/site-chrome";
 
 export function AuthPageShell({ mode, token }: { mode: AuthMode; token?: string }) {
@@ -13,6 +15,7 @@ export function AuthPageShell({ mode, token }: { mode: AuthMode; token?: string 
 
   useEffect(() => {
     if (!ready) return;
+
     if (user) {
       router.replace("/");
     } else if (mode === "reset" && !token) {

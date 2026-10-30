@@ -1,28 +1,29 @@
-.panel  {
+.panel {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 18px;
   padding: 28px;
 }
 
-.panel h2  {
+.panel h2 {
   margin: 0 0 12px;
   font-size: 22px;
 }
 
-.intro,.hint  {
+.intro,
+.hint {
   color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.6;
   margin: 0;
 }
 
-.form  {
+.form {
   margin-top: 28px;
   max-width: 640px;
 }
 
-.fields  {
+.fields {
   display: grid;
   gap: 22px;
   border: 0;
@@ -31,20 +32,20 @@
   min-width: 0;
 }
 
-.avatarRow  {
+.avatarRow {
   display: flex;
   align-items: center;
   gap: 20px;
 }
 
-.avatarRow p  {
+.avatarRow p {
   color: var(--color-text-secondary);
   font-size: 12px;
   line-height: 1.5;
   margin: 8px 0 0;
 }
 
-.upload  {
+.upload {
   display: inline-flex;
   position: relative;
   border-radius: 10px;
@@ -56,20 +57,20 @@
   cursor: pointer;
 }
 
-.upload:hover  {
+.upload:hover {
   background: var(--color-border);
 }
 
-.upload:active  {
+.upload:active {
   transform: translateY(1px);
 }
 
-.upload:focus-within  {
+.upload:focus-within {
   outline: 2px solid var(--color-brand);
   outline-offset: 3px;
 }
 
-.upload input  {
+.upload input {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -78,14 +79,16 @@
   cursor: pointer;
 }
 
-.actions  {
+.actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   padding-top: 8px;
 }
 
-.save,.cancel,.retry  {
+.save,
+.cancel,
+.retry {
   border: 1px solid var(--color-border);
   padding: 12px 18px;
   border-radius: 12px;
@@ -93,55 +96,89 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 180ms ease, transform 180ms ease;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
 }
 
-.save  {
+.save {
   background: var(--color-brand);
   color: var(--color-on-brand);
   border-color: transparent;
 }
 
-.cancel,.retry  {
+.cancel,
+.retry {
   background: var(--color-surface);
   color: var(--color-brand);
 }
 
-.save:hover:not(:disabled)  {
+.save:hover:not(:disabled) {
   background: var(--color-brand-hover);
 }
 
-.cancel:hover:not(:disabled),.retry:hover  {
+.cancel:hover:not(:disabled),
+.retry:hover {
   background: var(--color-hover);
 }
 
-.actions button:active:not(:disabled),.retry:active  {
+.actions button:active:not(:disabled),
+.retry:active {
   transform: translateY(1px);
 }
 
-.actions button:disabled  {
-  opacity: .5;
+.actions button:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.avatarRow .error  {
+.avatarRow .error {
   color: var(--color-error);
 }
 
-.avatarActions { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
-.removeAvatar { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 14px; border:1px solid var(--color-border); border-radius:10px; color:var(--color-error); background:var(--color-surface); font:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:background-color 180ms ease,transform 180ms ease; }
-.removeAvatar:hover:not(:disabled) { background:var(--color-error-bg); }
-.removeAvatar:active:not(:disabled) { transform:translateY(1px); }
-.removeAvatar:disabled { opacity:.5; cursor:not-allowed; }
+.avatarActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.removeAvatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-error);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+.removeAvatar:hover:not(:disabled) {
+  background: var(--color-error-bg);
+}
+.removeAvatar:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.removeAvatar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
-@media(max-width:600px)  {
-  .panel  {
+@media (max-width: 600px) {
+  .panel {
     padding: 20px;
   }
-  .actions  {
+  .actions {
     flex-direction: column;
   }
-  .avatarRow  {
+  .avatarRow {
     align-items: flex-start;
     gap: 12px;
   }

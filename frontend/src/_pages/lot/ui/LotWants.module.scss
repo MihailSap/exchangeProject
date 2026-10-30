@@ -1,46 +1,290 @@
-.options { display:grid; gap:12px; border:0; margin:0; padding:0; min-width:0; }
-.option { padding:20px; border:1px solid var(--color-border); border-radius:18px; background:var(--color-surface); min-width:0; transition:border-color 180ms ease,background-color 180ms ease; }
-.selected { border-color:var(--color-brand); background:color-mix(in srgb,var(--color-hover) 35%,var(--color-surface)); }
-.heading { display:flex; align-items:flex-start; gap:16px; cursor:pointer; }
-.heading > input { appearance:none; flex:0 0 24px; width:24px; height:24px; padding:0; margin:0; border:0; background: url('/images/lot-wants/unchecked.svg') center / 24px 24px no-repeat; cursor:pointer; }
-.heading > input:checked { background-image:url('/images/lot-wants/checked.svg'); }
-.heading > input:focus-visible { outline:2px solid var(--color-brand); outline-offset:4px; }
-.heading > input:disabled { cursor:not-allowed; }
-.heading > span { display:grid; gap:5px; min-width:0; }
-.heading strong { font-size:16px; line-height:1.5; }
-.heading small,.hint { font-size:12px; line-height:1.6; color:var(--color-text-secondary); }
-.heading:hover { color:var(--color-brand); }
-.heading:active { opacity:.8; }
-.content { margin-top:20px; display:grid; gap:12px; min-width:0; }
-.hint,.error { margin:0; }
-.error { color:var(--color-error); font-size:12px; line-height:1.6; }
-.lotInput { display:flex; align-items:flex-end; gap:10px; min-width:0; }
-.lotInput > div { flex:1; min-width:0; }
-.add,.more { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:12px 14px; border:1px solid var(--color-border); border-radius:10px; background:var(--color-surface); color:var(--color-brand); font:inherit; font-size:12px; font-weight:600; cursor:pointer; transition:background-color 180ms ease,transform 180ms ease; }
-.add { min-height:46px; }
-.add:hover:not(:disabled),.more:hover { background:var(--color-hover); }
-.add:active:not(:disabled),.more:active { transform:scale(.98); }
-.add:disabled { opacity:.45; cursor:not-allowed; }
-.lots { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:0; padding:0; list-style:none; }
-.lots li { display:flex; align-items:center; gap:10px; padding:10px; background:var(--color-surface); border:1px solid var(--color-border); border-radius:12px; min-width:0; }
-.thumb { display:grid; place-items:center; flex:0 0 36px; height:36px; border-radius:8px; overflow:hidden; background:var(--color-hover); }
-.thumb img { width:36px; height:36px; object-fit:cover; }
-.lotInfo { display:grid; gap:4px; flex:1; min-width:0; overflow-wrap:anywhere; }
-.lotInfo strong { font-size:12px; line-height:1.5; }
-.lotInfo small { font-size:10px; line-height:1.5; color:var(--color-text-secondary); }
-.lots button { display:grid; place-items:center; flex-shrink:0; padding:4px; border:0; border-radius:6px; color:var(--color-text-secondary); background:transparent; cursor:pointer; transition:background-color 180ms ease; }
-.lots button:hover { background:var(--color-hover); color:var(--color-error); }
-.lots button:active { background:var(--color-border); }
-.categories { display:flex; flex-wrap:wrap; gap:8px; }
-.categories label { position:relative; display:inline-flex; cursor:pointer; min-width:0; max-width:100%; }
-.categories input { position:absolute; opacity:0; width:100%; height:100%; margin:0; cursor:pointer; }
-.categories label > span { padding:8px 16px; border:1px solid var(--color-border); border-radius:999px; background:var(--color-surface); color:var(--color-text); font-size:12px; line-height:1.5; font-weight:600; overflow-wrap:anywhere; transition:background-color 180ms ease; }
-.categories .activeCategory > span { background:var(--color-brand); color:var(--color-on-brand); border-color:var(--color-brand); }
-.categories input:focus-visible + span { outline:2px solid var(--color-brand); outline-offset:3px; }
-.categories label:hover > span { border-color:var(--color-brand); }
-.categories label:active > span { background:var(--color-hover); color:var(--color-brand); }
-.categories input:disabled { cursor:not-allowed; }
-.categories input:disabled:not(:checked) + span { opacity:.45; }
-.more { border-radius:999px; padding:8px 16px; }
-:global([data-theme="dark"]) .heading > input:not(:checked) { background-color:var(--color-input); border:1px solid var(--color-border); border-radius:6px; background-image:none; }
-@media(max-width:600px) { .option { padding:16px; border-radius:14px; } .heading { gap:12px; } .heading strong { font-size:14px; } .content { margin-top:16px; } .lotInput { flex-wrap:wrap; } .lotInput > div { flex-basis:100%; } .lotInput > button { margin-left:auto; } .lots { grid-template-columns:minmax(0,1fr); } .categories label > span { padding:7px 12px; } }
+.options {
+  display: grid;
+  gap: 12px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+.option {
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+  min-width: 0;
+  transition:
+    border-color 180ms ease,
+    background-color 180ms ease;
+}
+.selected {
+  border-color: var(--color-brand);
+  background: color-mix(in srgb, var(--color-hover) 35%, var(--color-surface));
+}
+.heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  cursor: pointer;
+}
+.heading > input {
+  appearance: none;
+  flex: 0 0 24px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: url("/images/lot-wants/unchecked.svg") center / 24px 24px no-repeat;
+  cursor: pointer;
+}
+.heading > input:checked {
+  background-image: url("/images/lot-wants/checked.svg");
+}
+.heading > input:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 4px;
+}
+.heading > input:disabled {
+  cursor: not-allowed;
+}
+.heading > span {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.heading strong {
+  font-size: 16px;
+  line-height: 1.5;
+}
+.heading small,
+.hint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+.heading:hover {
+  color: var(--color-brand);
+}
+.heading:active {
+  opacity: 0.8;
+}
+.content {
+  margin-top: 20px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+.hint,
+.error {
+  margin: 0;
+}
+.error {
+  color: var(--color-error);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.lotInput {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+.lotInput > div {
+  flex: 1;
+  min-width: 0;
+}
+.add,
+.more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-brand);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
+}
+.add {
+  min-height: 46px;
+}
+.add:hover:not(:disabled),
+.more:hover {
+  background: var(--color-hover);
+}
+.add:active:not(:disabled),
+.more:active {
+  transform: scale(0.98);
+}
+.add:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.lots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lots li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  min-width: 0;
+}
+.thumb {
+  display: grid;
+  place-items: center;
+  flex: 0 0 36px;
+  height: 36px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--color-hover);
+}
+.thumb img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+}
+.lotInfo {
+  display: grid;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.lotInfo strong {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.lotInfo small {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+.lots button {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 4px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color 180ms ease;
+}
+.lots button:hover {
+  background: var(--color-hover);
+  color: var(--color-error);
+}
+.lots button:active {
+  background: var(--color-border);
+}
+.categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.categories label {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+  min-width: 0;
+  max-width: 100%;
+}
+.categories input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  cursor: pointer;
+}
+.categories label > span {
+  padding: 8px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 12px;
+  line-height: 1.5;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  transition: background-color 180ms ease;
+}
+.categories .activeCategory > span {
+  background: var(--color-brand);
+  color: var(--color-on-brand);
+  border-color: var(--color-brand);
+}
+.categories input:focus-visible + span {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 3px;
+}
+.categories label:hover > span {
+  border-color: var(--color-brand);
+}
+.categories label:active > span {
+  background: var(--color-hover);
+  color: var(--color-brand);
+}
+.categories input:disabled {
+  cursor: not-allowed;
+}
+.categories input:disabled:not(:checked) + span {
+  opacity: 0.45;
+}
+.more {
+  border-radius: 999px;
+  padding: 8px 16px;
+}
+:global([data-theme="dark"]) .heading > input:not(:checked) {
+  background-color: var(--color-input);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background-image: none;
+}
+@media (max-width: 600px) {
+  .option {
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .heading {
+    gap: 12px;
+  }
+  .heading strong {
+    font-size: 14px;
+  }
+  .content {
+    margin-top: 16px;
+  }
+  .lotInput {
+    flex-wrap: wrap;
+  }
+  .lotInput > div {
+    flex-basis: 100%;
+  }
+  .lotInput > button {
+    margin-left: auto;
+  }
+  .lots {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .categories label > span {
+    padding: 7px 12px;
+  }
+}

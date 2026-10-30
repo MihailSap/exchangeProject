@@ -1,10 +1,10 @@
-.copy  {
+.copy {
   margin: 0;
   font-size: 14px;
   line-height: 1.6;
 }
 
-.buttons  {
+.buttons {
   display: flex;
   justify-content: flex-end;
   flex-wrap: wrap;
@@ -12,7 +12,7 @@
   margin-top: 24px;
 }
 
-.buttons button  {
+.buttons button {
   border: 1px solid var(--color-border);
   border-radius: 11px;
   padding: 12px 20px;
@@ -20,35 +20,37 @@
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 180ms ease, transform 180ms ease;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
 }
 
-.secondary  {
+.secondary {
   background: var(--color-surface);
   color: var(--color-text);
 }
 
-.buttons .danger  {
+.buttons .danger {
   background: var(--color-error);
   color: var(--color-surface);
   border-color: transparent;
 }
 
-.buttons button:hover:not(:disabled)  {
-  filter: brightness(.93);
+.buttons button:hover:not(:disabled) {
+  filter: brightness(0.93);
 }
 
-.buttons button:active:not(:disabled)  {
+.buttons button:active:not(:disabled) {
   transform: translateY(1px);
 }
 
-.buttons button:disabled  {
-  opacity: .5;
+.buttons button:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-@media(max-width:600px)  {
-  .buttons button  {
+@media (max-width: 600px) {
+  .buttons button {
     flex: 1;
   }
 }

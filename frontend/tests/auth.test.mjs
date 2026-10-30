@@ -1,13 +1,18 @@
 import assert from "node:assert/strict";
 import { readFileSync, existsSync } from "node:fs";
 import path from "node:path";
+import test from "node:test";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
-import test from "node:test";
+
 import ts from "typescript";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
-const session = { accessToken: "access", refreshToken: "refresh", user: { id: 1, email: "user@example.com", name: "Имя", status: "ACTIVE" } };
+const session = {
+  accessToken: "access",
+  refreshToken: "refresh",
+  user: { id: 1, email: "user@example.com", name: "Имя", status: "ACTIVE" },
+};
 
 function environment(fetch = async () => new Response(null, { status: 204 })) {
   const storage = new Map();
@@ -21,24 +26,67 @@ function environment(fetch = async () => new Response(null, { status: 204 })) {
     },
     dispatchEvent: (event) => events.push(event.type),
   };
+
   function load(name, parent = root) {
-    const base = name.startsWith("@/") ? path.join(root, name.slice(2)) : path.resolve(parent, name);
-    const filename = [base, `${base}.ts`, path.join(base, "index.ts")].find((candidate) => existsSync(candidate) && candidate.endsWith(".ts"));
+    const base = name.startsWith("@/")
+      ? path.join(root, name.slice(2))
+      : path.resolve(parent, name);
+
+    const filename = [base, `${base}.ts`, path.join(base, "index.ts")].find(
+      (candidate) => existsSync(candidate) && candidate.endsWith(".ts"),
+    );
+
     if (!filename) throw new Error(`Cannot load ${name}`);
+
     if (cache.has(filename)) return cache.get(filename).exports;
+
     const module = { exports: {} };
     cache.set(filename, module);
-    const compiled = ts.transpileModule(readFileSync(filename, "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
-    vm.runInNewContext(compiled, { module, exports: module.exports, require: (request) => load(request, path.dirname(filename)), window, fetch, Headers, Response, DOMException, Event, atob, FormData, Blob, URL, process: { env: {} } }, { filename });
+    const compiled = ts.transpileModule(readFileSync(filename, "utf8"), {
+      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    }).outputText;
+
+    vm.runInNewContext(
+      compiled,
+      {
+        module,
+        exports: module.exports,
+        require: (request) => load(request, path.dirname(filename)),
+        window,
+        fetch,
+        Headers,
+        Response,
+        DOMException,
+        Event,
+        atob,
+        FormData,
+        Blob,
+        URL,
+        URLSearchParams,
+        process: { env: {} },
+      },
+      { filename },
+    );
+
     return module.exports;
   }
+
   return { load, storage, events };
 }
 
 test("forms validate required fields, password match and maximum lengths", () => {
-  const { validate, INITIAL_VALUES } = environment().load("@/src/features/auth/model/auth-validation");
+  const { validate, INITIAL_VALUES } = environment().load(
+    "@/src/features/auth/model/auth-validation",
+  );
+
   assert.equal(Object.keys(validate(INITIAL_VALUES, "register")).length, 4);
-  const valid = { name: "Имя", email: "user@example.com", password: "password123", repeatPassword: "password123" };
+  const valid = {
+    name: "Имя",
+    email: "user@example.com",
+    password: "password123",
+    repeatPassword: "password123",
+  };
+
   assert.equal(Object.keys(validate(valid, "register")).length, 0);
   assert.ok(validate({ ...valid, repeatPassword: "different" }, "reset").repeatPassword);
   assert.ok(validate({ ...valid, name: "a".repeat(81) }, "register").name);
@@ -59,17 +107,37 @@ test("stored session rejects malformed user data and notifies on changes", () =>
   assert.equal(env.events.length, 2);
 });
 
-for (const payload of [{ error: { message: "Ошибка сервера" } }, { error: { details: [{ message: "Ошибка поля" }] } }, { error: { message: 42, details: [null] } }]) {
+for (const payload of [
+  { error: { message: "Ошибка сервера" } },
+  { error: { details: [{ message: "Ошибка поля" }] } },
+  { error: { message: 42, details: [null] } },
+]) {
   test(`API handles error payload ${JSON.stringify(payload)}`, async () => {
-    const { apiRequest } = environment(async () => Response.json(payload, { status: 400 })).load("@/src/shared/api/client");
-    const expected = payload.error.message === "Ошибка сервера" ? "Ошибка сервера" : payload.error.details?.[0]?.message ?? "Fallback";
-    await assert.rejects(apiRequest("/example", { fallbackMessage: "Fallback" }), (error) => error.message === expected && error.status === 400);
+    const { apiRequest } = environment(async () => Response.json(payload, { status: 400 })).load(
+      "@/src/shared/api/client",
+    );
+
+    const expected =
+      payload.error.message === "Ошибка сервера"
+        ? "Ошибка сервера"
+        : (payload.error.details?.[0]?.message ?? "Fallback");
+
+    await assert.rejects(
+      apiRequest("/example", { fallbackMessage: "Fallback" }),
+      (error) => error.message === expected && error.status === 400,
+    );
   });
 }
 
 test("API converts network errors into UI fallback and accepts 204", async () => {
-  const failed = environment(async () => { throw new TypeError("Failed to fetch"); }).load("@/src/shared/api/client");
-  await assert.rejects(failed.apiRequest("/example", { fallbackMessage: "Повторите позже" }), (error) => error.message === "Повторите позже" && error.status === 0);
+  const failed = environment(async () => {
+    throw new TypeError("Failed to fetch");
+  }).load("@/src/shared/api/client");
+
+  await assert.rejects(
+    failed.apiRequest("/example", { fallbackMessage: "Повторите позже" }),
+    (error) => error.message === "Повторите позже" && error.status === 0,
+  );
   const empty = environment().load("@/src/shared/api/client");
   assert.equal(await empty.apiRequest("/example"), undefined);
 });
@@ -77,14 +145,20 @@ test("API converts network errors into UI fallback and accepts 204", async () =>
 test("late token renewal cannot restore a signed out session", async () => {
   let release;
   const env = environment(async (url) => {
-    if (url.endsWith("/auth/token")) return new Promise((resolve) => { release = () => resolve(Response.json({ data: { accessToken: "new-access" } })); });
+    if (url.endsWith("/auth/token"))
+      return new Promise((resolve) => {
+        release = () => resolve(Response.json({ data: { accessToken: "new-access" } }));
+      });
+
     return new Response(null, { status: 401 });
   });
+
   const model = env.load("@/src/entities/session/model/session");
   model.writeSession(session);
   const { apiRequest } = env.load("@/src/shared/api/client");
   const request = apiRequest("/example", { authenticated: true });
   while (!release) await new Promise((resolve) => setImmediate(resolve));
+
   model.clearSession();
   release();
   await assert.rejects(request, (error) => error.status === 401);
@@ -95,8 +169,12 @@ test("profile requests share one in-flight response and validate DTO", async () 
   let requests = 0;
   const env = environment(async () => {
     requests += 1;
-    return Response.json({ data: { ...session.user, email_confirmed: true, avatar_url: null, reviews_count: 2 } });
+
+    return Response.json({
+      data: { ...session.user, email_confirmed: true, avatar_url: null, reviews_count: 2 },
+    });
   });
+
   const model = env.load("@/src/entities/session/model/session");
   model.writeSession(session);
   const { updateSessionProfile } = env.load("@/src/entities/session/api/profile");
@@ -109,7 +187,10 @@ test("profile requests share one in-flight response and validate DTO", async () 
 });
 
 test("invalid profile response is rejected without overwriting the session", async () => {
-  const env = environment(async () => Response.json({ data: { id: "invalid", email_confirmed: true } }));
+  const env = environment(async () =>
+    Response.json({ data: { id: "invalid", email_confirmed: true } }),
+  );
+
   const model = env.load("@/src/entities/session/model/session");
   model.writeSession(session);
   const { updateSessionProfile } = env.load("@/src/entities/session/api/profile");
@@ -120,27 +201,42 @@ test("invalid profile response is rejected without overwriting the session", asy
 test("401 after token rotation clears the rotated session", async () => {
   const env = environment(async (url) => {
     if (url.endsWith("/auth/token")) return Response.json({ data: { accessToken: "new-access" } });
-    if (url.endsWith("/auth/refresh")) return Response.json({ data: { accessToken: "rotated-access", refreshToken: "rotated-refresh" } });
+
+    if (url.endsWith("/auth/refresh"))
+      return Response.json({
+        data: { accessToken: "rotated-access", refreshToken: "rotated-refresh" },
+      });
+
     return new Response(null, { status: 401 });
   });
+
   const model = env.load("@/src/entities/session/model/session");
   model.writeSession(session);
   const { apiRequest } = env.load("@/src/shared/api/client");
-  await assert.rejects(apiRequest("/example", { authenticated: true }), (error) => error.status === 401);
+  await assert.rejects(
+    apiRequest("/example", { authenticated: true }),
+    (error) => error.status === 401,
+  );
   assert.equal(model.readSession(), null);
 });
-
 
 test("profile 401 renews tokens and retries once with the new access", async () => {
   const calls = [];
   const env = environment(async (url, options) => {
     calls.push(url.split("/api/v1")[1]);
     if (url.endsWith("/auth/token")) return Response.json({ data: { accessToken: "new-access" } });
-    if (url.endsWith("/auth/refresh")) return Response.json({ data: { accessToken: "rotated-access", refreshToken: "rotated" } });
-    if (options.headers.get("Authorization") === "Bearer access") return new Response(null, { status: 401 });
+
+    if (url.endsWith("/auth/refresh"))
+      return Response.json({ data: { accessToken: "rotated-access", refreshToken: "rotated" } });
+
+    if (options.headers.get("Authorization") === "Bearer access")
+      return new Response(null, { status: 401 });
+
     assert.equal(options.headers.get("Authorization"), "Bearer rotated-access");
+
     return Response.json({ data: { ...session.user, email_confirmed: true } });
   });
+
   const model = env.load("@/src/entities/session/model/session");
   model.writeSession(session);
   const user = await env.load("@/src/entities/session/api/profile").updateSessionProfile();
@@ -155,19 +251,30 @@ test("parallel 401 responses share token renewal", async () => {
   const env = environment(async (url, options) => {
     if (url.endsWith("/auth/token")) {
       renewals += 1;
+
       return Response.json({ data: { accessToken: "new-access" } });
     }
+
     if (url.endsWith("/auth/refresh")) {
       rotations += 1;
+
       return Response.json({ data: { accessToken: "rotated-access", refreshToken: "rotated" } });
     }
-    if (options.headers.get("Authorization") === "Bearer access") return new Response(null, { status: 401 });
+
+    if (options.headers.get("Authorization") === "Bearer access")
+      return new Response(null, { status: 401 });
+
     retries += 1;
+
     return Response.json({ data: true });
   });
+
   env.load("@/src/entities/session/model/session").writeSession(session);
   const { apiRequest } = env.load("@/src/shared/api/client");
-  await Promise.all([apiRequest("/first", { authenticated: true }), apiRequest("/second", { authenticated: true })]);
+  await Promise.all([
+    apiRequest("/first", { authenticated: true }),
+    apiRequest("/second", { authenticated: true }),
+  ]);
   assert.equal(renewals, 1);
   assert.equal(rotations, 1);
   assert.equal(retries, 2);
@@ -178,12 +285,17 @@ for (const status of [403, 404]) {
     let calls = 0;
     const env = environment(async () => {
       calls += 1;
+
       return Response.json({ error: { message: "Server error" } }, { status });
     });
+
     const model = env.load("@/src/entities/session/model/session");
     model.writeSession(session);
     const { apiRequest } = env.load("@/src/shared/api/client");
-    await assert.rejects(apiRequest("/example", { authenticated: true }), (error) => error.status === status);
+    await assert.rejects(
+      apiRequest("/example", { authenticated: true }),
+      (error) => error.status === status,
+    );
     assert.equal(calls, 1);
     assert.ok(model.readSession());
   });
@@ -195,16 +307,27 @@ test("late 401 reuses the completed rotation without losing the session", async 
   const env = environment(async (url, options) => {
     if (url.endsWith("/auth/token")) {
       renewals += 1;
+
       return Response.json({ data: { accessToken: "new-access" } });
     }
-    if (url.endsWith("/auth/refresh")) return Response.json({ data: { accessToken: "rotated-access", refreshToken: "rotated" } });
+
+    if (url.endsWith("/auth/refresh"))
+      return Response.json({ data: { accessToken: "rotated-access", refreshToken: "rotated" } });
+
     if (options.headers.get("Authorization") === "Bearer access") {
-      if (url.endsWith("/slow")) return new Promise((resolve) => { release = () => resolve(new Response(null, { status: 401 })); });
+      if (url.endsWith("/slow"))
+        return new Promise((resolve) => {
+          release = () => resolve(new Response(null, { status: 401 }));
+        });
+
       return new Response(null, { status: 401 });
     }
+
     assert.equal(options.headers.get("Authorization"), "Bearer rotated-access");
+
     return Response.json({ data: true });
   });
+
   const model = env.load("@/src/entities/session/model/session");
   model.writeSession(session);
   const { apiRequest } = env.load("@/src/shared/api/client");
@@ -216,9 +339,11 @@ test("late 401 reuses the completed rotation without losing the session", async 
   assert.equal(model.readSession().refreshToken, "rotated");
 });
 
-
 test("profile settings allow empty contacts and still validate field limits and region", () => {
-  const { validateProfile, validateAvatar } = environment().load("@/src/features/profile-settings/model/validation");
+  const { validateProfile, validateAvatar } = environment().load(
+    "@/src/features/profile-settings/model/validation",
+  );
+
   const initial = { name: "User", region: "Москва", contacts: "Telegram" };
   assert.equal(Object.keys(validateProfile(initial, ["Москва"])).length, 0);
   assert.equal(Object.keys(validateProfile({ ...initial, contacts: "" }, ["Москва"])).length, 0);
@@ -235,7 +360,10 @@ test("profile settings allow empty contacts and still validate field limits and 
 test("demo lots match transport fields, ratings average all reviews and reviews are newest first", () => {
   const env = environment();
   const { createDemoLots } = env.load("@/src/entities/lot/model/fixtures");
-  const { DEMO_REVIEWS, DEMO_EXCHANGES, ratingOf, latestReviews } = env.load("@/src/_pages/profile/model/demo-data");
+  const { DEMO_REVIEWS, DEMO_EXCHANGES, ratingOf, latestReviews } = env.load(
+    "@/src/_pages/profile/model/demo-data",
+  );
+
   const lots = createDemoLots(1, "User", "Москва");
   assert.equal(lots.filter((lot) => lot.status === "ACTIVE").length, 4);
   assert.equal(lots.filter((lot) => lot.status === "MODERATION").length, 2);
@@ -245,7 +373,11 @@ test("demo lots match transport fields, ratings average all reviews and reviews 
   const shuffled = [...DEMO_REVIEWS].reverse();
   assert.equal(latestReviews(shuffled)[0].id, 1);
   assert.equal(shuffled[0].id, 3);
-  assert.ok(DEMO_EXCHANGES.every((exchange) => lots.some((lot) => lot.id === exchange.lotId && lot.status === "COMPLETED")));
+  assert.ok(
+    DEMO_EXCHANGES.every((exchange) =>
+      lots.some((lot) => lot.id === exchange.lotId && lot.status === "COMPLETED"),
+    ),
+  );
   assert.equal(lots[0].wants[0].want_type, "KEYWORDS");
   assert.ok(lots[0].category.name);
 });
@@ -261,8 +393,17 @@ test("multipart profile update preserves boundary headers and synchronizes the s
     assert.equal(options.headers.has("Content-Type"), false);
     assert.equal(options.headers.get("Authorization"), "Bearer access");
     sent = true;
-    return Response.json({ data: { ...session.user, region: "Москва", avatar_url: "new-avatar.png", email_confirmed: true } });
+
+    return Response.json({
+      data: {
+        ...session.user,
+        region: "Москва",
+        avatar_url: "new-avatar.png",
+        email_confirmed: true,
+      },
+    });
   });
+
   const model = env.load("@/src/entities/session/model/session");
   model.writeSession(session);
   const saved = await env.load("@/src/entities/session/api/profile").saveSessionProfile(data);
@@ -272,38 +413,85 @@ test("multipart profile update preserves boundary headers and synchronizes the s
 });
 
 test("public profile response is validated and does not expose an email", async () => {
-  const env = environment(async () => Response.json({ data: { id: 2, name: "Public User", email: "private@example.com", email_confirmed: false, region: "Москва", created_at: "2025-01-01T00:00:00Z" } }));
+  const env = environment(async () =>
+    Response.json({
+      data: {
+        id: 2,
+        name: "Public User",
+        email: "private@example.com",
+        email_confirmed: false,
+        region: "Москва",
+        created_at: "2025-01-01T00:00:00Z",
+      },
+    }),
+  );
+
   const profile = await env.load("@/src/entities/profile/api/profile-api").getPublicProfile(2);
   assert.equal(profile.id, 2);
   assert.equal("email" in profile, false);
-  await assert.rejects(env.load("@/src/entities/profile/api/profile-api").getPublicProfile(3), (error) => error.status === 502);
+  await assert.rejects(
+    env.load("@/src/entities/profile/api/profile-api").getPublicProfile(3),
+    (error) => error.status === 502,
+  );
 });
 
 test("notification events group messages, expire after seven days and keep newest first", () => {
   const model = environment().load("@/src/features/notifications/model/notifications");
   const now = Date.now();
-  const event = { id: "one", type: "CHAT_MESSAGE", chatId: 3, createdAt: new Date(now - 1000).toISOString() };
+  const event = {
+    id: "one",
+    type: "CHAT_MESSAGE",
+    chatId: 3,
+    createdAt: new Date(now - 1000).toISOString(),
+  };
+
   assert.equal(model.isNotificationEvent(event), true);
   assert.equal(model.isNotificationEvent({ ...event, chatId: "3" }), false);
   assert.equal(model.isNotificationEvent({ ...event, createdAt: "invalid" }), false);
   let items = model.mergeNotification([], event);
-  items = model.mergeNotification(items, { ...event, id: "two", createdAt: new Date(now).toISOString() });
+  items = model.mergeNotification(items, {
+    ...event,
+    id: "two",
+    createdAt: new Date(now).toISOString(),
+  });
   assert.equal(items.length, 1);
   assert.equal(items[0].count, 2);
   assert.equal(model.notificationText(items[0]).text, "Пришло несколько новых сообщений");
   assert.equal(model.mergeNotification(items, { ...event, id: "two" }).length, 1);
   assert.equal(model.notificationHref(items[0]), "/chats/3");
   assert.equal(model.notificationHref({ ...event, type: "NEW_OFFER", offerId: 8 }), "/offers/8");
-  assert.equal(model.retainNotifications([{ ...items[0], createdAt: new Date(now - 8 * 86400_000).toISOString() }], now).length, 0);
+  assert.equal(
+    model.retainNotifications(
+      [{ ...items[0], createdAt: new Date(now - 8 * 86400_000).toISOString() }],
+      now,
+    ).length,
+    0,
+  );
   assert.equal(model.isImportant("LOT_APPROVED"), false);
   assert.equal(model.categoryOf("MODERATOR_WARNING"), null);
 });
 
 test("lot form rejects invalid fields, photos and serializes Spring multipart names", () => {
   const form = environment().load("@/src/_pages/lot/model/form");
-  const values = { ...form.initialValues(null, "Москва"), title: "Камера", description: "Камера в хорошем состоянии", categoryId: "1", cost: "12000,50", wantTypes: ["KEYWORDS"], keywords: "Книги" };
+  const values = {
+    ...form.initialValues(null, "Москва"),
+    title: "Камера",
+    description: "Камера в хорошем состоянии",
+    categoryId: "1",
+    cost: "12000,50",
+    wantTypes: ["KEYWORDS"],
+    keywords: "Книги",
+  };
+
   assert.equal(Object.keys(form.validateLotForm(values, ["Москва"], [1], 1)).length, 0);
-  assert.ok(form.validateLotForm({ ...values, title: "x", cost: "-1", region: "Unknown", keywords: "" }, ["Москва"], [1], 0).photos);
+  assert.ok(
+    form.validateLotForm(
+      { ...values, title: "x", cost: "-1", region: "Unknown", keywords: "" },
+      ["Москва"],
+      [1],
+      0,
+    ).photos,
+  );
   assert.equal(form.isFormValues({ ...values, type: "INVALID" }), false);
   assert.ok(form.validatePhotos([{ type: "image/svg+xml", size: 1 }]));
   assert.ok(form.validatePhotos([{ type: "image/png", size: 11 * 1024 * 1024 }]));
@@ -325,22 +513,55 @@ test("lot API validates nullable dates, caches per session and sends text update
       assert.equal("photos" in body, false);
       assert.equal("wants" in body, false);
     }
+
     return Response.json({ data: lot });
   });
-  const model = env.load("@/src/entities/session/model/session"); model.writeSession(session);
-  const lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42, published_at: null, expires_at: null };
+
+  const model = env.load("@/src/entities/session/model/session");
+  model.writeSession(session);
+  const lot = {
+    ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0],
+    id: 42,
+    published_at: null,
+    expires_at: null,
+  };
+
   const api = env.load("@/src/entities/lot/api/lot-api");
-  await api.getLot(42); await api.getLot(42); assert.equal(calls, 1);
-  model.writeSession({ ...session, refreshToken: "another" }); await api.getLot(42); assert.equal(calls, 2);
-  await api.updateLot(lot, { title: "Обновлённая камера", description: lot.description, category_id: 1, region: lot.region, type: lot.type, delivery_method: lot.delivery_method, estimated_cost: 1000 }, lot.wants);
+  await api.getLot(42);
+  await api.getLot(42);
+  assert.equal(calls, 1);
+  model.writeSession({ ...session, refreshToken: "another" });
+  await api.getLot(42);
+  assert.equal(calls, 2);
+  await api.updateLot(
+    lot,
+    {
+      title: "Обновлённая камера",
+      description: lot.description,
+      category_id: 1,
+      region: lot.region,
+      type: lot.type,
+      delivery_method: lot.delivery_method,
+      estimated_cost: 1000,
+    },
+    lot.wants,
+  );
   assert.equal(calls, 3);
-  await api.getLot(42); assert.equal(calls, 4);
-  assert.equal(env.load("@/src/entities/lot/model/validation").isLot({ ...lot, owner: null }), false);
+  await api.getLot(42);
+  assert.equal(calls, 4);
+  assert.equal(
+    env.load("@/src/entities/lot/model/validation").isLot({ ...lot, owner: null }),
+    false,
+  );
 });
 
 test("fixture changes persist across reads, isolate owners and never send fixture ids to backend", async () => {
   let calls = 0;
-  const env = environment(async () => { calls++; throw new Error("Unexpected network call"); });
+  const env = environment(async () => {
+    calls++;
+    throw new Error("Unexpected network call");
+  });
+
   const fixtures = env.load("@/src/entities/lot/model/fixtures");
   const first = fixtures.initializeFixtureLots(1, "First", "Москва");
   const second = fixtures.initializeFixtureLots(2, "Second", "Москва");
@@ -350,8 +571,10 @@ test("fixture changes persist across reads, isolate owners and never send fixtur
   assert.equal(archived.status, "ARCHIVED");
   assert.equal(fixtures.initializeFixtureLots(1, "First", "Москва")[0].status, "ARCHIVED");
   assert.equal(fixtures.getFixtureLot(second[0].id).status, "ACTIVE");
-  const published = await api.republishLot(archived); assert.equal(published.id, first[0].id);
-  await api.deleteLot(published); assert.equal(fixtures.getFixtureLot(published.id).status, "DELETED");
+  const published = await api.republishLot(archived);
+  assert.equal(published.id, first[0].id);
+  await api.deleteLot(published);
+  assert.equal(fixtures.getFixtureLot(published.id).status, "DELETED");
   assert.equal(calls, 0);
 });
 
@@ -372,14 +595,34 @@ test("header selects only the current FAQ or owned lot workspace", () => {
 
 test("lot progression validates only the current step and edits require meaningful changes", () => {
   const form = environment().load("@/src/_pages/lot/model/form");
-  const initial = { ...form.initialValues(null, "Москва"), title: "Камера", description: "Камера в хорошем состоянии", categoryId: "1", cost: "12000", wantTypes: ["ANY"] };
+  const initial = {
+    ...form.initialValues(null, "Москва"),
+    title: "Камера",
+    description: "Камера в хорошем состоянии",
+    categoryId: "1",
+    cost: "12000",
+    wantTypes: ["ANY"],
+  };
+
   assert.equal(form.canContinueLotStep(1, true, false), true);
   assert.equal(form.canContinueLotStep(2, true, false), false);
   assert.equal(form.canContinueLotStep(1, false, true), false);
   assert.equal(form.hasFormChanges(initial, initial), false);
-  assert.equal(form.hasFormChanges({ ...initial, title: "  Камера ", cost: "12000,00", keywords: "Неактивное поле" }, initial), false);
-  assert.equal(form.hasFormChanges({ ...initial, description: "Другое описание камеры" }, initial), true);
-  assert.equal(form.hasFormChanges({ ...initial, wantTypes: ["KEYWORDS"], keywords: "Книги" }, initial), true);
+  assert.equal(
+    form.hasFormChanges(
+      { ...initial, title: "  Камера ", cost: "12000,00", keywords: "Неактивное поле" },
+      initial,
+    ),
+    false,
+  );
+  assert.equal(
+    form.hasFormChanges({ ...initial, description: "Другое описание камеры" }, initial),
+    true,
+  );
+  assert.equal(
+    form.hasFormChanges({ ...initial, wantTypes: ["KEYWORDS"], keywords: "Книги" }, initial),
+    true,
+  );
 });
 
 test("lot photo selection detects additions, removal and cover changes", () => {
@@ -395,10 +638,21 @@ test("lot photo selection detects additions, removal and cover changes", () => {
 
 test("server photo changes fail before sending an incompatible PATCH", async () => {
   let calls = 0;
-  const env = environment(async () => { calls++; return new Response(null, { status: 204 }); });
-  const lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42 };
+  const env = environment(async () => {
+    calls++;
+
+    return new Response(null, { status: 204 });
+  });
+
+  const lot = {
+    ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0],
+    id: 42,
+  };
+
   const api = env.load("@/src/entities/lot/api/lot-api");
-  await assert.rejects(api.updateLot(lot, {}, lot.wants, []), (error) => error.message.includes("фотографий"));
+  await assert.rejects(api.updateLot(lot, {}, lot.wants, []), (error) =>
+    error.message.includes("фотографий"),
+  );
   assert.equal(calls, 0);
 });
 
@@ -416,8 +670,14 @@ test("estimate marker stays within the scale and verdict follows the entered pri
 test("administrative menu role comes from token claims instead of editable user storage", () => {
   const env = environment();
   const model = env.load("@/src/entities/session/model/session");
-  const token = (role) => `header.${Buffer.from(JSON.stringify({ role, exp: 2_000_000_000 })).toString("base64url")}.signature`;
-  model.writeSession({ ...session, accessToken: token("USER"), user: { ...session.user, role: "ADMIN" } });
+  const token = (role) =>
+    `header.${Buffer.from(JSON.stringify({ role, exp: 2_000_000_000 })).toString("base64url")}.signature`;
+
+  model.writeSession({
+    ...session,
+    accessToken: token("USER"),
+    user: { ...session.user, role: "ADMIN" },
+  });
   assert.equal(model.readSession().user.role, "USER");
   model.writeSession({ ...session, accessToken: token("ADMIN") });
   assert.equal(model.readSession().user.role, "ADMIN");
@@ -429,7 +689,17 @@ test("administrative menu role comes from token claims instead of editable user 
 
 test("admin user pagination validates transport fields and rejects duplicate identifiers", () => {
   const { parseUsersPage } = environment().load("@/src/features/administration/model/contracts");
-  const user = { id: 2, name: "Анна", email: "anna@example.com", role: "USER", status: "FROZEN", email_confirmed: true, avatar_url: null, createdAt: "2026-10-20T10:00:00Z" };
+  const user = {
+    id: 2,
+    name: "Анна",
+    email: "anna@example.com",
+    role: "USER",
+    status: "FROZEN",
+    email_confirmed: true,
+    avatar_url: null,
+    createdAt: "2026-10-20T10:00:00Z",
+  };
+
   const page = { content: [user], totalElements: 1, totalPages: 1, page: 0, size: 20 };
   assert.equal(parseUsersPage(page).content[0].emailConfirmed, true);
   assert.throws(() => parseUsersPage({ ...page, content: [{ ...user, role: "ROOT" }] }));
@@ -444,25 +714,65 @@ test("lot categories show each category once when backend repeats child nodes", 
   const parent = { id: 1, name: "Техника", children: [child] };
   const env = environment(async () => Response.json({ data: [leaf, child, parent] }));
   const categories = await env.load("@/src/entities/lot/api/lot-api").getLotCategories();
-  assert.deepEqual(Array.from(categories, (category) => category.id), [3, 2, 1]);
+  assert.deepEqual(
+    Array.from(categories, (category) => category.id),
+    [3, 2, 1],
+  );
   assert.equal(categories.find((category) => category.id === 3).name, "Фото");
 });
 
+test("lot category picker requests the active tree and flattens descendants", async () => {
+  const requests = [];
+  const env = environment(async (url) => {
+    requests.push(url);
+
+    return Response.json({
+      data: [
+        {
+          id: 1,
+          name: "Техника",
+          isActive: true,
+          children: [{ id: 2, name: "Камеры", isActive: true, children: [] }],
+        },
+      ],
+    });
+  });
+
+  env.load("@/src/entities/session/model/session").writeSession(session);
+  const categories = await env.load("@/src/entities/lot/api/lot-api").getLotCategories();
+  assert.ok(requests[0].endsWith("/categories/active"));
+  assert.deepEqual(
+    Array.from(categories, (item) => item.id),
+    [1, 2],
+  );
+});
+
 test("admin categories flatten duplicated backend tree and prevent descendant parenting", () => {
-  const { parseCategories, allowedParents } = environment().load("@/src/features/administration/model/contracts");
-  const leaf = { id: 3, name: "Фото", slug: "photo", children: [] };
-  const child = { id: 2, name: "Камеры", slug: "cameras", children: [leaf] };
-  const parent = { id: 1, name: "Техника", slug: "tech", children: [child] };
+  const { parseCategories, allowedParents } = environment().load(
+    "@/src/features/administration/model/contracts",
+  );
+
+  const leaf = { id: 3, name: "Фото", slug: "photo", isActive: false, children: [] };
+  const child = { id: 2, name: "Камеры", slug: "cameras", isActive: true, children: [leaf] };
+  const parent = { id: 1, name: "Техника", slug: "tech", isActive: true, children: [child] };
   const categories = parseCategories({ data: [leaf, child, parent] });
   assert.equal(categories.length, 3);
+  assert.equal(categories.find((item) => item.id === 3).isActive, false);
+  assert.throws(() => parseCategories({ data: [{ ...leaf, isActive: undefined }] }));
   assert.equal(categories.find((item) => item.id === 3).parentId, 2);
   assert.equal(allowedParents(categories, 1).length, 0);
-  assert.deepEqual(Array.from(allowedParents(categories, 2), (item) => item.id), [1]);
+  assert.deepEqual(
+    Array.from(allowedParents(categories, 2), (item) => item.id),
+    [1],
+  );
   assert.throws(() => parseCategories({ data: [{ ...leaf, id: "3" }] }));
 });
 
 test("administrative forms require a freeze reason and explicit category visibility", () => {
-  const { reasonError, categoryErrors } = environment().load("@/src/features/administration/model/contracts");
+  const { reasonError, categoryErrors } = environment().load(
+    "@/src/features/administration/model/contracts",
+  );
+
   assert.ok(reasonError("  "));
   assert.ok(reasonError("x".repeat(501)));
   assert.equal(reasonError("Нарушение правил сервиса"), undefined);
@@ -473,12 +783,22 @@ test("administrative forms require a freeze reason and explicit category visibil
 
 test("admin freeze and category mutations use real protected API contracts", async () => {
   const requests = [];
-  const env = environment(async (url, options) => { requests.push({ url, ...options }); return new Response(null, { status: 204 }); });
+  const env = environment(async (url, options) => {
+    requests.push({ url, ...options });
+
+    return new Response(null, { status: 204 });
+  });
+
   env.load("@/src/entities/session/model/session").writeSession(session);
   const api = env.load("@/src/features/administration/api/admin-api");
   await api.setUserFrozen(2, true, "  Причина  ");
   await api.setUserFrozen(2, false, "");
-  await api.saveAdminCategory(3, { name: "Техника", slug: "tech", parentId: null, isActive: false });
+  await api.saveAdminCategory(3, {
+    name: "Техника",
+    slug: "tech",
+    parentId: null,
+    isActive: false,
+  });
   assert.ok(requests[0].url.endsWith("/admin/users/2/freeze"));
   assert.equal(requests[0].method, "PATCH");
   assert.equal(requests[0].headers.get("Authorization"), "Bearer access");
@@ -489,15 +809,23 @@ test("admin freeze and category mutations use real protected API contracts", asy
   assert.equal(JSON.parse(requests[2].body).isActive, false);
 });
 
-
 test("protected avatar URLs survive remounts and are isolated between sessions", async () => {
   let requests = 0;
-  const env = environment(async () => { requests += 1; return new Response(new Blob(["image"], { type: "image/png" })); });
+  const env = environment(async () => {
+    requests += 1;
+
+    return new Response(new Blob(["image"], { type: "image/png" }));
+  });
+
   const sessionModel = env.load("@/src/entities/session/model/session");
   sessionModel.writeSession(session);
   const images = env.load("@/src/shared/api/files");
   assert.equal(images.getCachedProtectedImageUrl("avatar.png"), null);
-  const [first, parallel] = await Promise.all([images.getProtectedImageUrl("avatar.png"), images.getProtectedImageUrl("avatar.png")]);
+  const [first, parallel] = await Promise.all([
+    images.getProtectedImageUrl("avatar.png"),
+    images.getProtectedImageUrl("avatar.png"),
+  ]);
+
   assert.equal(first, parallel);
   assert.equal(requests, 1);
   assert.equal(images.getCachedProtectedImageUrl("avatar.png"), first);
@@ -514,7 +842,12 @@ test("protected avatar URLs survive remounts and are isolated between sessions",
 
 test("avatar URL cache evicts and revokes old entries without keeping failed downloads", async () => {
   let fail = true;
-  const env = environment(async () => fail ? new Response(null, { status: 500 }) : new Response(new Blob(["image"], { type: "image/png" })));
+  const env = environment(async () =>
+    fail
+      ? new Response(null, { status: 500 })
+      : new Response(new Blob(["image"], { type: "image/png" })),
+  );
+
   env.load("@/src/entities/session/model/session").writeSession(session);
   const images = env.load("@/src/shared/api/files");
   await assert.rejects(images.getProtectedImageUrl("first.png"));
@@ -522,36 +855,74 @@ test("avatar URL cache evicts and revokes old entries without keeping failed dow
   fail = false;
   const first = await images.getProtectedImageUrl("first.png");
   for (let index = 0; index < 20; index++) await images.getProtectedImageUrl(`avatar-${index}.png`);
+
   assert.equal(images.getCachedProtectedImageUrl("first.png"), null);
   await assert.rejects(fetch(first));
 });
 
 test("exchange choices serialize every selected lot, category, free text and ANY independently", () => {
   const form = environment().load("@/src/_pages/lot/model/form");
-  const values = { ...form.initialValues(null, "Москва"), title: "Камера", description: "Камера в хорошем состоянии", categoryId: "1", cost: "12000", wantTypes: ["ANY", "KEYWORDS", "CATEGORY", "LOT"], keywords: " Велосипед или самокат ", targetCategoryIds: ["2", "3"], targetLots: ["42", "https://example.com/lots/43"] };
+  const values = {
+    ...form.initialValues(null, "Москва"),
+    title: "Камера",
+    description: "Камера в хорошем состоянии",
+    categoryId: "1",
+    cost: "12000",
+    wantTypes: ["ANY", "KEYWORDS", "CATEGORY", "LOT"],
+    keywords: " Велосипед или самокат ",
+    targetCategoryIds: ["2", "3"],
+    targetLots: ["42", "https://example.com/lots/43"],
+  };
+
   assert.equal(Object.keys(form.validateLotForm(values, ["Москва"], [1, 2, 3], 1)).length, 0);
   const body = form.toMultipart(values, []);
-  assert.deepEqual(Array.from({ length: 6 }, (_, index) => body.get(`wants[${index}].wantType`)), ["LOT", "LOT", "CATEGORY", "CATEGORY", "KEYWORDS", "ANY"]);
+  assert.deepEqual(
+    Array.from({ length: 6 }, (_, index) => body.get(`wants[${index}].wantType`)),
+    ["LOT", "LOT", "CATEGORY", "CATEGORY", "KEYWORDS", "ANY"],
+  );
   assert.equal(body.get("wants[1].targetLot"), "43");
   assert.equal(body.get("wants[3].targetCategoryId"), "3");
   assert.equal(body.get("wants[4].keywords"), "Велосипед или самокат");
   assert.equal(body.has("wants[5].targetCategoryId"), false);
   const onlyAny = form.toMultipart({ ...values, wantTypes: ["ANY"] }, []);
-  assert.deepEqual([...onlyAny.keys()].filter((key) => key.startsWith("wants")), ["wants[0].wantType"]);
+  assert.deepEqual(
+    [...onlyAny.keys()].filter((key) => key.startsWith("wants")),
+    ["wants[0].wantType"],
+  );
   assert.ok(form.validateLotForm({ ...values, wantTypes: [] }, ["Москва"], [1, 2, 3], 1).wantTypes);
-  const invalid = form.validateLotForm({ ...values, keywords: "", targetCategoryIds: [], targetLots: ["42", "/lots/42"] }, ["Москва"], [1, 2, 3], 1);
+  const invalid = form.validateLotForm(
+    { ...values, keywords: "", targetCategoryIds: [], targetLots: ["42", "/lots/42"] },
+    ["Москва"],
+    [1, 2, 3],
+    1,
+  );
+
   assert.ok(invalid.keywords && invalid.targetCategoryIds && invalid.targetLots);
 });
 
 test("exchange drafts migrate a single legacy choice and preserve new multiple choices", () => {
   const form = environment().load("@/src/_pages/lot/model/form");
   const base = form.initialValues(null, "Москва");
-  delete base.wantTypes; delete base.targetLots; delete base.targetCategoryIds;
-  const migrated = form.readFormValues({ ...base, wantType: "LOT", targetCategoryId: "", targetLot: "/lots/42" });
+  delete base.wantTypes;
+  delete base.targetLots;
+  delete base.targetCategoryIds;
+  const migrated = form.readFormValues({
+    ...base,
+    wantType: "LOT",
+    targetCategoryId: "",
+    targetLot: "/lots/42",
+  });
+
   assert.deepEqual(Array.from(migrated.wantTypes), ["LOT"]);
   assert.deepEqual(Array.from(migrated.targetLots), ["42"]);
   assert.equal("wantType" in migrated, false);
-  const multiple = { ...base, wantTypes: ["CATEGORY", "KEYWORDS", "ANY"], targetCategoryIds: ["2", "3"], targetLots: [] };
+  const multiple = {
+    ...base,
+    wantTypes: ["CATEGORY", "KEYWORDS", "ANY"],
+    targetCategoryIds: ["2", "3"],
+    targetLots: [],
+  };
+
   assert.equal(form.readFormValues(multiple), multiple);
   assert.equal(form.readFormValues({ ...multiple, wantTypes: ["CATEGORY", "CATEGORY"] }), null);
   assert.equal(form.readFormValues({ ...multiple, targetLots: [null] }), null);
@@ -559,27 +930,80 @@ test("exchange drafts migrate a single legacy choice and preserve new multiple c
 
 test("existing lot restores every exchange choice and dirty state ignores selection order", () => {
   const form = environment().load("@/src/_pages/lot/model/form");
-  const wants = [{ want_type: "CATEGORY", target_category: { id: 2, name: "Книги" } }, { want_type: "CATEGORY", target_category: { id: 3, name: "Спорт" } }, { want_type: "LOT", target_lot: "42" }, { want_type: "LOT", target_lot: "43" }, { want_type: "KEYWORDS", keywords: "Велосипед" }, { want_type: "ANY" }];
-  const values = form.initialValues({ category: { id: 1 }, estimated_cost: 12000, wants }, "Москва");
+  const wants = [
+    { want_type: "CATEGORY", target_category: { id: 2, name: "Книги" } },
+    { want_type: "CATEGORY", target_category: { id: 3, name: "Спорт" } },
+    { want_type: "LOT", target_lot: "42" },
+    { want_type: "LOT", target_lot: "43" },
+    { want_type: "KEYWORDS", keywords: "Велосипед" },
+    { want_type: "ANY" },
+  ];
+
+  const values = form.initialValues(
+    { category: { id: 1 }, estimated_cost: 12000, wants },
+    "Москва",
+  );
+
   assert.equal(form.formWants(values, []).length, 6);
-  const reordered = { ...values, wantTypes: [...values.wantTypes].reverse(), targetCategoryIds: ["3", "2"], targetLots: ["/lots/43", "42"] };
+  const reordered = {
+    ...values,
+    wantTypes: [...values.wantTypes].reverse(),
+    targetCategoryIds: ["3", "2"],
+    targetLots: ["/lots/43", "42"],
+  };
+
   assert.equal(form.hasFormChanges(reordered, values), false);
   assert.equal(form.hasFormChanges({ ...values, wantTypes: ["ANY"] }, values), true);
   assert.equal(form.hasFormChanges({ ...values, wantTypes: ["ANY"] }, values, false), false);
-  assert.equal(form.hasFormChanges({ ...values, wantTypes: ["ANY"], keywords: "Скрытый текст" }, { ...values, wantTypes: ["ANY"] }), false);
+  assert.equal(
+    form.hasFormChanges(
+      { ...values, wantTypes: ["ANY"], keywords: "Скрытый текст" },
+      { ...values, wantTypes: ["ANY"] },
+    ),
+    false,
+  );
 });
 
 test("category rows group descendants beneath each parent with increasing depth", () => {
   const { categoryRows } = environment().load("@/src/features/administration/model/category-tree");
-  const category = (id, parentId) => ({ id, parentId, name: `Category ${id}`, slug: `category-${id}` });
-  const rows = categoryRows([category(4, 3), category(2, 1), category(5, null), category(3, 2), category(1, null), category(6, 1)]);
-  assert.deepEqual(Array.from(rows, ({ category, depth }) => [category.id, depth]), [[5, 0], [1, 0], [2, 1], [3, 2], [4, 3], [6, 1]]);
+  const category = (id, parentId) => ({
+    id,
+    parentId,
+    name: `Category ${id}`,
+    slug: `category-${id}`,
+  });
+
+  const rows = categoryRows([
+    category(4, 3),
+    category(2, 1),
+    category(5, null),
+    category(3, 2),
+    category(1, null),
+    category(6, 1),
+  ]);
+
+  assert.deepEqual(
+    Array.from(rows, ({ category, depth }) => [category.id, depth]),
+    [
+      [5, 0],
+      [1, 0],
+      [2, 1],
+      [3, 2],
+      [4, 3],
+      [6, 1],
+    ],
+  );
   assert.equal(rows.filter(({ category }) => category.id === 4)[0].depth, 3);
 });
 
 test("category rows keep orphaned and cyclic branches visible exactly once", () => {
   const { categoryRows } = environment().load("@/src/features/administration/model/category-tree");
-  const categories = [{ id: 1, parentId: 2 }, { id: 2, parentId: 1 }, { id: 3, parentId: 99 }];
+  const categories = [
+    { id: 1, parentId: 2 },
+    { id: 2, parentId: 1 },
+    { id: 3, parentId: 99 },
+  ];
+
   const rows = categoryRows(categories);
   assert.equal(rows.length, 3);
   assert.equal(new Set(rows.map(({ category }) => category.id)).size, 3);
@@ -588,6 +1012,236 @@ test("category rows keep orphaned and cyclic branches visible exactly once", () 
 
 test("target lot references accept only positive safe identifiers and supported links", () => {
   const form = environment().load("@/src/_pages/lot/model/form");
-  for (const value of ["42", " /lots/42/ ", "https://example.com/lots/42"]) assert.equal(form.parseTargetLot(value), "42");
-  for (const value of ["0", "-1", "1.5", "text", "https://example.com/profile/42", "9007199254740992"]) assert.equal(form.parseTargetLot(value), null);
+  for (const value of ["42", " /lots/42/ ", "https://example.com/lots/42"])
+    assert.equal(form.parseTargetLot(value), "42");
+
+  for (const value of [
+    "0",
+    "-1",
+    "1.5",
+    "text",
+    "https://example.com/profile/42",
+    "9007199254740992",
+  ])
+    assert.equal(form.parseTargetLot(value), null);
+});
+
+test("catalog query validates URL values and preserves applied filters", () => {
+  const { load } = environment();
+  const { readCatalogQuery, catalogParams, catalogQueryFromParams } = load(
+    "@/src/features/catalog/model/catalog",
+  );
+
+  const query = readCatalogQuery(
+    new URLSearchParams(
+      "q=  кресло  &category=12&type=PRODUCT&min=100&max=25000&delivery=1&sort=rating&page=2",
+    ),
+    false,
+  );
+
+  assert.equal(query.q, "кресло");
+  assert.equal(query.page, 2);
+  assert.equal(query.category, "12");
+  assert.equal(query.delivery, true);
+  const roundtrip = readCatalogQuery(new URLSearchParams(catalogParams(query)), false);
+  assert.equal(JSON.stringify(roundtrip), JSON.stringify(query));
+  assert.equal(
+    catalogQueryFromParams({ sort: "price-asc", q: ["лампа", "кресло"] }, true).sort,
+    "price-asc",
+  );
+  assert.equal(catalogQueryFromParams({ q: ["лампа", "кресло"] }, true).q, "лампа");
+  const invalid = readCatalogQuery(
+    new URLSearchParams("category=-4&type=INVALID&min=-1&max=abc&page=Infinity&sort=unknown"),
+    false,
+  );
+
+  assert.equal(invalid.category, "");
+  assert.equal(invalid.type, "");
+  assert.equal(invalid.min, "");
+  assert.equal(invalid.max, "");
+  assert.equal(invalid.page, 1);
+  assert.equal(invalid.sort, "newest");
+  assert.equal(readCatalogQuery(new URLSearchParams(), true).sort, "suitable");
+});
+
+test("catalog price validation handles zero, invalid numbers and reversed ranges", () => {
+  const { load } = environment();
+  const { priceErrors } = load("@/src/features/catalog/model/catalog");
+  assert.equal(priceErrors("0", "9999999999").max, "");
+  assert.ok(priceErrors("100", "99").max);
+  for (const value of ["-1", "1.5", "1e3", "10000000000", " "])
+    assert.ok(priceErrors(value, "").min);
+
+  assert.equal(priceErrors("", "").min, "");
+});
+
+test("catalog searches the complete source and combines filters before pagination", () => {
+  const { load } = environment();
+  const { readCatalogQuery, selectCatalogItems } = load("@/src/features/catalog/model/catalog");
+  const { CATALOG_ITEMS, RECOMMENDED_ITEMS } = load("@/src/entities/lot/model/discovery");
+  const query = (params = "") => readCatalogQuery(new URLSearchParams(params), false);
+  assert.ok(CATALOG_ITEMS.length > 12);
+  assert.equal(selectCatalogItems(CATALOG_ITEMS, query("q=Реставрация"))[0].type, "SERVICE");
+  assert.ok(selectCatalogItems(CATALOG_ITEMS, query("q=кресло")).length >= 4);
+  const filtered = selectCatalogItems(
+    CATALOG_ITEMS,
+    query("category=20&region=Москва&type=PRODUCT&delivery=1&min=4000&max=5000"),
+    [{ id: 20, name: "Дом и уют", parentId: null, depth: 0 }],
+  );
+
+  assert.equal(filtered.length, 1);
+  assert.equal(filtered[0].title, "Настольная лампа");
+  assert.equal(selectCatalogItems(CATALOG_ITEMS, query("q=несуществующийлот")).length, 0);
+  assert.ok(RECOMMENDED_ITEMS.every((item) => item.recommended));
+  assert.ok(!RECOMMENDED_ITEMS.some((item) => item.id === "lot-2"));
+});
+
+test("catalog sorts by price, date and rating with unrated owners last", () => {
+  const { load } = environment();
+  const { readCatalogQuery, selectCatalogItems, resultLabel } = load(
+    "@/src/features/catalog/model/catalog",
+  );
+
+  const { CATALOG_ITEMS } = load("@/src/entities/lot/model/discovery");
+  for (const sort of ["price-asc", "price-desc", "newest", "rating"]) {
+    const items = selectCatalogItems(
+      CATALOG_ITEMS,
+      readCatalogQuery(new URLSearchParams(`sort=${sort}`), false),
+    );
+
+    for (let index = 1; index < items.length; index++) {
+      const a = items[index - 1];
+      const b = items[index];
+      if (sort === "price-asc") assert.ok(a.cost <= b.cost);
+
+      if (sort === "price-desc") assert.ok(a.cost >= b.cost);
+
+      if (sort === "newest") assert.ok(Date.parse(a.publishedAt) >= Date.parse(b.publishedAt));
+
+      if (sort === "rating") assert.ok((a.rating ?? -1) >= (b.rating ?? -1));
+    }
+  }
+
+  assert.equal(resultLabel(1), "1 предложение");
+  assert.equal(resultLabel(12), "12 предложений");
+  assert.equal(resultLabel(22), "22 предложения");
+});
+
+test("active category tree preserves true roots and rejects cycles and bad payloads", () => {
+  const { load } = environment();
+  const { parseActiveCategories } = load("@/src/entities/category/model/category");
+  const child = { id: 2, name: "Камеры", children: [], isActive: true };
+  const categories = parseActiveCategories({
+    data: [child, { id: 1, name: "Техника", children: [child] }],
+  });
+
+  assert.equal(categories.length, 2);
+  assert.equal(categories.find((item) => item.id === 2).parentId, 1);
+  assert.equal(categories.filter((item) => item.parentId === null).length, 1);
+  assert.throws(() =>
+    parseActiveCategories({
+      data: [{ id: 1, name: "X", children: [{ id: 1, name: "Y", children: [] }] }],
+    }),
+  );
+  assert.throws(() => parseActiveCategories({ data: [{ id: -1, name: "X", children: [] }] }));
+  assert.equal(
+    parseActiveCategories({ data: [{ id: 1, name: "X", isActive: false, children: [] }] }).length,
+    0,
+  );
+});
+
+test("active categories cache one request, isolate sessions and retry rejected requests", async () => {
+  let calls = 0;
+  let fail = false;
+  const { load, storage } = environment(async () => {
+    calls++;
+
+    return new Response(
+      JSON.stringify(
+        fail
+          ? { error: { message: "Нет доступа" } }
+          : { data: [{ id: 1, name: "Техника", children: [] }] },
+      ),
+      { status: fail ? 403 : 200 },
+    );
+  });
+
+  const api = load("@/src/entities/category/api/category-api");
+  await Promise.all([api.getActiveCategories(), api.getActiveCategories()]);
+  assert.equal(calls, 1);
+  const { SESSION_KEY } = load("@/src/shared/lib/session-storage");
+  storage.set(SESSION_KEY, JSON.stringify(session));
+  await api.getActiveCategories();
+  assert.equal(calls, 2);
+  api.clearCategoryCache();
+  fail = true;
+  await assert.rejects(api.getActiveCategories(), /Нет доступа/);
+  fail = false;
+  await api.getActiveCategories();
+  assert.equal(calls, 4);
+});
+
+test("catalog category filters use real ids and include descendants", () => {
+  const { load } = environment();
+  const { selectCatalogItems, readCatalogQuery, catalogParams } = load(
+    "@/src/features/catalog/model/catalog",
+  );
+
+  const { CATALOG_ITEMS } = load("@/src/entities/lot/model/discovery");
+  const categories = [
+    { id: 100, name: "Для дома", parentId: null, depth: 0 },
+    { id: 200, name: "Дом и уют", parentId: 100, depth: 1 },
+  ];
+
+  const query = readCatalogQuery(new URLSearchParams("category=100"), false);
+  const items = selectCatalogItems(CATALOG_ITEMS, query, categories);
+  assert.ok(items.length > 0);
+  assert.ok(items.every((item) => item.category === "Дом и уют"));
+  assert.equal(
+    readCatalogQuery(new URLSearchParams("category=9007199254740992"), false).category,
+    "",
+  );
+  assert.ok(!catalogParams(query).includes("demo"));
+});
+
+test("catalog detail routes resolve complete lots without requesting backend ids", () => {
+  const { load } = environment(() => {
+    throw new Error("Local catalog detail must not request backend");
+  });
+
+  const { CATALOG_ITEMS, getCatalogLot } = load("@/src/entities/lot/model/discovery");
+  const { isLot } = load("@/src/entities/lot/model/validation");
+  for (const item of CATALOG_ITEMS) {
+    const lot = getCatalogLot(item.id);
+    assert.ok(isLot(lot));
+    assert.equal(lot.title, item.title);
+    assert.equal(lot.description, item.description);
+    assert.equal(lot.photos[0].name, item.image);
+    assert.equal(lot.estimated_cost, item.cost);
+    assert.equal(lot.region, item.region);
+    assert.equal(lot.owner.rating, item.rating);
+  }
+
+  assert.equal(getCatalogLot("1"), undefined);
+  assert.equal(getCatalogLot("lot-999999"), undefined);
+  assert.equal(getCatalogLot("../profile"), undefined);
+});
+
+test("catalog batches fill exactly two rows at every grid breakpoint", () => {
+  const { load } = environment();
+  const { getCatalogPageSize } = load("@/src/features/catalog/model/page-size");
+  for (const [width, columns] of [
+    [320, 1],
+    [600, 1],
+    [601, 2],
+    [1100, 2],
+    [1101, 3],
+    [1440, 3],
+    [1599, 3],
+    [1600, 4],
+    [1920, 4],
+    [2560, 4],
+  ]) {
+    assert.equal(getCatalogPageSize(width), columns * 2, `width ${width}`);
+  }
 });

@@ -4,14 +4,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+
+import styles from "./AuthFlow.module.scss";
+import { registerAndSignIn, requestPasswordReset, resetPassword, signIn } from "../model/auth-api";
+import { INITIAL_VALUES, validate } from "../model/auth-validation";
+
+import type { AuthMode, FieldName, FormValues } from "../model/auth-validation";
 import type { FormEvent, InputHTMLAttributes, ReactNode } from "react";
+
 import { useSession } from "@/src/entities/session";
 import { ApiError } from "@/src/shared/api/client";
 import { useToast } from "@/src/shared/ui/toast/ToastProvider";
-import { registerAndSignIn, requestPasswordReset, resetPassword, signIn } from "../model/auth-api";
-import { INITIAL_VALUES, validate } from "../model/auth-validation";
-import type { AuthMode, FieldName, FormValues } from "../model/auth-validation";
-import styles from "./AuthFlow.module.scss";
 
 const COPY: Record<AuthMode, { title: string; description: string; submit: string }> = {
   login: {
@@ -50,14 +53,28 @@ type FieldProps = {
   revealable?: boolean;
 };
 
-function FormField({ name, label, value, error, type, placeholder, maxLength, autoComplete, onChange, onBlur, revealable }: FieldProps) {
+function FormField({
+  name,
+  label,
+  value,
+  error,
+  type,
+  placeholder,
+  maxLength,
+  autoComplete,
+  onChange,
+  onBlur,
+  revealable,
+}: FieldProps) {
   const [revealed, setRevealed] = useState(false);
   const inputType = revealable && revealed ? "text" : type;
   const errorId = `${name}-error`;
 
   return (
     <div className={styles.field}>
-      <label className={styles.label} htmlFor={name}>{label}</label>
+      <label className={styles.label} htmlFor={name}>
+        {label}
+      </label>
       <div className={`${styles.inputWrap} ${error ? styles.invalid : ""}`}>
         <input
           id={name}
@@ -85,7 +102,11 @@ function FormField({ name, label, value, error, type, placeholder, maxLength, au
           </button>
         )}
       </div>
-      {error && <span className={styles.fieldError} id={errorId} role="alert">{error}</span>}
+      {error && (
+        <span className={styles.fieldError} id={errorId} role="alert">
+          {error}
+        </span>
+      )}
     </div>
   );
 }
@@ -95,7 +116,11 @@ function AuthArtwork() {
     <aside className={styles.artwork} aria-label="Сообщество обмена">
       <span className={styles.artworkTag}>СООБЩЕСТВО ОБМЕНА</span>
       <div className={styles.artworkCopy}>
-        <h2>У вещей есть<br />вторая жизнь.</h2>
+        <h2>
+          У вещей есть
+          <br />
+          вторая жизнь.
+        </h2>
         <p>Находите то, что давно искали — и отдавайте то, чем готовы поделиться.</p>
       </div>
       <Image
@@ -117,7 +142,10 @@ function FooterLinks({ children }: { children: ReactNode }) {
 export function AuthFlow({ mode, token }: { mode: AuthMode; token?: string }) {
   const [values, setValues] = useState<FormValues>(INITIAL_VALUES);
   const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({});
-  const [validationVisible, setValidationVisible] = useState<Partial<Record<FieldName, boolean>>>({});
+  const [validationVisible, setValidationVisible] = useState<Partial<Record<FieldName, boolean>>>(
+    {},
+  );
+
   const [submitting, setSubmitting] = useState(false);
   const validationTimers = useRef<Partial<Record<FieldName, ReturnType<typeof setTimeout>>>>({});
   const router = useRouter();
@@ -127,11 +155,14 @@ export function AuthFlow({ mode, token }: { mode: AuthMode; token?: string }) {
   const allErrors = useMemo(() => validate(values, mode), [values, mode]);
   const hasErrors = Object.keys(allErrors).length > 0;
 
-  useEffect(() => () => {
-    Object.values(validationTimers.current).forEach((timer) => {
-      if (timer) clearTimeout(timer);
-    });
-  }, []);
+  useEffect(
+    () => () => {
+      Object.values(validationTimers.current).forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
+    },
+    [],
+  );
 
   function updateField(name: FieldName, value: string) {
     setValues((current) => ({ ...current, [name]: value }));
@@ -139,6 +170,7 @@ export function AuthFlow({ mode, token }: { mode: AuthMode; token?: string }) {
       setValidationVisible((current) => ({ ...current, [name]: false }));
       const currentTimer = validationTimers.current[name];
       if (currentTimer) clearTimeout(currentTimer);
+
       validationTimers.current[name] = setTimeout(() => {
         setValidationVisible((current) => ({ ...current, [name]: true }));
         delete validationTimers.current[name];
@@ -158,8 +190,10 @@ export function AuthFlow({ mode, token }: { mode: AuthMode; token?: string }) {
     if (hasErrors) {
       const firstInvalidField = Object.keys(allErrors)[0];
       if (firstInvalidField) document.getElementById(firstInvalidField)?.focus();
+
       return;
     }
+
     if ((mode === "reset" && !token) || submitting) return;
 
     setSubmitting(true);
@@ -170,7 +204,12 @@ export function AuthFlow({ mode, token }: { mode: AuthMode; token?: string }) {
         notify({ kind: "success", title: "Вы вошли в аккаунт" });
         router.replace("/");
       } else if (mode === "register") {
-        const session = await registerAndSignIn(values.name.trim(), values.email.trim(), values.password);
+        const session = await registerAndSignIn(
+          values.name.trim(),
+          values.email.trim(),
+          values.password,
+        );
+
         setUser(session.user);
         notify({
           kind: "success",
@@ -185,34 +224,105 @@ export function AuthFlow({ mode, token }: { mode: AuthMode; token?: string }) {
         router.replace("/login");
       } else {
         if (!token) throw new Error("Ссылка для сброса пароля недействительна или устарела.");
+
         await resetPassword(token, values.password);
         notify({ kind: "success", title: "Пароль успешно сброшен" });
         router.replace("/login");
       }
     } catch (error) {
-      const message = error instanceof ApiError || error instanceof Error
-        ? error.message
-        : "Не удалось выполнить запрос. Попробуйте позже.";
+      const message =
+        error instanceof ApiError || error instanceof Error
+          ? error.message
+          : "Не удалось выполнить запрос. Попробуйте позже.";
+
       notify({ kind: "error", title: message || "Не удалось выполнить запрос. Попробуйте позже." });
     } finally {
       setSubmitting(false);
     }
   }
 
-  const fields = mode === "register"
-    ? [
-        { name: "name" as const, label: "Имя", type: "text" as const, placeholder: "Как вас зовут", maxLength: 80, autoComplete: "name" },
-        { name: "email" as const, label: "Email", type: "email" as const, placeholder: "you@example.com", maxLength: 254, autoComplete: "email" },
-        { name: "password" as const, label: "Пароль", type: "password" as const, placeholder: "Придумайте пароль", maxLength: 128, autoComplete: "new-password", revealable: true },
-        { name: "repeatPassword" as const, label: "Повторите пароль", type: "password" as const, placeholder: "Повторите пароль", maxLength: 128, autoComplete: "new-password", revealable: true },
-      ]
-    : mode === "reset"
+  const fields =
+    mode === "register"
       ? [
-          { name: "password" as const, label: "Пароль", type: "password" as const, placeholder: "Придумайте пароль", maxLength: 128, autoComplete: "new-password", revealable: true },
-          { name: "repeatPassword" as const, label: "Повторите пароль", type: "password" as const, placeholder: "Повторите пароль", maxLength: 128, autoComplete: "new-password", revealable: true },
+        {
+          name: "name" as const,
+          label: "Имя",
+          type: "text" as const,
+          placeholder: "Как вас зовут",
+          maxLength: 80,
+          autoComplete: "name",
+        },
+        {
+          name: "email" as const,
+          label: "Email",
+          type: "email" as const,
+          placeholder: "you@example.com",
+          maxLength: 254,
+          autoComplete: "email",
+        },
+        {
+          name: "password" as const,
+          label: "Пароль",
+          type: "password" as const,
+          placeholder: "Придумайте пароль",
+          maxLength: 128,
+          autoComplete: "new-password",
+          revealable: true,
+        },
+        {
+          name: "repeatPassword" as const,
+          label: "Повторите пароль",
+          type: "password" as const,
+          placeholder: "Повторите пароль",
+          maxLength: 128,
+          autoComplete: "new-password",
+          revealable: true,
+        },
+      ]
+      : mode === "reset"
+        ? [
+          {
+            name: "password" as const,
+            label: "Пароль",
+            type: "password" as const,
+            placeholder: "Придумайте пароль",
+            maxLength: 128,
+            autoComplete: "new-password",
+            revealable: true,
+          },
+          {
+            name: "repeatPassword" as const,
+            label: "Повторите пароль",
+            type: "password" as const,
+            placeholder: "Повторите пароль",
+            maxLength: 128,
+            autoComplete: "new-password",
+            revealable: true,
+          },
         ]
-      : [{ name: "email" as const, label: "Email", type: "email" as const, placeholder: "you@example.com", maxLength: 254, autoComplete: "email" },
-          ...(mode === "login" ? [{ name: "password" as const, label: "Пароль", type: "password" as const, placeholder: "Введите пароль", maxLength: 128, autoComplete: "current-password", revealable: true }] : [])];
+        : [
+          {
+            name: "email" as const,
+            label: "Email",
+            type: "email" as const,
+            placeholder: "you@example.com",
+            maxLength: 254,
+            autoComplete: "email",
+          },
+          ...(mode === "login"
+            ? [
+              {
+                name: "password" as const,
+                label: "Пароль",
+                type: "password" as const,
+                placeholder: "Введите пароль",
+                maxLength: 128,
+                autoComplete: "current-password",
+                revealable: true,
+              },
+            ]
+            : []),
+        ];
 
   const showBack = true;
 
@@ -234,7 +344,9 @@ export function AuthFlow({ mode, token }: { mode: AuthMode; token?: string }) {
                 <p>{copy.description}</p>
               </div>
               {mode === "reset" && !token && (
-                <p className={styles.notice} role="alert">Ссылка для сброса пароля недействительна или устарела.</p>
+                <p className={styles.notice} role="alert">
+                  Ссылка для сброса пароля недействительна или устарела.
+                </p>
               )}
               <form className={styles.form} noValidate onSubmit={handleSubmit}>
                 <div className={styles.fields}>
@@ -243,30 +355,49 @@ export function AuthFlow({ mode, token }: { mode: AuthMode; token?: string }) {
                       key={field.name}
                       {...field}
                       value={values[field.name]}
-                      error={touched[field.name] && validationVisible[field.name] ? allErrors[field.name] : undefined}
+                      error={
+                        touched[field.name] && validationVisible[field.name]
+                          ? allErrors[field.name]
+                          : undefined
+                      }
                       onChange={(value) => updateField(field.name, value)}
                       onBlur={() => touch(field.name)}
                     />
                   ))}
                 </div>
                 {mode === "login" && (
-                  <Link className={styles.forgotLink} href="/forgot-password">Забыли пароль?</Link>
+                  <Link className={styles.forgotLink} href="/forgot-password">
+                    Забыли пароль?
+                  </Link>
                 )}
-                <button className={styles.submit} type="submit" disabled={hasErrors || submitting || (mode === "reset" && !token)}>
+                <button
+                  className={styles.submit}
+                  type="submit"
+                  disabled={hasErrors || submitting || (mode === "reset" && !token)}
+                >
                   {submitting ? "Подождите…" : copy.submit}
                 </button>
               </form>
               {(mode === "login" || mode === "register") && (
                 <FooterLinks>
                   {mode === "login" ? (
-                    <><span>Ещё нет аккаунта?</span><Link href="/register">Зарегистрироваться</Link></>
+                    <>
+                      <span>Ещё нет аккаунта?</span>
+                      <Link href="/register">Зарегистрироваться</Link>
+                    </>
                   ) : (
-                    <><span>Уже есть аккаунт?</span><Link href="/login">Войти</Link></>
+                    <>
+                      <span>Уже есть аккаунт?</span>
+                      <Link href="/login">Войти</Link>
+                    </>
                   )}
                 </FooterLinks>
               )}
               {mode === "forgot" && (
-                <FooterLinks><span>Вспомнили пароль?</span><Link href="/login">Войти</Link></FooterLinks>
+                <FooterLinks>
+                  <span>Вспомнили пароль?</span>
+                  <Link href="/login">Войти</Link>
+                </FooterLinks>
               )}
             </section>
           </div>

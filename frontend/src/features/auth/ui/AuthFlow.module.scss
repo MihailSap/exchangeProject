@@ -19,7 +19,9 @@
   color: var(--color-text-secondary);
   font-size: 12px;
   text-decoration: none;
-  transition: color 180ms ease, transform 180ms ease;
+  transition:
+    color 180ms ease,
+    transform 180ms ease;
 }
 
 .backLink:hover {
@@ -138,6 +140,8 @@
 }
 
 .field {
+  padding-bottom: 20px;
+  margin-bottom: -20px;
   position: relative;
   display: grid;
   min-width: 0;
@@ -159,7 +163,10 @@
   border: 1px solid var(--color-border);
   border-radius: 11px;
   background: var(--color-input);
-  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 500ms ease;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 500ms ease;
 }
 
 .inputWrap:focus-within {
@@ -205,7 +212,9 @@
   border-radius: 10px;
   background: transparent;
   cursor: pointer;
-  transition: background-color 180ms ease, transform 180ms ease;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
 }
 
 .revealButton:hover {
@@ -217,6 +226,9 @@
 }
 
 .fieldError {
+  position: absolute;
+  bottom: 0;
+  inset-inline: 0;
   color: var(--color-error);
   font-size: 12px;
   line-height: 1.5;
@@ -254,7 +266,11 @@
   font: inherit;
   font-size: 14px;
   font-weight: 700;
-  transition: background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease, opacity 180ms ease;
+  transition:
+    background-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    opacity 180ms ease;
 }
 
 .submit:hover:not(:disabled) {

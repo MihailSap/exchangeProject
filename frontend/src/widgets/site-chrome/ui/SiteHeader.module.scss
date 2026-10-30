@@ -57,7 +57,10 @@
   color: var(--color-text);
   cursor: pointer;
   font-size: 19px;
-  transition: background-color 180ms ease, color 180ms ease, transform 180ms ease;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
 }
 
 .themeButton:hover {
@@ -107,7 +110,10 @@
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
-  transition: background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .headerButton:hover {
@@ -167,27 +173,88 @@
   }
 }
 
-
-.nav a,.nav button { color: var(--color-text-secondary); text-decoration: none; font: inherit; font-weight: 500; background: none; border: 0; padding: 0; cursor: pointer; }
-.nav a:hover,.nav button:hover { color: var(--color-brand-hover); text-decoration: underline; text-underline-offset: 4px; }
-.nav a:active,.nav button:active { opacity: .75; }
-.logo:hover { color: var(--color-brand-hover); }
-.logo:active { opacity: .8; }
-.createButton { width: clamp(180px,18.6vw,268px); min-width: 0; font-size: 12px; cursor: pointer; opacity: 1; }
-.headerButton:disabled:hover { box-shadow: none; background: var(--color-brand); }
-.headerButton:disabled:active { transform: none; }
-@media(max-width:600px) { .createButton { display: none; } .actions { gap: 14px; } }
-
-@media(max-width:359px) {
-  .inner { padding-inline: 16px; }
-  .logo { font-size: 22px; }
-  .actions { gap: 8px; }
+.nav a,
+.nav button {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  font: inherit;
+  font-weight: 500;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+.nav a:hover,
+.nav button:hover {
+  color: var(--color-brand-hover);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.nav a:active,
+.nav button:active {
+  opacity: 0.75;
+}
+.logo:hover {
+  color: var(--color-brand-hover);
+}
+.logo:active {
+  opacity: 0.8;
+}
+.createButton {
+  width: clamp(180px, 18.6vw, 268px);
+  min-width: 0;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 1;
+}
+.headerButton:disabled:hover {
+  box-shadow: none;
+  background: var(--color-brand);
+}
+.headerButton:disabled:active {
+  transform: none;
+}
+@media (max-width: 600px) {
+  .createButton {
+    display: none;
+  }
+  .actions {
+    gap: 14px;
+  }
 }
 
+@media (max-width: 359px) {
+  .inner {
+    padding-inline: 16px;
+  }
+  .logo {
+    font-size: 22px;
+  }
+  .actions {
+    gap: 8px;
+  }
+}
 
-.headerButton:disabled { opacity:.45; cursor:not-allowed; }
+.headerButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
 
-.nav a[aria-current=page] { color: var(--color-brand); font-weight: 700; }
-.nav a { display:inline-grid; white-space:nowrap; }
-.nav a > span,.nav a::after { grid-area:1 / 1; }
-.nav a::after { content:attr(data-label); font-weight:700; visibility:hidden; pointer-events:none; }
+.nav a[aria-current="page"] {
+  color: var(--color-brand);
+  font-weight: 700;
+}
+.nav a {
+  display: inline-grid;
+  white-space: nowrap;
+}
+.nav a > span,
+.nav a::after {
+  grid-area: 1 / 1;
+}
+.nav a::after {
+  content: attr(data-label);
+  font-weight: 700;
+  visibility: hidden;
+  pointer-events: none;
+}

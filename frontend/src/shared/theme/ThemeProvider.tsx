@@ -1,9 +1,19 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
 import type { ReactNode } from "react";
 
 type Theme = "light" | "dark";
+
 type ThemeContextValue = { theme: Theme; toggleTheme: () => void };
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -24,6 +34,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {
       savedTheme = null;
     }
+
     if (savedTheme === "light" || savedTheme === "dark") {
       document.documentElement.dataset.theme = savedTheme;
       setTheme(savedTheme);
@@ -31,14 +42,18 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       document.documentElement.removeAttribute("data-theme");
       setTheme(systemTheme());
     }
+
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const syncSystemTheme = () => {
       if (!document.documentElement.dataset.theme) setTheme(systemTheme());
     };
+
     media.addEventListener("change", syncSystemTheme);
+
     return () => {
       media.removeEventListener("change", syncSystemTheme);
       if (transitionTimer.current !== null) clearTimeout(transitionTimer.current);
+
       document.documentElement.removeAttribute("data-theme-changing");
     };
   }, []);
@@ -53,8 +68,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     } catch {
       root.dataset.theme = nextTheme;
     }
+
     setTheme(nextTheme);
     if (transitionTimer.current !== null) clearTimeout(transitionTimer.current);
+
     transitionTimer.current = setTimeout(() => {
       root.removeAttribute("data-theme-changing");
       transitionTimer.current = null;
@@ -62,11 +79,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme]);
 
   const value = useMemo(() => ({ theme, toggleTheme }), [theme, toggleTheme]);
+
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 export function useTheme(): ThemeContextValue {
   const context = useContext(ThemeContext);
   if (!context) throw new Error("useTheme must be used within ThemeProvider");
+
   return context;
 }

@@ -1,6 +1,6 @@
-.main  {
+.main {
   flex: 1;
-  width: min(100%,1920px);
+  width: min(100%, 1920px);
   margin-inline: auto;
   padding: 26px 56px 56px;
 }
@@ -9,53 +9,53 @@
   margin-bottom: 10px;
 }
 
-.pageHeading h1  {
+.pageHeading h1 {
   margin: 20px 0 4px;
   font-size: 31px;
-  letter-spacing: -.6px;
+  letter-spacing: -0.6px;
   line-height: 1.45;
 }
 
-.pageHeading p  {
+.pageHeading p {
   color: var(--color-text-secondary);
   font-size: 14px;
   margin: 0;
   line-height: 1.6;
 }
 
-.layout  {
+.layout {
   display: grid;
-  grid-template-columns: 250px minmax(0,1fr);
+  grid-template-columns: 250px minmax(0, 1fr);
   gap: 24px;
   align-items: start;
 }
 
-.sidebar  {
+.sidebar {
   padding: 22px 12px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 18px;
 }
 
-.identity  {
+.identity {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 0 8px;
 }
 
-.identity div  {
+.identity div {
   min-width: 0;
 }
 
-.identity h2  {
+.identity h2 {
   font-size: 14px;
   line-height: 1.5;
   margin: 0 0 5px;
   overflow-wrap: anywhere;
 }
 
-.identity p  {
+.identity p {
   color: var(--color-text-secondary);
   font-size: 10px;
   line-height: 1.7;
@@ -63,7 +63,7 @@
   overflow-wrap: anywhere;
 }
 
-.verified  {
+.verified {
   display: table;
   margin: 14px auto 0;
   padding: 7px 16px;
@@ -76,12 +76,12 @@
   text-transform: uppercase;
 }
 
-.unverified  {
+.unverified {
   background: var(--color-error-bg);
   color: var(--color-error);
 }
 
-.resend  {
+.resend {
   display: block;
   max-width: 100%;
   margin: 10px auto 0;
@@ -94,26 +94,26 @@
   line-height: 1.5;
 }
 
-.resend:hover:not(:disabled)  {
+.resend:hover:not(:disabled) {
   text-decoration: underline;
 }
 
-.resend:active:not(:disabled)  {
+.resend:active:not(:disabled) {
   color: var(--color-brand-hover);
 }
 
-.resend:disabled  {
+.resend:disabled {
   cursor: not-allowed;
   color: var(--color-text-secondary);
 }
 
-.sideNav  {
+.sideNav {
   display: grid;
   gap: 7px;
   margin: 28px 0 20px;
 }
 
-.sideNav button  {
+.sideNav button {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -127,10 +127,12 @@
   font-size: 12px;
   text-align: left;
   cursor: pointer;
-  transition: background-color 180ms ease,color 180ms ease;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
 }
 
-.sideNav button span  {
+.sideNav button span {
   display: grid;
   place-items: center;
   width: 20px;
@@ -138,39 +140,39 @@
   font-size: 16px;
 }
 
-.sideNav button:hover  {
+.sideNav button:hover {
   background: var(--color-hover);
   color: var(--color-brand);
 }
 
-.sideNav button:active  {
+.sideNav button:active {
   background: var(--color-border);
 }
 
-.sideNav .selected  {
+.sideNav .selected {
   background: var(--color-hover);
   color: var(--color-brand);
   font-weight: 600;
 }
 
-.help  {
+.help {
   padding: 20px 8px 0;
   border-top: 1px solid var(--color-border);
 }
 
-.help h3  {
+.help h3 {
   margin: 0;
   font-size: 13px;
 }
 
-.help p  {
+.help p {
   font-size: 11px;
   line-height: 1.6;
   color: var(--color-text-secondary);
   margin: 14px 0 16px;
 }
 
-.help button  {
+.help button {
   width: 100%;
   border: 0;
   border-radius: 12px;
@@ -181,36 +183,38 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 180ms ease,transform 180ms ease;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
 }
 
-.help button:hover  {
+.help button:hover {
   background: var(--color-border);
 }
 
-.help button:active  {
+.help button:active {
   transform: translateY(1px);
 }
 
-.publicInfo  {
+.publicInfo {
   display: grid;
   justify-items: center;
   padding: 14px 8px 0;
   gap: 12px;
 }
 
-.publicInfo p  {
+.publicInfo p {
   font-size: 12px;
   margin: 0;
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
-.content  {
+.content {
   min-width: 0;
 }
 
-.contentHeading  {
+.contentHeading {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -218,12 +222,12 @@
   min-height: 44px;
 }
 
-.contentHeading h2  {
+.contentHeading h2 {
   margin: 0;
   font-size: 22px;
 }
 
-.newLot  {
+.newLot {
   min-width: 220px;
   min-height: 43px;
   border: 0;
@@ -236,24 +240,30 @@
   opacity: 1;
   cursor: pointer;
   justify-content: center;
-  transition: background-color 180ms ease, transform 180ms ease;
+  transition:
+    background-color 180ms ease,
+    transform 180ms ease;
 }
 
-.newLot:hover { background: var(--color-brand-hover); }
-.newLot:active { transform: scale(.98); }
+.newLot:hover {
+  background: var(--color-brand-hover);
+}
+.newLot:active {
+  transform: scale(0.98);
+}
 
-.stats  {
+.stats {
   display: grid;
-  grid-template-columns: repeat(4,minmax(0,1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
   margin: 14px 0 24px;
 }
 
-.publicStats  {
-  grid-template-columns: repeat(2,minmax(0,250px));
+.publicStats {
+  grid-template-columns: repeat(2, minmax(0, 250px));
 }
 
-.stat  {
+.stat {
   display: grid;
   gap: 8px;
   position: relative;
@@ -265,41 +275,43 @@
   text-align: left;
   cursor: pointer;
   color: var(--color-text);
-  transition: border-color 180ms ease,transform 180ms ease;
+  transition:
+    border-color 180ms ease,
+    transform 180ms ease;
 }
 
-.stat span  {
+.stat span {
   padding-right: 28px;
   color: var(--color-text-secondary);
   font-size: 11px;
 }
 
-.stat strong  {
+.stat strong {
   font-size: 23px;
 }
 
-.stat img  {
+.stat img {
   position: absolute;
   right: 17px;
   top: 17px;
 }
 
-.stat:hover  {
+.stat:hover {
   border-color: var(--color-brand);
 }
 
-.stat:active  {
+.stat:active {
   transform: translateY(1px);
 }
 
-.filters  {
+.filters {
   display: flex;
   gap: 6px 14px;
   border-bottom: 1px solid var(--color-border);
   flex-wrap: wrap;
 }
 
-.filters button  {
+.filters button {
   position: relative;
   display: flex;
   align-items: center;
@@ -314,17 +326,18 @@
   min-height: 43px;
 }
 
-.filters button:hover,.filters button:active  {
+.filters button:hover,
+.filters button:active {
   color: var(--color-brand);
   background: var(--color-hover);
 }
 
-.filters .activeFilter  {
+.filters .activeFilter {
   color: var(--color-brand);
   font-weight: 600;
 }
 
-.activeFilter::after  {
+.activeFilter::after {
   content: "";
   position: absolute;
   inset: auto 10px -1px;
@@ -333,13 +346,14 @@
   background: var(--color-brand);
 }
 
-.lots  {
+.lots {
   display: grid;
   gap: 18px;
   margin-top: 18px;
 }
 
-.empty,.loading  {
+.empty,
+.loading {
   padding: 36px;
   border: 1px solid var(--color-border);
   border-radius: 16px;
@@ -347,12 +361,13 @@
   color: var(--color-text-secondary);
 }
 
-.empty h3  {
+.empty h3 {
   color: var(--color-text);
   margin-top: 0;
 }
 
-.empty button,.loading button  {
+.empty button,
+.loading button {
   border: 0;
   border-radius: 10px;
   padding: 12px 16px;
@@ -361,15 +376,17 @@
   cursor: pointer;
 }
 
-.empty button:hover,.loading button:hover  {
+.empty button:hover,
+.loading button:hover {
   background: var(--color-border);
 }
 
-.empty button:active,.loading button:active  {
+.empty button:active,
+.loading button:active {
   transform: translateY(1px);
 }
 
-.restriction  {
+.restriction {
   background: var(--color-error-bg);
   color: var(--color-error);
   padding: 14px 18px;
@@ -379,56 +396,56 @@
   margin: 0 0 18px;
 }
 
-@media(max-width:1100px)  {
-  .main  {
+@media (max-width: 1100px) {
+  .main {
     padding-inline: 24px;
   }
-  .layout  {
-    grid-template-columns: 220px minmax(0,1fr);
+  .layout {
+    grid-template-columns: 220px minmax(0, 1fr);
     gap: 20px;
   }
-  .sidebar  {
+  .sidebar {
     padding-inline: 10px;
   }
-  .stats  {
-    grid-template-columns: repeat(2,minmax(0,1fr));
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
-  .newLot  {
+  .newLot {
     min-width: 140px;
   }
-  .contentHeading h2  {
+  .contentHeading h2 {
     font-size: 21px;
   }
-  .filters button  {
+  .filters button {
     padding-inline: 10px;
   }
 }
 
-@media(max-width:600px)  {
-  .main  {
+@media (max-width: 600px) {
+  .main {
     padding: 20px 16px 36px;
   }
-  .pageHeading h1  {
+  .pageHeading h1 {
     margin-top: 12px;
     font-size: 27px;
   }
-  .pageHeading p  {
+  .pageHeading p {
     font-size: 13px;
   }
-  .layout  {
-    grid-template-columns: minmax(0,1fr);
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
     gap: 24px;
   }
-  .sidebar  {
+  .sidebar {
     padding: 18px 12px;
   }
-  .sideNav  {
-    grid-template-columns: repeat(3,minmax(0,1fr));
+  .sideNav {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 5px;
     margin: 20px 0 16px;
   }
-  .sideNav button  {
+  .sideNav button {
     flex-direction: column;
     justify-content: center;
     gap: 6px;
@@ -436,56 +453,69 @@
     font-size: 11px;
     text-align: center;
   }
-  .help  {
+  .help {
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
     gap: 8px 12px;
     padding-top: 14px;
   }
-  .help h3  {
+  .help h3 {
     font-size: 12px;
   }
-  .help p  {
+  .help p {
     margin: 0;
     grid-column: 1;
   }
-  .help button  {
+  .help button {
     grid-column: 2;
     grid-row: 1 / span 2;
     padding: 12px;
   }
-  .contentHeading  {
+  .contentHeading {
     gap: 12px;
   }
-  .contentHeading h2  {
+  .contentHeading h2 {
     font-size: 21px;
   }
-  .newLot  {
+  .newLot {
     min-width: 115px;
     padding: 10px;
   }
-  .filters  {
+  .filters {
     gap: 2px;
   }
-  .filters button  {
+  .filters button {
     padding-inline: 10px;
     font-size: 12px;
   }
-  .stats  {
+  .stats {
     margin-bottom: 16px;
   }
-  .stat  {
+  .stat {
     padding: 14px;
   }
-  .stat img  {
+  .stat img {
     right: 12px;
   }
 }
 
-.newLot { display: inline-flex; align-items: center; text-decoration: none; }
-.sideNav svg { flex: 0 0 20px; }
+.newLot {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.sideNav svg {
+  flex: 0 0 20px;
+}
 
-.newLot:disabled { opacity:.45; cursor:not-allowed; }
-.newLot:disabled:hover { background:var(--color-brand); }
-.newLot:disabled:active { transform:none; }
+.newLot:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.newLot:disabled:hover {
+  background: var(--color-brand);
+}
+.newLot:disabled:active {
+  transform: none;
+}

@@ -1,4 +1,4 @@
-.avatar  {
+.avatar {
   position: relative;
   display: inline-grid;
   flex: 0 0 54px;
@@ -10,24 +10,24 @@
   box-shadow: 0 0 0 1px var(--color-border);
 }
 
-.small  {
+.small {
   width: 34px;
   height: 34px;
   flex-basis: 34px;
 }
 
-.photo  {
+.photo {
   border-radius: 50%;
   object-fit: cover;
 }
 
-.initial  {
+.initial {
   position: absolute;
   color: #143e2c;
   font-weight: 700;
   font-size: 20px;
 }
 
-.small .initial  {
+.small .initial {
   font-size: 15px;
 }

@@ -1,12 +1,15 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useState } from "react";
-import type { ReactNode } from "react";
+
 import { Toast } from "./Toast";
-import type { ToastInput, ToastItem } from "./toast.types";
 import styles from "./ToastProvider.module.scss";
 
+import type { ToastInput, ToastItem } from "./toast.types";
+import type { ReactNode } from "react";
+
 export type { ToastKind } from "./toast.types";
+
 type ToastContextValue = { notify: (toast: ToastInput) => void };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
@@ -31,7 +34,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <div className={styles.region}>
-        {items.map((item) => <Toast key={item.id} item={item} onRemove={remove} />)}
+        {items.map((item) => (
+          <Toast key={item.id} item={item} onRemove={remove} />
+        ))}
       </div>
     </ToastContext.Provider>
   );
@@ -40,5 +45,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 export function useToast(): ToastContextValue {
   const context = useContext(ToastContext);
   if (!context) throw new Error("useToast must be used within ToastProvider");
+
   return context;
 }

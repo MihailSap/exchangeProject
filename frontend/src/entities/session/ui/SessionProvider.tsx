@@ -1,10 +1,13 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
-import { SESSION_CHANGED_EVENT, SESSION_KEY } from "@/src/shared/lib/session-storage";
-import type { AuthUser } from "../model/session";
+
 import { clearSession, readSession, writeSession } from "../model/session";
+
+import type { AuthUser } from "../model/session";
+import type { ReactNode } from "react";
+
+import { SESSION_CHANGED_EVENT, SESSION_KEY } from "@/src/shared/lib/session-storage";
 
 type SessionContextValue = {
   user: AuthUser | null;
@@ -24,10 +27,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const handleStorage = (event: StorageEvent) => {
       if (event.key === SESSION_KEY || event.key === null) syncSession();
     };
+
     syncSession();
     setReady(true);
     window.addEventListener(SESSION_CHANGED_EVENT, syncSession);
     window.addEventListener("storage", handleStorage);
+
     return () => {
       window.removeEventListener(SESSION_CHANGED_EVENT, syncSession);
       window.removeEventListener("storage", handleStorage);
@@ -38,6 +43,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setUserState(nextUser);
     const session = readSession();
     if (session && nextUser) writeSession({ ...session, user: nextUser });
+
     if (!nextUser) clearSession();
   }, []);
 
@@ -51,8 +57,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         } catch {
           if (!readSession()) return;
         }
+
         const activeSession = readSession();
         if (!activeSession) return;
+
         await apiRequest("/auth/logout", {
           method: "POST",
           body: { refreshToken: activeSession.refreshToken },
@@ -69,11 +77,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(() => ({ user, ready, setUser, signOut }), [user, ready, setUser, signOut]);
+
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 
 export function useSession(): SessionContextValue {
   const context = useContext(SessionContext);
   if (!context) throw new Error("useSession must be used within SessionProvider");
+
   return context;
 }

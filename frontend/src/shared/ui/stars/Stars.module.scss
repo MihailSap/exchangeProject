@@ -1,4 +1,4 @@
-.stars  {
+.stars {
   display: inline-flex;
   gap: 3px;
   color: var(--color-brand);
@@ -7,17 +7,17 @@
   white-space: nowrap;
 }
 
-.star  {
+.star {
   position: relative;
 }
 
-.fill  {
+.fill {
   position: absolute;
   inset: 0 auto 0 0;
   overflow: hidden;
 }
 
-.empty  {
+.empty {
   color: var(--color-text-secondary);
   font-size: 13px;
 }

@@ -1,10 +1,11 @@
-.anchor  {
+.anchor {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.bell,.avatarButton  {
+.bell,
+.avatarButton {
   display: grid;
   place-items: center;
   position: relative;
@@ -13,18 +14,22 @@
   border-radius: 50%;
   background: transparent;
   cursor: pointer;
-  transition: box-shadow 180ms ease, transform 180ms ease;
+  transition:
+    box-shadow 180ms ease,
+    transform 180ms ease;
 }
 
-.bell:hover,.avatarButton:hover  {
+.bell:hover,
+.avatarButton:hover {
   box-shadow: 0 0 0 5px var(--color-hover);
 }
 
-.bell:active,.avatarButton:active  {
-  transform: scale(.95);
+.bell:active,
+.avatarButton:active {
+  transform: scale(0.95);
 }
 
-.badge  {
+.badge {
   position: absolute;
   right: -4px;
   top: -3px;
@@ -39,7 +44,7 @@
   font-size: 9px;
 }
 
-.dropdown  {
+.dropdown {
   position: absolute;
   z-index: 30;
   right: 0;
@@ -51,12 +56,12 @@
   box-shadow: 0 12px 40px #0002;
 }
 
-.profile  {
+.profile {
   width: 255px;
   padding: 8px;
 }
 
-.user  {
+.user {
   display: grid;
   gap: 5px;
   padding: 12px;
@@ -65,16 +70,17 @@
   overflow-wrap: anywhere;
 }
 
-.user strong  {
+.user strong {
   font-size: 14px;
 }
 
-.user span  {
+.user span {
   font-size: 11px;
   color: var(--color-text-secondary);
 }
 
-.profile a,.profile button  {
+.profile a,
+.profile button {
   display: flex;
   width: 100%;
   gap: 10px;
@@ -92,34 +98,36 @@
   transition: background-color 180ms ease;
 }
 
-.profile a:hover,.profile button:hover:not(:disabled)  {
+.profile a:hover,
+.profile button:hover:not(:disabled) {
   background: var(--color-hover);
 }
 
-.profile a:active,.profile button:active:not(:disabled)  {
+.profile a:active,
+.profile button:active:not(:disabled) {
   background: var(--color-border);
 }
 
-.profile .logout  {
+.profile .logout {
   color: var(--color-error);
 }
 
-.profile button:disabled  {
-  opacity: .5;
+.profile button:disabled {
+  opacity: 0.5;
   cursor: wait;
 }
 
-.profile svg  {
+.profile svg {
   width: 18px;
   height: 18px;
   flex: 0 0 18px;
 }
 
-.notifications  {
+.notifications {
   width: 380px;
 }
 
-.heading  {
+.heading {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -127,12 +135,12 @@
   padding: 18px 18px 8px;
 }
 
-.heading h2  {
+.heading h2 {
   margin: 0;
   font-size: 17px;
 }
 
-.heading button  {
+.heading button {
   padding: 0;
   border: 0;
   background: none;
@@ -142,27 +150,27 @@
   cursor: pointer;
 }
 
-.heading button:hover:not(:disabled)  {
+.heading button:hover:not(:disabled) {
   text-decoration: underline;
 }
 
-.heading button:active:not(:disabled)  {
+.heading button:active:not(:disabled) {
   color: var(--color-brand-hover);
 }
 
-.heading button:disabled  {
+.heading button:disabled {
   color: var(--color-text-secondary);
   cursor: default;
 }
 
-.notificationList  {
+.notificationList {
   max-height: min(430px, calc(100dvh - 190px));
   overflow-y: auto;
   overscroll-behavior: contain;
   padding-bottom: 8px;
 }
 
-.notification  {
+.notification {
   display: flex;
   gap: 10px;
   padding: 15px 18px;
@@ -172,31 +180,31 @@
   transition: background-color 180ms ease;
 }
 
-.notification:hover  {
+.notification:hover {
   background: var(--color-hover);
 }
 
-.notification:active  {
+.notification:active {
   background: var(--color-border);
 }
 
-.notification strong  {
+.notification strong {
   font-size: 12px;
 }
 
-.notification p  {
+.notification p {
   margin: 6px 0;
   font-size: 12px;
   line-height: 1.5;
   color: var(--color-text-secondary);
 }
 
-.notification time  {
+.notification time {
   font-size: 10px;
   color: var(--color-text-secondary);
 }
 
-.indicator  {
+.indicator {
   width: 6px;
   height: 6px;
   flex: 0 0 6px;
@@ -204,46 +212,144 @@
   border-radius: 50%;
 }
 
-.unread  {
+.unread {
   background: var(--color-info-bg);
 }
 
-.unread .indicator  {
+.unread .indicator {
   background: var(--color-brand);
 }
 
-@media(max-width:600px)  {
-  .dropdown  {
+@media (max-width: 600px) {
+  .dropdown {
     position: fixed;
     right: 16px;
     top: 76px;
     max-width: calc(100vw - 32px);
   }
-  .notifications  {
+  .notifications {
     width: calc(100vw - 32px);
   }
-  .profile  {
+  .profile {
     width: 255px;
   }
 }
 
-.notification { position: relative; padding: 0; }
-.notification > a { display:flex; gap:10px; flex:1; padding:15px 44px 15px 18px; color:inherit; text-decoration:none; min-width:0; overflow-wrap:anywhere; }
-.tools { display:flex; justify-content:space-between; gap:12px; padding:12px 18px; }
-.tools button,.preferences button { display:inline-flex; align-items:center; gap:6px; padding:0; border:0; font:inherit; font-size:11px; color:var(--color-brand); background:none; cursor:pointer; transition:color 180ms ease; }
-.tools button:hover,.preferences button:hover { color:var(--color-brand-hover); text-decoration:underline; }
-.tools button:active,.preferences button:active { color:var(--color-text); }
-.tools button:disabled { opacity:.45; cursor:default; }
-.tools svg { width:14px; height:14px; flex-basis:14px; }
-.readButton { position:absolute; right:10px; top:14px; padding:5px; border:0; border-radius:7px; background:transparent; color:var(--color-brand); cursor:pointer; }
-.readButton:hover { background:var(--color-hover); }
-.readButton:active { background:var(--color-border); }
-.emptyNotifications { display:grid; justify-items:center; gap:14px; padding:28px; text-align:center; font-size:13px; }
-.emptyNotifications p { margin:0; font-size:12px; color:var(--color-text-secondary); line-height:1.6; }
-.preferences { padding:12px 18px 24px; max-height:calc(100dvh - 160px); overflow:auto; }
-.preferences h3 { font-size:13px; margin:4px 0 16px; }
-.preferences label { display:flex; gap:16px; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--color-border); font-size:13px; cursor:pointer; }
-.preferences input { width:18px; height:18px; accent-color:var(--color-brand); cursor:pointer; }
-.preferences p { font-size:11px; line-height:1.6; color:var(--color-text-secondary); }
+.notification {
+  position: relative;
+  padding: 0;
+}
+.notification > a {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+  padding: 15px 44px 15px 18px;
+  color: inherit;
+  text-decoration: none;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tools {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+}
+.tools button,
+.preferences button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  font-size: 11px;
+  color: var(--color-brand);
+  background: none;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+.tools button:hover,
+.preferences button:hover {
+  color: var(--color-brand-hover);
+  text-decoration: underline;
+}
+.tools button:active,
+.preferences button:active {
+  color: var(--color-text);
+}
+.tools button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.tools svg {
+  width: 14px;
+  height: 14px;
+  flex-basis: 14px;
+}
+.readButton {
+  position: absolute;
+  right: 10px;
+  top: 14px;
+  padding: 5px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--color-brand);
+  cursor: pointer;
+}
+.readButton:hover {
+  background: var(--color-hover);
+}
+.readButton:active {
+  background: var(--color-border);
+}
+.emptyNotifications {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding: 28px;
+  text-align: center;
+  font-size: 13px;
+}
+.emptyNotifications p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+.preferences {
+  padding: 12px 18px 24px;
+  max-height: calc(100dvh - 160px);
+  overflow: auto;
+}
+.preferences h3 {
+  font-size: 13px;
+  margin: 4px 0 16px;
+}
+.preferences label {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 13px;
+  cursor: pointer;
+}
+.preferences input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-brand);
+  cursor: pointer;
+}
+.preferences p {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
 
-.profile .admin { color:var(--color-admin); font-weight:600; }
+.profile .admin {
+  color: var(--color-admin);
+  font-weight: 600;
+}

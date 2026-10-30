@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { confirmEmail } from "@/src/features/auth";
+import { useEffect } from "react";
+
+import styles from "./ConfirmEmailPage.module.scss";
+
 import { useSession } from "@/src/entities/session";
+import { confirmEmail } from "@/src/features/auth";
 import { ApiError } from "@/src/shared/api/client";
 import { useToast } from "@/src/shared/ui/toast/ToastProvider";
 import { SiteFooter, SiteHeader } from "@/src/widgets/site-chrome";
-import styles from "./ConfirmEmailPage.module.scss";
 
 const DEFAULT_ERROR = "Возникла ошибка при подтверждении почты. Попробуйте еще раз позже";
 const confirmationRequests = new Map<string, Promise<boolean>>();
@@ -18,6 +20,7 @@ function confirmEmailOnce(token: string): Promise<boolean> {
 
   const request = confirmEmail(token).finally(() => confirmationRequests.delete(token));
   confirmationRequests.set(token, request);
+
   return request;
 }
 
@@ -28,20 +31,26 @@ export function ConfirmEmailPage({ token }: { token?: string }) {
   const { notify } = useToast();
   useEffect(() => {
     if (!ready) return;
+
     let active = true;
 
     async function completeConfirmation() {
       if (!token) {
         if (active) router.replace(fallbackHref);
+
         return;
       }
+
       try {
         const confirmed = await confirmEmailOnce(token);
         if (!active) return;
+
         if (!confirmed) throw new ApiError(DEFAULT_ERROR, 400);
+
         notify({ kind: "success", title: "Почта успешно подтверждена!" });
       } catch (error) {
         if (!active) return;
+
         const message = error instanceof Error && error.message ? error.message : DEFAULT_ERROR;
         notify({ kind: "error", title: message });
       } finally {
@@ -50,6 +59,7 @@ export function ConfirmEmailPage({ token }: { token?: string }) {
     }
 
     void completeConfirmation();
+
     return () => {
       active = false;
     };

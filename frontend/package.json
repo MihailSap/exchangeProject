@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "format": "eslint . --fix",
+    "format:check": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.mjs"
   },
@@ -16,10 +18,12 @@
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@stylistic/eslint-plugin": "5.10.0",
     "@types/node": "22.0.0",
     "@types/react": "19.0.0",
     "@types/react-dom": "19.0.0",
-    "eslint": "9.0.0",
+    "eslint": "9.39.5",
+    "eslint-plugin-import": "^2.32.0",
     "sass": "1.106.1",
     "typescript": "5.9.3",
     "typescript-eslint": "8.72.0"

@@ -1,8 +1,100 @@
+import stylistic from "@stylistic/eslint-plugin";
+import importPlugin from "eslint-plugin-import";
 import tseslint from "typescript-eslint";
 
 const eslintConfig = [
   ...tseslint.configs.recommended,
   { ignores: [".next/**", "out/**", "build/**", "next-env.d.ts"] },
+  {
+    files: ["**/*.{js,mjs,cjs,ts,tsx}"],
+    plugins: {
+      "@stylistic": stylistic,
+      import: importPlugin,
+    },
+    rules: {
+      "@stylistic/indent": ["error", 2, { SwitchCase: 1 }],
+      "@stylistic/brace-style": ["error", "1tbs", { allowSingleLine: false }],
+      "@stylistic/max-statements-per-line": ["error", { max: 1 }],
+      "@stylistic/array-bracket-spacing": ["error", "never"],
+      "@stylistic/arrow-parens": ["error", "always"],
+      "@stylistic/arrow-spacing": "error",
+      "@stylistic/block-spacing": ["error", "always"],
+      "@stylistic/comma-spacing": "error",
+      "@stylistic/eol-last": ["error", "always"],
+      "@stylistic/key-spacing": "error",
+      "@stylistic/keyword-spacing": "error",
+      "@stylistic/no-multi-spaces": "error",
+      "@stylistic/no-multiple-empty-lines": ["error", { max: 1, maxBOF: 0, maxEOF: 0 }],
+      "@stylistic/no-tabs": "error",
+      "@stylistic/no-trailing-spaces": "error",
+      "@stylistic/object-curly-spacing": ["error", "always"],
+      "@stylistic/quotes": ["error", "double", { avoidEscape: true }],
+      "@stylistic/semi": ["error", "always"],
+      "@stylistic/semi-spacing": "error",
+      "@stylistic/space-before-blocks": "error",
+      "@stylistic/space-before-function-paren": [
+        "error",
+        { anonymous: "always", named: "never", asyncArrow: "always" },
+      ],
+      "@stylistic/space-in-parens": ["error", "never"],
+      "@stylistic/space-infix-ops": "error",
+      "@stylistic/type-annotation-spacing": "error",
+      "@stylistic/padding-line-between-statements": [
+        "error",
+        { blankLine: "always", prev: "directive", next: "*" },
+        { blankLine: "always", prev: "function", next: "*" },
+        { blankLine: "always", prev: "*", next: "function" },
+        { blankLine: "always", prev: "class", next: "*" },
+        { blankLine: "always", prev: "*", next: "class" },
+        { blankLine: "always", prev: ["interface", "type"], next: "*" },
+        { blankLine: "always", prev: "*", next: ["interface", "type"] },
+        { blankLine: "always", prev: "*", next: "return" },
+        { blankLine: "always", prev: ["if", "for", "while", "switch", "try"], next: "*" },
+        { blankLine: "always", prev: ["multiline-const", "multiline-let"], next: "*" },
+      ],
+      "@stylistic/lines-between-class-members": [
+        "error",
+        "always",
+        { exceptAfterSingleLine: true },
+      ],
+      "@stylistic/jsx-closing-bracket-location": ["error", "line-aligned"],
+      "@stylistic/jsx-closing-tag-location": "error",
+      "@stylistic/jsx-curly-spacing": ["error", "never"],
+      "@stylistic/jsx-equals-spacing": ["error", "never"],
+      "@stylistic/jsx-first-prop-new-line": ["error", "multiline-multiprop"],
+      "@stylistic/jsx-indent-props": ["error", 2],
+      "@stylistic/jsx-max-props-per-line": ["error", { maximum: 1, when: "multiline" }],
+      "@stylistic/jsx-one-expression-per-line": ["error", { allow: "non-jsx" }],
+      "@stylistic/jsx-quotes": ["error", "prefer-double"],
+      "@stylistic/jsx-tag-spacing": ["error", { beforeSelfClosing: "always" }],
+      "@stylistic/jsx-wrap-multilines": [
+        "error",
+        {
+          arrow: "parens-new-line",
+          assignment: "parens-new-line",
+          declaration: "parens-new-line",
+          return: "parens-new-line",
+        },
+      ],
+      "import/order": [
+        "error",
+        {
+          groups: [
+            "builtin",
+            "external",
+            "internal",
+            ["parent", "sibling", "index"],
+            "type",
+          ],
+          "newlines-between": "always",
+          alphabetize: {
+            order: "asc",
+            caseInsensitive: true,
+          },
+        },
+      ],
+    },
+  },
 ];
 
 export default eslintConfig;

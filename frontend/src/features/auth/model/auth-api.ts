@@ -1,7 +1,7 @@
-import { ApiError, apiRequest } from "@/src/shared/api/client";
-import { writeSession } from "@/src/entities/session";
 import type { AuthSession } from "@/src/entities/session";
 
+import { writeSession } from "@/src/entities/session";
+import { ApiError, apiRequest } from "@/src/shared/api/client";
 import { isNonEmptyString, isRecord } from "@/src/shared/lib/validation";
 
 export async function signIn(email: string, password: string): Promise<AuthSession> {
@@ -11,12 +11,22 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
     fallbackMessage: "Не удалось войти. Попробуйте позже.",
   });
 
-  if (!isRecord(envelope) || !isRecord(envelope.data)) throw new ApiError("Не удалось войти. Попробуйте позже.", 502);
+  if (!isRecord(envelope) || !isRecord(envelope.data))
+    throw new ApiError("Не удалось войти. Попробуйте позже.", 502);
+
   const data = envelope.data;
-  if (!isRecord(data.access_token) || !isNonEmptyString(data.access_token.body)
-    || !isRecord(data.refresh_token) || !isNonEmptyString(data.refresh_token.body)
-    || !isRecord(data.user) || typeof data.user.id !== "number" || !Number.isSafeInteger(data.user.id) || data.user.id <= 0
-    || !isNonEmptyString(data.user.name) || !isNonEmptyString(data.user.status)) {
+  if (
+    !isRecord(data.access_token) ||
+    !isNonEmptyString(data.access_token.body) ||
+    !isRecord(data.refresh_token) ||
+    !isNonEmptyString(data.refresh_token.body) ||
+    !isRecord(data.user) ||
+    typeof data.user.id !== "number" ||
+    !Number.isSafeInteger(data.user.id) ||
+    data.user.id <= 0 ||
+    !isNonEmptyString(data.user.name) ||
+    !isNonEmptyString(data.user.status)
+  ) {
     throw new ApiError("Не удалось войти. Попробуйте позже.", 502);
   }
 
@@ -25,11 +35,17 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
     refreshToken: data.refresh_token.body,
     user: { id: data.user.id, name: data.user.name, status: data.user.status, email },
   };
+
   writeSession(session);
+
   return session;
 }
 
-export async function registerAndSignIn(name: string, email: string, password: string): Promise<AuthSession> {
+export async function registerAndSignIn(
+  name: string,
+  email: string,
+  password: string,
+): Promise<AuthSession> {
   await apiRequest("/auth/register", {
     method: "POST",
     body: { name, email, password },
@@ -62,8 +78,14 @@ export async function confirmEmail(token: string): Promise<boolean> {
     authenticated: true,
     fallbackMessage: "Возникла ошибка при подтверждении почты. Попробуйте еще раз позже",
   });
-  if (!isRecord(envelope) || !isRecord(envelope.data) || typeof envelope.data.email_Confirmed !== "boolean") {
+
+  if (
+    !isRecord(envelope) ||
+    !isRecord(envelope.data) ||
+    typeof envelope.data.email_Confirmed !== "boolean"
+  ) {
     throw new ApiError("Возникла ошибка при подтверждении почты. Попробуйте еще раз позже", 502);
   }
+
   return envelope.data.email_Confirmed;
 }

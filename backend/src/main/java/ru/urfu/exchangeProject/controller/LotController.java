@@ -3,8 +3,10 @@ package ru.urfu.exchangeProject.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.BaseResponse;
@@ -53,8 +55,12 @@ public class LotController {
 
     @Operation(description = "Получение лота по id")
     @GetMapping("/{id}")
-    public BaseResponse<LotResponse> getById(@PathVariable("id") long id) throws LotNotFoundException {
+    public BaseResponse<LotResponse> getById(@PathVariable("id") long id) throws LotNotFoundException, UserNotFoundException {
         Lot lot = lotService.getById(id);
+        LotStatus lotStatus = lot.getStatus();
+        if(lotStatus == LotStatus.ARCHIVED || lotStatus == LotStatus.DRAFT || lotStatus == LotStatus.DELETED){
+            validateOwner(lot.getUser());
+        }
         LotResponse lotResponse = lotMapper.mapToLotResponse(lot);
         return new BaseResponse<>(lotResponse);
     }
@@ -62,8 +68,8 @@ public class LotController {
     @Operation(description = "Создание лота")
     @SecurityRequirement(name = "bearerAuth")
     @ResponseStatus(HttpStatus.CREATED)
-    @PostMapping
-    public BaseResponse<LotResponse> create(@ModelAttribute LotCreateRequest lotCreateRequest)
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BaseResponse<LotResponse> create(@Valid @ModelAttribute LotCreateRequest lotCreateRequest)
             throws UserNotFoundException, CategoryNotFound {
         String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
         User user = userService.getByEmail(authenticatedUserEmail);
@@ -89,9 +95,9 @@ public class LotController {
 
     @Operation(description = "Обновление лота")
     @SecurityRequirement(name = "bearerAuth")
-    @PatchMapping("/{id}")
+    @PatchMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<LotResponse> update(
-            @PathVariable("id") long id, @RequestBody LotUpdateRequest lotUpdateRequest)
+            @PathVariable("id") long id, @Valid @RequestBody LotUpdateRequest lotUpdateRequest)
             throws UserNotFoundException, CategoryNotFound, LotNotFoundException {
         String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
         User user = userService.getByEmail(authenticatedUserEmail);
@@ -167,7 +173,7 @@ public class LotController {
         String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
         User user = userService.getByEmail(authenticatedUserEmail);
         if(!user.equals(owner)){
-            throw new RuntimeException("Нельзя редактировать чужой лот");
+            throw new LotForbiddenException();
         }
     }
 }

@@ -39,7 +39,7 @@ public class LotPhotoServiceImpl implements LotPhotoService {
     @Override
     public int getMaxOrder(List<LotPhoto> photos) {
         return photos.stream()
-                .mapToInt(LotPhoto::getOrder)
+                .mapToInt(LotPhoto::getPhotoOrder)
                 .max()
                 .orElse(1);
     }
@@ -48,7 +48,7 @@ public class LotPhotoServiceImpl implements LotPhotoService {
     @Override
     public LotPhoto create(Lot lot, MultipartFile photo, int order){
         LotPhoto lotPhoto = new LotPhoto();
-        lotPhoto.setOrder(order);
+        lotPhoto.setPhotoOrder(order);
         lotPhoto.setLot(lot);
         lotPhoto.setCreatedAt(Instant.now());
 

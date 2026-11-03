@@ -26,6 +26,7 @@ import ru.urfu.exchangeProject.service.UserService;
 import ru.urfu.exchangeProject.specification.UserSpecification;
 
 import java.time.Instant;
+import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -144,8 +145,10 @@ public class UserServiceImpl implements UserService {
             user.setEmail(newName);
         }
 
-        String contacts = userUpdateRequest.contacts();;
-        if(contacts != null && !contacts.isBlank()){
+        String contacts = userUpdateRequest.contacts();
+        if(contacts == null || contacts.isBlank()){
+            user.setContacts(null);
+        } else {
             user.setContacts(contacts);
         }
 
@@ -156,7 +159,7 @@ public class UserServiceImpl implements UserService {
 
         MultipartFile avatar = userUpdateRequest.avatar();
         if(avatar != null){
-            fileService.delete(avatar.getOriginalFilename());
+            fileService.delete(user.getAvatarUrl());
             String avatarFileTitle = fileService.save(avatar);
             user.setAvatarUrl(avatarFileTitle);
         }

@@ -2,6 +2,7 @@ package ru.urfu.exchangeProject.service;
 
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
+import ru.urfu.exchangeProject.exception.globalEx.NotFoundException;
 
 import java.net.MalformedURLException;
 
@@ -11,5 +12,5 @@ public interface FileService {
 
     void delete(String fileName);
 
-    Resource getFileResource(String fileTitle) throws MalformedURLException;
+    Resource getFileResource(String fileTitle) throws MalformedURLException, NotFoundException;
 }

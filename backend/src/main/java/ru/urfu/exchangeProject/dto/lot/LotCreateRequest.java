@@ -6,6 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 import ru.urfu.exchangeProject.dto.lot.want.WantCreateRequest;
 import ru.urfu.exchangeProject.model.lot.DeliveryMethod;
 import ru.urfu.exchangeProject.model.lot.LotType;
+import ru.urfu.exchangeProject.validation.Region;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -17,6 +18,7 @@ public record LotCreateRequest(
         @NotNull
         @JsonProperty("category_id")
         long categoryId,
+        @Region
         String region,
         @NotNull
         LotType type,

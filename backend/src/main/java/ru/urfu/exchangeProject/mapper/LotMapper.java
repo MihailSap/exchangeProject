@@ -59,6 +59,6 @@ public class LotMapper {
     }
 
     private LotPhotoDataResponse mapToLotPhotoDataResponse(LotPhoto lotPhoto){
-        return new LotPhotoDataResponse(lotPhoto.getOrder(), lotPhoto.getName());
+        return new LotPhotoDataResponse(lotPhoto.getPhotoOrder(), lotPhoto.getName());
     }
 }

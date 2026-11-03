@@ -4,9 +4,12 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import ru.urfu.exchangeProject.exception.customEx.news.FileInvalidException;
+import ru.urfu.exchangeProject.exception.globalEx.NotFoundException;
 import ru.urfu.exchangeProject.service.FileService;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
@@ -57,8 +60,18 @@ public class FileServiceImpl implements FileService {
     }
 
     @Override
-    public Resource getFileResource(String fileTitle) throws MalformedURLException {
-        Path path = Paths.get(String.format("uploads/%s", fileTitle));
-        return new UrlResource(path.toUri());
+    public Resource getFileResource(String fileTitle) throws MalformedURLException, NotFoundException {
+        Path path = Paths.get(uploadDir);
+        Path normalizedPath = path.resolve(fileTitle).normalize();
+        if (!normalizedPath.startsWith(path.normalize())) {
+            throw new FileInvalidException();
+        }
+
+        Resource resource = new UrlResource(normalizedPath.toUri());
+        if (!resource.exists() || !resource.isReadable()) {
+            throw new NotFoundException("Файл не найден");
+        }
+
+        return resource;
     }
 }

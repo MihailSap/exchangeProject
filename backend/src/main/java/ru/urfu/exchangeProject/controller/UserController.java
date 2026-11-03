@@ -3,7 +3,9 @@ package ru.urfu.exchangeProject.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.BaseResponse;
@@ -49,8 +51,8 @@ public class UserController {
     }
 
     @Operation(description = "Обновление профиля текущего пользователя")
-    @PatchMapping("/me")
-    public BaseResponse<UserProfileResponse> updateCurrentUser(@ModelAttribute UserUpdateRequest userUpdateRequest)
+    @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public BaseResponse<UserProfileResponse> updateCurrentUser(@Valid @ModelAttribute UserUpdateRequest userUpdateRequest)
             throws UserNotFoundException {
         String email = authService.getAuthenticatedUserEmail();
         User user = userService.getByEmail(email);
@@ -76,59 +78,4 @@ public class UserController {
         User user = userService.getByEmail(email);
         userService.changeRole(user);
     }
-
-
-
-//    @Operation(description = "Смена пароля пользователя")
-//    @PatchMapping("/{userId}/password")
-//    public String updatePassword(
-//            @PathVariable("userId") long userId, @RequestBody UpdatePasswordRequest updatePasswordRequest)
-//            throws UserNotFoundException {
-//        User user = userService.getById(userId);
-//        userService.updatePassword(user, updatePasswordRequest.newPassword());
-//        return "Пароль успешно обновлён";
-//    }
-
-//    @Operation(description = "Получение всех пользователей с пагинацией")
-//    @PreAuthorize("hasAuthority('ADMIN')")
-//    @GetMapping
-//    public PagedResponse<UserResponse> getAll(
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "10") int size,
-//            @RequestParam(required = false) String filter
-//    ){
-//        Page<UserResponse> users = userService.getAll(page, size, filter)
-//                .map(userMapper::mapToUserResponse);
-//        return pageMapper.mapToPagedResponse(users);
-//    }
-
-//    @Operation(description = "Удаление пользователя")
-//    @PreAuthorize("hasAuthority('ADMIN')")
-//    @DeleteMapping("/{userId}")
-//    public String delete(@PathVariable("userId") long userId)
-//            throws UserNotFoundException {
-//        User user = userService.getById(userId);
-//        userService.delete(user);
-//        return "Пользователь удален";
-//    }
-
-//    @Operation(description = "Добавление пользователю роли 'ADMIN'")
-//    @PreAuthorize("hasAuthority('ADMIN')")
-//    @PatchMapping("/{userId}/admin")
-//    public UserResponse makeAdmin(@PathVariable("userId") long userId)
-//            throws UserNotFoundException {
-//        User user = userService.getById(userId);
-//        User updatedUser = userService.makeAdmin(user);
-//        return userMapper.mapToUserResponse(updatedUser);
-//    }
-//
-//    @Operation(description = "Удаление у пользователя роли 'ADMIN'")
-//    @PreAuthorize("hasAuthority('ADMIN')")
-//    @PatchMapping("/{userId}/not-admin")
-//    public UserResponse makeNotAdmin(@PathVariable("userId") long userId)
-//            throws UserNotFoundException {
-//        User user = userService.getById(userId);
-//        User updatedUser = userService.makeNotAdmin(user);
-//        return userMapper.mapToUserResponse(updatedUser);
-//    }
 }

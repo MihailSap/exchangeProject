@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.service.FileService;
 
+import java.nio.file.Files;
+
 @Tag(name = "Управление файлами")
 @SecurityRequirement(name = "bearerAuth")
 @RestController
@@ -27,13 +29,29 @@ public class FileController {
         this.fileService = fileService;
     }
 
+//    @Operation(description = "Получение изображения")
+//    @GetMapping("/image/{imageFileTitle}")
+//    public ResponseEntity<Resource> getImageFile(@PathVariable("imageFileTitle") String imageFileTitle)
+//            throws Exception {
+//        Resource resource = fileService.getFileResource(imageFileTitle);
+//        return ResponseEntity.ok()
+//                .contentType(MediaType.IMAGE_JPEG)
+//                .body(resource);
+//    }
+
     @Operation(description = "Получение изображения")
     @GetMapping("/image/{imageFileTitle}")
-    public ResponseEntity<Resource> getImageFile(@PathVariable("imageFileTitle") String imageFileTitle)
-            throws Exception {
+    public ResponseEntity<Resource> getImageFile(
+            @PathVariable("imageFileTitle") String imageFileTitle
+    ) throws Exception {
         Resource resource = fileService.getFileResource(imageFileTitle);
+        String contentType = Files.probeContentType(resource.getFile().toPath());
+        if (contentType == null) {
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        }
+
         return ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_JPEG)
+                .contentType(MediaType.parseMediaType(contentType))
                 .body(resource);
     }
 }

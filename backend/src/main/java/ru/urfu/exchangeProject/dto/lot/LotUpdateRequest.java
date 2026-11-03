@@ -5,6 +5,7 @@ import org.springframework.web.multipart.MultipartFile;
 import ru.urfu.exchangeProject.dto.lot.want.WantCreateRequest;
 import ru.urfu.exchangeProject.model.lot.DeliveryMethod;
 import ru.urfu.exchangeProject.model.lot.LotType;
+import ru.urfu.exchangeProject.validation.Region;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -14,6 +15,7 @@ public record LotUpdateRequest(
         String description,
         @JsonProperty("category_id")
         Long categoryId,
+        @Region
         String region,
         LotType type,
         @JsonProperty("delivery_method")

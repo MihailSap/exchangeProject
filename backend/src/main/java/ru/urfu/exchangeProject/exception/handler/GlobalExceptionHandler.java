@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import ru.urfu.exchangeProject.dto.exceptions.*;
+import ru.urfu.exchangeProject.exception.customEx.InvalidRefreshTokenException;
 import ru.urfu.exchangeProject.exception.customEx.news.*;
 import ru.urfu.exchangeProject.exception.globalEx.InvalidException;
 import ru.urfu.exchangeProject.exception.globalEx.NotFoundException;
@@ -83,6 +84,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ExceptionResponse(exceptionErrorResponse));
     }
 
+    @ExceptionHandler(FileInvalidException.class)
+    public ResponseEntity<ExceptionResponse> handleFileInvalidEx(FileInvalidException ex) {
+        logger.error("FileInvalidException: {}", ex.getMessage(), ex);
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ErrorCode.INVALID_EXCEPTION, null, null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
+    @ExceptionHandler(LotForbiddenException.class)
+    public ResponseEntity<ExceptionResponse> handleFileInvalidEx(LotForbiddenException ex) {
+        logger.error("LotForbiddenException: {}", ex.getMessage(), ex);
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ErrorCode.LOT_FORBIDDEN, null, null);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ExceptionResponse> handleValidationException(
             MethodArgumentNotValidException ex) {
@@ -104,9 +121,9 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ExceptionResponse(errorResponse));
     }
 
-    @ExceptionHandler(InvalidException.class)
-    public ResponseEntity<ExceptionResponse> handleInvalidException(InvalidException ex) {
-        logger.error("InvalidException: {}", ex.getMessage(), ex);
+    @ExceptionHandler(InvalidRefreshTokenException.class)
+    public ResponseEntity<ExceptionResponse> handleInvalidException(InvalidRefreshTokenException ex) {
+        logger.error("InvalidRefreshTokenException: {}", ex.getMessage(), ex);
         ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
                 ErrorCode.INVALID_EXCEPTION, ex.getMessage(), null);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ExceptionResponse(exceptionErrorResponse));
@@ -132,7 +149,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ExceptionResponse> handleException(Exception ex) {
         logger.error("Exception: {}", ex.getMessage(), ex);
         ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
-                ErrorCode.UNKNOWN_EXCEPTION, ex.getMessage(), null);
+                ErrorCode.UNKNOWN_EXCEPTION, null, null);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ExceptionResponse(exceptionErrorResponse));
     }
 }

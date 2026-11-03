@@ -147,30 +147,28 @@ export async function archiveLot(lot: Lot): Promise<Lot> {
 
   return next;
 }
-const categoryCache = new Map<string, { promise: Promise<LotCategory[]>; expires: number }>();
+let categoryCache: { promise: Promise<LotCategory[]>; expires: number } | null = null;
+
 export function invalidateLotCategories(): void {
-  categoryCache.clear();
+  categoryCache = null;
 }
+
 export function getLotCategories(): Promise<LotCategory[]> {
-  const key = readTokens()?.refreshToken ?? "guest";
-  const cached = categoryCache.get(key);
-  if (cached && cached.expires > Date.now()) return cached.promise;
+  if (categoryCache && categoryCache.expires > Date.now()) return categoryCache.promise;
 
   const promise = fetchLotCategories().catch((error: unknown) => {
-    categoryCache.delete(key);
+    if (categoryCache?.promise === promise) categoryCache = null;
+
     throw error;
   });
 
-  if (categoryCache.size >= 5) categoryCache.clear();
-
-  categoryCache.set(key, { promise, expires: Date.now() + 600_000 });
+  categoryCache = { promise, expires: Date.now() + 600_000 };
 
   return promise;
 }
 
 async function fetchLotCategories(): Promise<LotCategory[]> {
   const payload = await apiRequest("/categories/active", {
-    authenticated: true,
     fallbackMessage: "Не удалось загрузить категории. Попробуйте ещё раз.",
   });
 

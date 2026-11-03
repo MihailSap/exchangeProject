@@ -248,6 +248,7 @@
 .newLot:hover {
   background: var(--color-brand-hover);
 }
+
 .newLot:active {
   transform: scale(0.98);
 }
@@ -400,23 +401,29 @@
   .main {
     padding-inline: 24px;
   }
+
   .layout {
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 20px;
   }
+
   .sidebar {
     padding-inline: 10px;
   }
+
   .stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 12px;
   }
+
   .newLot {
     min-width: 140px;
   }
+
   .contentHeading h2 {
     font-size: 21px;
   }
+
   .filters button {
     padding-inline: 10px;
   }
@@ -426,25 +433,40 @@
   .main {
     padding: 20px 16px 36px;
   }
+
   .pageHeading h1 {
     margin-top: 12px;
     font-size: 27px;
   }
+
   .pageHeading p {
     font-size: 13px;
   }
+
   .layout {
     grid-template-columns: minmax(0, 1fr);
     gap: 24px;
   }
+
   .sidebar {
     padding: 18px 12px;
   }
+
+  .verified {
+    display: block;
+    width: fit-content;
+    min-width: 0;
+    max-width: calc(100% - 82px);
+    margin: 14px 8px 0 74px;
+    text-align: left;
+  }
+
   .sideNav {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 5px;
     margin: 20px 0 16px;
   }
+
   .sideNav button {
     flex-direction: column;
     justify-content: center;
@@ -453,6 +475,7 @@
     font-size: 11px;
     text-align: center;
   }
+
   .help {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -460,41 +483,52 @@
     gap: 8px 12px;
     padding-top: 14px;
   }
+
   .help h3 {
     font-size: 12px;
   }
+
   .help p {
     margin: 0;
     grid-column: 1;
   }
+
   .help button {
     grid-column: 2;
     grid-row: 1 / span 2;
     padding: 12px;
   }
+
   .contentHeading {
     gap: 12px;
   }
+
   .contentHeading h2 {
     font-size: 21px;
   }
+
   .newLot {
     min-width: 115px;
     padding: 10px;
   }
+
   .filters {
     gap: 2px;
   }
+
   .filters button {
     padding-inline: 10px;
     font-size: 12px;
   }
+
   .stats {
     margin-bottom: 16px;
   }
+
   .stat {
     padding: 14px;
   }
+
   .stat img {
     right: 12px;
   }
@@ -505,6 +539,7 @@
   align-items: center;
   text-decoration: none;
 }
+
 .sideNav svg {
   flex: 0 0 20px;
 }
@@ -513,9 +548,11 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
 .newLot:disabled:hover {
   background: var(--color-brand);
 }
+
 .newLot:disabled:active {
   transform: none;
 }

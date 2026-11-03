@@ -161,12 +161,12 @@ export function reasonError(value: string): string | undefined {
 export function categoryErrors(name: string, slug: string, visibility: string) {
   return {
     name:
-      name.trim().length < 2 || name.length > 120
-        ? "Название должно содержать от 2 до 120 символов"
+      name.trim().length < 2 || name.length > 100
+        ? "Название должно содержать от 2 до 100 символов"
         : undefined,
     slug:
-      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 120
-        ? "До 120 символов: латинские буквы, цифры и дефис между словами"
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) || slug.length > 100
+        ? "До 100 символов: латинские буквы, цифры и дефис между словами"
         : undefined,
     visibility:
       visibility !== "true" && visibility !== "false"

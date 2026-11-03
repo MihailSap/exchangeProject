@@ -31,3 +31,13 @@
 .small .initial {
   font-size: 15px;
 }
+
+.large {
+  width: 120px;
+  height: 120px;
+  flex-basis: 120px;
+}
+
+.large .initial {
+  font-size: 44px;
+}

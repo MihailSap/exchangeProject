@@ -138,7 +138,7 @@ export function ProfileSettings({
       <form onSubmit={submit} noValidate className={styles.form}>
         <fieldset disabled={saving} className={styles.fields}>
           <div className={styles.avatarRow}>
-            <Avatar name={values.name} src={removeAvatar ? null : preview || user.avatarUrl} />
+            <Avatar name={values.name} src={removeAvatar ? null : preview || user.avatarUrl} large />
             <div>
               <div className={styles.avatarActions}>
                 <label className={styles.upload} htmlFor="profile-avatar">

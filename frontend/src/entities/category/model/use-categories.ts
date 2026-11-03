@@ -9,38 +9,36 @@ import type { Category } from "./category";
 import { useToast } from "@/src/shared/ui/toast/ToastProvider";
 
 type State =
-  | { status: "loading"; key: string }
-  | { status: "error"; key: string; message: string }
-  | { status: "ready"; key: string; categories: Category[] };
+  | { status: "loading" }
+  | { status: "error"; message: string }
+  | { status: "ready"; categories: Category[] };
 
-export function useCategories(identity: string, ready: boolean) {
-  const [state, setState] = useState<State>({ status: "loading", key: identity });
+export function useCategories() {
+  const [state, setState] = useState<State>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const { notify } = useToast();
   useEffect(() => {
-    if (!ready) return;
-
     let active = true;
-    setState({ status: "loading", key: identity });
+    setState({ status: "loading" });
     getActiveCategories()
       .then((categories) => {
-        if (active) setState({ status: "ready", key: identity, categories });
+        if (active) setState({ status: "ready", categories });
       })
       .catch((error: unknown) => {
         if (!active) return;
 
         const message = error instanceof Error ? error.message : "Не удалось загрузить категории";
-        setState({ status: "error", key: identity, message });
+        setState({ status: "error", message });
         notify({ kind: "error", title: message });
       });
 
     return () => {
       active = false;
     };
-  }, [identity, ready, attempt, notify]);
+  }, [attempt, notify]);
 
   return {
-    state: state.key === identity && ready ? state : { status: "loading" as const, key: identity },
+    state,
     retry: () => {
       clearCategoryCache();
       setAttempt((value) => value + 1);

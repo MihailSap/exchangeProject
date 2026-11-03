@@ -21,7 +21,6 @@ import { useCategories } from "@/src/entities/category/client";
 import { CATALOG_ITEMS, RECOMMENDED_ITEMS } from "@/src/entities/lot";
 import { CatalogLotCard } from "@/src/entities/lot/ui";
 import { getRegions } from "@/src/entities/profile";
-import { useSession } from "@/src/entities/session";
 import { Icon } from "@/src/shared/ui/icon";
 import { Loading } from "@/src/shared/ui/loading";
 import { Select } from "@/src/shared/ui/select";
@@ -37,14 +36,10 @@ export function CatalogBrowser({
   const pathname = usePathname();
   const router = useRouter();
   const pageSize = useCatalogPageSize();
-  const { user, ready } = useSession();
   const [pending, startTransition] = useTransition();
   const [navigationKind, setNavigationKind] = useState<"replace" | "append">("replace");
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const { state: categoryState, retry: retryCategories } = useCategories(
-    String(user?.id ?? "guest"),
-    ready,
-  );
+  const { state: categoryState, retry: retryCategories } = useCategories();
 
   const [regions, setRegions] = useState<string[]>([]);
   const [regionError, setRegionError] = useState("");
@@ -135,7 +130,7 @@ export function CatalogBrowser({
               const sort = SORT_OPTIONS.find((item) => item.value === value)?.value;
               if (sort) navigate({ sort });
             }}
-            options={SORT_OPTIONS.filter((item) => recommendations || item.value !== "suitable")}
+            options={SORT_OPTIONS}
           />
         </div>
       </div>

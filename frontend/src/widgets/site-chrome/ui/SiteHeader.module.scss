@@ -184,22 +184,27 @@
   padding: 0;
   cursor: pointer;
 }
+
 .nav a:hover,
 .nav button:hover {
   color: var(--color-brand-hover);
   text-decoration: underline;
   text-underline-offset: 4px;
 }
+
 .nav a:active,
 .nav button:active {
   opacity: 0.75;
 }
+
 .logo:hover {
   color: var(--color-brand-hover);
 }
+
 .logo:active {
   opacity: 0.8;
 }
+
 .createButton {
   width: clamp(180px, 18.6vw, 268px);
   min-width: 0;
@@ -207,17 +212,21 @@
   cursor: pointer;
   opacity: 1;
 }
+
 .headerButton:disabled:hover {
   box-shadow: none;
   background: var(--color-brand);
 }
+
 .headerButton:disabled:active {
   transform: none;
 }
+
 @media (max-width: 600px) {
   .createButton {
     display: none;
   }
+
   .actions {
     gap: 14px;
   }
@@ -227,9 +236,11 @@
   .inner {
     padding-inline: 16px;
   }
+
   .logo {
     font-size: 22px;
   }
+
   .actions {
     gap: 8px;
   }
@@ -244,14 +255,17 @@
   color: var(--color-brand);
   font-weight: 700;
 }
+
 .nav a {
   display: inline-grid;
   white-space: nowrap;
 }
+
 .nav a > span,
 .nav a::after {
   grid-area: 1 / 1;
 }
+
 .nav a::after {
   content: attr(data-label);
   font-weight: 700;

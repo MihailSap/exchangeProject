@@ -214,15 +214,18 @@
   .card {
     grid-template-columns: 130px minmax(0, 1fr);
   }
+
   .actions {
     grid-column: 2;
     grid-row: 2;
     justify-content: space-between;
     padding: 0;
   }
+
   .imageButton {
     grid-row: span 2;
   }
+
   .copy {
     align-content: start;
   }
@@ -233,23 +236,29 @@
     gap: 12px;
     padding: 12px;
   }
+
   .actions {
     grid-column: 1 / -1;
     grid-row: auto;
   }
+
   .imageButton {
     grid-row: 1;
   }
+
   .copy {
     gap: 8px;
   }
+
   .status {
     min-width: 0;
     font-size: 9px;
   }
+
   .title {
     font-size: 13px;
   }
+
   .copy strong {
     font-size: 15px;
   }
@@ -259,6 +268,7 @@
   .card {
     grid-template-columns: minmax(0, 1fr);
   }
+
   .actions {
     grid-column: 1;
   }
@@ -270,6 +280,7 @@
   justify-content: center;
   gap: 8px;
 }
+
 .imageButton img {
   object-fit: cover;
 }

@@ -107,9 +107,7 @@ export function LotForm({
               ]
               : categoryResult.value,
           );
-        else if (!(
-          categoryResult.reason instanceof ApiError && categoryResult.reason.status === 403
-        ))
+        else
           failures.push(
             categoryResult.reason instanceof Error
               ? categoryResult.reason.message

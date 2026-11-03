@@ -4,6 +4,7 @@
   margin-inline: auto;
   padding: 22px clamp(24px, 3.9vw, 56px) 32px;
 }
+
 .hero {
   position: relative;
   display: flex;
@@ -13,12 +14,14 @@
   border-radius: 26px;
   background: var(--color-brand-deep);
 }
+
 .heroContent {
   position: relative;
   z-index: 1;
   flex: 0 0 46%;
   padding: 32px 40px 20px;
 }
+
 .eyebrow {
   display: inline-block;
   padding: 8px 24px;
@@ -28,6 +31,7 @@
   font-size: 11px;
   font-weight: 500;
 }
+
 .hero h1 {
   margin: 16px 0 18px;
   color: #fff;
@@ -35,12 +39,14 @@
   line-height: 1.2;
   letter-spacing: -0.6px;
 }
+
 .hero p {
   margin: 0 0 18px;
   color: #d9e8dc;
   font-size: 16px;
   line-height: 1.4;
 }
+
 .heroButton {
   display: inline-flex;
   align-items: center;
@@ -60,13 +66,16 @@
     box-shadow 180ms ease,
     transform 180ms ease;
 }
+
 .heroButton:hover {
   background: #e2ff94;
   box-shadow: 0 8px 24px rgb(213 242 123 / 35%);
 }
+
 .heroButton:active {
   transform: translateY(1px) scale(0.99);
 }
+
 .heroImage {
   position: absolute;
   left: 43.6%;
@@ -77,28 +86,33 @@
   object-fit: contain;
   object-position: bottom;
 }
+
 .section {
   margin-top: 28px;
   min-width: 0;
 }
+
 .section h2 {
   margin: 0;
   color: var(--color-text);
   font-size: 24px;
   line-height: 1.5;
 }
+
 .subtitle {
   margin: 2px 0 0;
   color: var(--color-text-secondary);
   font-size: 13px;
   line-height: 1.5;
 }
+
 .categories {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 24px;
   margin: 14px 20px 0;
 }
+
 .category {
   display: flex;
   align-items: center;
@@ -117,45 +131,56 @@
     border-color 180ms ease,
     transform 180ms ease;
 }
+
 .category strong {
   flex: 1;
   font-weight: 600;
   overflow-wrap: anywhere;
 }
+
 .category > span:last-child {
   display: inline-flex;
   flex-shrink: 0;
   color: var(--color-text-secondary);
 }
+
 .dot {
   flex: 0 0 40px;
   height: 40px;
   border-radius: 50%;
   background: var(--color-archive-bg);
 }
+
 .category:nth-child(2) .dot {
   background: var(--color-warning-bg);
 }
+
 .category:nth-child(3) .dot {
   background: var(--color-completed-bg);
 }
+
 .category:nth-child(4) .dot {
   background: var(--color-brand-lime);
 }
+
 .category:nth-child(5) .dot {
   background: var(--color-success-bg);
 }
+
 .category:nth-child(6) .dot {
   background: var(--color-info-bg);
 }
+
 .category:hover {
   border-color: var(--color-brand);
   background: var(--color-hover);
   transform: translateY(-2px);
 }
+
 .category:active {
   transform: translateY(0);
 }
+
 .categoryError {
   display: flex;
   align-items: center;
@@ -165,6 +190,7 @@
   color: var(--color-text-secondary);
   font-size: 13px;
 }
+
 .textButton {
   padding: 8px;
   border: 0;
@@ -175,24 +201,29 @@
   font-weight: 600;
   cursor: pointer;
 }
+
 .textButton:hover {
   background: var(--color-hover);
 }
+
 .textButton:active {
   opacity: 0.7;
 }
+
 .sectionHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
 }
+
 .headingLine {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
 }
+
 .badge {
   padding: 8px 16px;
   border-radius: 999px;
@@ -200,6 +231,7 @@
   color: var(--color-brand);
   font-size: 11px;
 }
+
 .more {
   display: inline-flex;
   align-items: center;
@@ -219,12 +251,15 @@
     background-color 180ms ease,
     transform 180ms ease;
 }
+
 .more:hover {
   background: var(--color-hover);
 }
+
 .more:active {
   transform: scale(0.98);
 }
+
 .carouselControls {
   display: flex;
   align-items: center;
@@ -234,10 +269,12 @@
   color: var(--color-text-secondary);
   font-size: 11px;
 }
+
 .carouselControls > div {
   display: flex;
   gap: 8px;
 }
+
 .carouselControls button {
   display: grid;
   place-items: center;
@@ -252,16 +289,20 @@
     background-color 180ms ease,
     transform 180ms ease;
 }
+
 .carouselControls button:hover:not(:disabled) {
   background: var(--color-hover);
 }
+
 .carouselControls button:active:not(:disabled) {
   transform: scale(0.95);
 }
+
 .carouselControls button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
 .carousel {
   display: grid;
   grid-auto-flow: column;
@@ -276,62 +317,77 @@
   scrollbar-color: var(--color-border) transparent;
   list-style: none;
 }
+
 .carousel li {
   display: flex;
   min-width: 0;
   scroll-snap-align: start;
 }
+
 @media (min-width: 1600px) {
   .carousel {
     grid-auto-columns: calc((100% - 112px) / 5);
   }
 }
+
 @media (max-width: 1100px) {
   .main {
     padding-inline: 24px;
   }
+
   .heroContent {
     flex-basis: 55%;
     padding: 28px;
   }
+
   .heroImage {
     left: 52%;
     width: 48%;
   }
+
   .hero p {
     font-size: 14px;
   }
+
   .categories {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
     margin-inline: 0;
   }
+
   .carousel {
     grid-auto-columns: calc((100% - 20px) / 2);
     gap: 20px;
     margin-inline: 0;
   }
+
   .carouselControls {
     margin-inline: 0;
   }
 }
+
 @media (max-width: 600px) {
   .main {
     padding: 16px 20px 28px;
   }
+
   .hero {
     display: block;
     border-radius: 20px;
   }
+
   .heroContent {
     padding: 24px 24px 0;
   }
+
   .hero h1 {
     font-size: 34px;
   }
+
   .hero p {
     font-size: 14px;
   }
+
   .heroImage {
     position: relative;
     display: block;
@@ -340,48 +396,60 @@
     max-height: 210px;
     margin-top: 6px;
   }
+
   .heroButton {
     width: 100%;
   }
+
   .section {
     margin-top: 24px;
   }
+
   .section h2 {
     font-size: 21px;
   }
+
   .categories {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
+
   .category {
     gap: 8px;
     padding: 10px;
     font-size: 12px;
   }
+
   .dot {
     flex-basis: 28px;
     height: 28px;
   }
+
   .sectionHeader {
     flex-wrap: wrap;
     gap: 12px;
   }
+
   .headingLine {
     gap: 8px;
   }
+
   .badge {
     font-size: 9px;
     padding: 6px 10px;
   }
+
   .more {
     min-height: 40px;
     font-size: 13px;
   }
+
   .carousel {
     grid-auto-columns: 88%;
     gap: 12px;
   }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .category:hover {
     transform: none;

@@ -54,6 +54,7 @@
   border-color: var(--color-brand);
   box-shadow: 0 0 0 3px rgb(23 107 77 / 12%);
 }
+
 .field :is(input, textarea)[aria-invalid="true"]:focus {
   border-color: var(--color-error);
   box-shadow: 0 0 0 3px rgb(179 62 57 / 12%);

@@ -8,9 +8,9 @@ import styles from "./Avatar.module.scss";
 import { getCachedProtectedImageUrl, getProtectedImageUrl } from "@/src/shared/api/files";
 import { readTokens } from "@/src/shared/lib/session-storage";
 
-type AvatarProps = { name: string; src?: string | null; small?: boolean };
+type AvatarProps = { name: string; src?: string | null; small?: boolean; large?: boolean };
 
-export function Avatar({ name, src, small = false }: AvatarProps) {
+export function Avatar({ name, src, small = false, large = false }: AvatarProps) {
   const [image, setImage] = useState<{ key: string; url: string } | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const imageKey = `${readTokens()?.refreshToken ?? ""}:${src ?? ""}`;
@@ -33,7 +33,7 @@ export function Avatar({ name, src, small = false }: AvatarProps) {
       active = false;
     };
   }, [src, imageKey]);
-  const size = small ? 34 : 54;
+  const size = large ? 120 : small ? 34 : 54;
   const direct =
     src && (src.startsWith("/") || src.startsWith("blob:") || src.startsWith("https://"))
       ? src
@@ -47,7 +47,7 @@ export function Avatar({ name, src, small = false }: AvatarProps) {
       : null;
 
   return (
-    <span className={`${styles.avatar} ${small ? styles.small : ""}`}>
+    <span className={`${styles.avatar} ${large ? styles.large : small ? styles.small : ""}`}>
       {resolved ? (
         <Image
           src={resolved}

@@ -131,9 +131,6 @@ public class UserServiceImpl implements UserService {
     public User update(UserUpdateRequest userUpdateRequest, User user) {
         String newName = userUpdateRequest.name();
         if(newName != null && !newName.isBlank()){
-            if(isExistsByName(newName)){
-                throw new NameExistsException();
-            }
             user.setName(newName);
         }
 
@@ -146,10 +143,8 @@ public class UserServiceImpl implements UserService {
         }
 
         String contacts = userUpdateRequest.contacts();
-        if(contacts == null || contacts.isBlank()){
-            user.setContacts(null);
-        } else {
-            user.setContacts(contacts);
+        if(contacts != null){
+            user.setContacts(contacts.trim());
         }
 
         String region = userUpdateRequest.region();

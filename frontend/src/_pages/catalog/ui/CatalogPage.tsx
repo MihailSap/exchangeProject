@@ -14,7 +14,7 @@ export function CatalogPage({
   recommendations?: boolean;
   searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const query = catalogQueryFromParams(searchParams, recommendations);
+  const query = catalogQueryFromParams(searchParams);
 
   return (
     <div className="sitePage">

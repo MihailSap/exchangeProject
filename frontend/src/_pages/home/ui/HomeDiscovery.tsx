@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import styles from "./HomePage.module.scss";
 
 import { useCategories } from "@/src/entities/category/client";
-import { RECOMMENDED_ITEMS } from "@/src/entities/lot";
+import { CATALOG_ITEMS, RECOMMENDED_ITEMS } from "@/src/entities/lot";
 import { CatalogLotCard } from "@/src/entities/lot/ui";
 import { useSession, updateSessionProfile } from "@/src/entities/session";
 import { ApiError } from "@/src/shared/api/client";
@@ -17,7 +17,9 @@ import { useToast } from "@/src/shared/ui/toast/ToastProvider";
 export function HomeDiscovery() {
   const { user, ready, setUser } = useSession();
   const { notify } = useToast();
-  const { state, retry } = useCategories(String(user?.id ?? "guest"), ready);
+  const { state, retry } = useCategories();
+  const personalized = ready && Boolean(user);
+  const items = (personalized ? RECOMMENDED_ITEMS : CATALOG_ITEMS).slice(0, 10);
   const track = useRef<HTMLUListElement>(null);
   const [position, setPosition] = useState({ start: true, end: false });
   useEffect(() => {
@@ -62,7 +64,7 @@ export function HomeDiscovery() {
       observer.disconnect();
       element.removeEventListener("scroll", sync);
     };
-  }, []);
+  }, [ready, personalized]);
 
   function scroll(direction: number): void {
     const element = track.current;
@@ -133,16 +135,18 @@ export function HomeDiscovery() {
         <div className={styles.sectionHeader}>
           <div>
             <div className={styles.headingLine}>
-              <h2 id="recommendations-heading">Подобрали для вас</h2>
-              <span className={styles.badge}>РЕКОМЕНДАЦИИ</span>
+              <h2 id="recommendations-heading">{personalized ? "Подобрали для вас" : "Найдите свой обмен"}</h2>
+              <span className={styles.badge}>{personalized ? "РЕКОМЕНДАЦИИ" : "КАТАЛОГ"}</span>
             </div>
             <p className={styles.subtitle}>
-              {ready && user?.emailConfirmed
-                ? "Варианты, которые могут подойти под ваши лоты"
-                : "Варианты, которые могут подойти под ваши интересы"}
+              {personalized
+                ? user?.emailConfirmed
+                  ? "Варианты, которые могут подойти под ваши лоты"
+                  : "Варианты, которые могут подойти под ваши интересы"
+                : "Вещи и услуги, которые можно обменять уже сейчас"}
             </p>
           </div>
-          <Link className={styles.more} href="/recommendations">
+          <Link className={styles.more} href={personalized ? "/recommendations" : "/catalog"}>
             Смотреть ещё
             {" "}
             <Icon name="arrow" />
@@ -152,7 +156,7 @@ export function HomeDiscovery() {
           <div>
             <button
               type="button"
-              aria-label="Предыдущие рекомендации"
+              aria-label="Предыдущие лоты"
               disabled={position.start}
               onClick={() => scroll(-1)}
             >
@@ -160,7 +164,7 @@ export function HomeDiscovery() {
             </button>
             <button
               type="button"
-              aria-label="Следующие рекомендации"
+              aria-label="Следующие лоты"
               disabled={position.end}
               onClick={() => scroll(1)}
             >
@@ -168,8 +172,12 @@ export function HomeDiscovery() {
             </button>
           </div>
         </div>
-        <ul className={styles.carousel} ref={track} aria-label="10 рекомендаций" tabIndex={0}>
-          {RECOMMENDED_ITEMS.slice(0, 10).map((item, index) => (
+        <ul className={styles.carousel} ref={track} aria-label={personalized ? "10 рекомендаций" : "Первые 10 лотов каталога"} aria-busy={!ready} tabIndex={0}>
+          {!ready ? (
+            <li>
+              <Loading compact label="Загружаем предложения…" />
+            </li>
+          ) : items.map((item, index) => (
             <li key={item.id}>
               <CatalogLotCard item={item} spacious eager={index < 4} />
             </li>

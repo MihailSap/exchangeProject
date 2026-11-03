@@ -2,11 +2,11 @@ import type { Category } from "@/src/entities/category";
 import type { CatalogItem } from "@/src/entities/lot";
 
 export const SORT_OPTIONS = [
-  { value: "newest", label: "Сначала новые" },
-  { value: "price-asc", label: "По цене по возрастанию" },
-  { value: "price-desc", label: "По цене по убыванию" },
+  { value: "oldest", label: "По дате по возрастанию" },
+  { value: "newest", label: "По дате по убыванию" },
+  { value: "price-asc", label: "По стоимости по возрастанию" },
+  { value: "price-desc", label: "По стоимости по убыванию" },
   { value: "rating", label: "По рейтингу" },
-  { value: "suitable", label: "Сначала подходящие" },
 ] as const;
 export type CatalogSort = (typeof SORT_OPTIONS)[number]["value"];
 export type CatalogFilters = {
@@ -42,7 +42,6 @@ export function priceErrors(min: string, max: string): { min: string; max: strin
 }
 export function readCatalogQuery(
   params: Pick<URLSearchParams, "get">,
-  recommendations: boolean,
 ): CatalogQuery {
   const min = params.get("min") ?? "";
   const max = params.get("max") ?? "";
@@ -66,10 +65,7 @@ export function readCatalogQuery(
     delivery: params.get("delivery") === "1",
     pickup: params.get("pickup") === "1",
     q: (params.get("q") ?? "").trim().slice(0, 200),
-    sort:
-      SORT_OPTIONS.find(
-        (item) => item.value === sort && (recommendations || item.value !== "suitable"),
-      )?.value ?? (recommendations ? "suitable" : "newest"),
+    sort: SORT_OPTIONS.find((item) => item.value === sort)?.value ?? "newest",
     page: Number.isSafeInteger(page) && page > 0 && page <= 100 ? page : 1,
   };
 }
@@ -145,6 +141,8 @@ export function selectCatalogItems(
 
     if (query.sort === "rating") return (b.rating ?? -1) - (a.rating ?? -1);
 
+    if (query.sort === "oldest") return Date.parse(a.publishedAt) - Date.parse(b.publishedAt);
+
     if (query.sort === "newest") return Date.parse(b.publishedAt) - Date.parse(a.publishedAt);
 
     return 0;
@@ -159,7 +157,6 @@ export function resultLabel(count: number): string {
 
 export function catalogQueryFromParams(
   params: Record<string, string | string[] | undefined>,
-  recommendations: boolean,
 ): CatalogQuery {
   const values = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -167,5 +164,5 @@ export function catalogQueryFromParams(
     if (first !== undefined) values.set(key, first);
   }
 
-  return readCatalogQuery(values, recommendations);
+  return readCatalogQuery(values);
 }

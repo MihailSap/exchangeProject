@@ -9,7 +9,7 @@ import { CompletedPanel } from "./CompletedPanel";
 import { LotCard } from "./LotCard";
 import styles from "./ProfilePage.module.scss";
 import { ReviewsPanel } from "./ReviewsPanel";
-import { DEMO_EXCHANGES, DEMO_REVIEWS, ratingOf } from "../model/demo-data";
+import { DEMO_EXCHANGES, DEMO_REVIEWS, DEMO_SENT_REVIEWS, ratingOf } from "../model/demo-data";
 
 import type { LotAction } from "./LotCard";
 import type { Lot, LotStatus } from "@/src/entities/lot";
@@ -192,6 +192,13 @@ export function ProfilePage({ userId }: { userId?: number }) {
     lotId: review.lotId + Math.max(0, (profile?.id ?? 1) - 1) * 100,
   })).filter((review) => lots.some((lot) => lot.id === review.lotId));
 
+  const sentReviews = DEMO_SENT_REVIEWS.map((review) => ({
+    ...review,
+    authorId: profile?.id ?? 1,
+    authorName: profile?.name ?? review.authorName,
+    lotId: review.lotId + Math.max(0, (profile?.id ?? 1) - 1) * 100,
+  })).filter((review) => lots.some((lot) => lot.id === review.lotId && lot.status === "COMPLETED"));
+
   const exchanges = DEMO_EXCHANGES.map((exchange) => ({
     ...exchange,
     lotId: exchange.lotId + Math.max(0, (profile?.id ?? 1) - 1) * 100,
@@ -355,7 +362,7 @@ export function ProfilePage({ userId }: { userId?: number }) {
               {section === "settings" && own && user ? (
                 <ProfileSettings key={user.id} user={user} onSaved={setUser} />
               ) : section === "reviews" ? (
-                <ReviewsPanel reviews={reviews} />
+                <ReviewsPanel key={profile.id} reviews={reviews} sentReviews={sentReviews} />
               ) : (
                 <>
                   <div className={styles.contentHeading}>

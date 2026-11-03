@@ -37,6 +37,11 @@ function getErrorMessage(payload: unknown, fallback: string): string {
     }
   }
 
+  if (error.code === "SLUG_EXISTS_EXCEPTION")
+    return "Категория с таким адресом (slug) уже существует. Укажите другой адрес.";
+
+  if (error.code === "LOT_FORBIDDEN") return "У вас нет доступа к этому лоту";
+
   if (error.code === "INVALID_CREDENTIALS") return "Неверный email или пароль";
 
   if (error.code === "ACCOUNT_FROZEN") return "Аккаунт заморожен. Обратитесь в поддержку.";

@@ -74,7 +74,7 @@ export function CategoryDialog({ category, categories, onClose, onSaved, onDenie
           value={name}
           onChange={setName}
           onBlur={() => setTouched((value) => ({ ...value, name: true }))}
-          maxLength={120}
+          maxLength={100}
           error={touched.name ? errors.name : undefined}
           required
           disabled={busy}
@@ -85,7 +85,7 @@ export function CategoryDialog({ category, categories, onClose, onSaved, onDenie
           value={slug}
           onChange={setSlug}
           onBlur={() => setTouched((value) => ({ ...value, slug: true }))}
-          maxLength={120}
+          maxLength={100}
           error={touched.slug ? errors.slug : undefined}
           required
           disabled={busy}

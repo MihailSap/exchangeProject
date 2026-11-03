@@ -142,6 +142,7 @@
   align-items: center;
   gap: 10px;
 }
+
 .removeAvatar {
   display: inline-flex;
   align-items: center;
@@ -160,12 +161,15 @@
     background-color 180ms ease,
     transform 180ms ease;
 }
+
 .removeAvatar:hover:not(:disabled) {
   background: var(--color-error-bg);
 }
+
 .removeAvatar:active:not(:disabled) {
   transform: translateY(1px);
 }
+
 .removeAvatar:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -175,10 +179,13 @@
   .panel {
     padding: 20px;
   }
+
   .actions {
     flex-direction: column;
   }
+
   .avatarRow {
+    flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }

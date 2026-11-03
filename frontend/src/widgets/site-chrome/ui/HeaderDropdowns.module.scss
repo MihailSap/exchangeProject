@@ -227,9 +227,11 @@
     top: 76px;
     max-width: calc(100vw - 32px);
   }
+
   .notifications {
     width: calc(100vw - 32px);
   }
+
   .profile {
     width: 255px;
   }
@@ -239,6 +241,7 @@
   position: relative;
   padding: 0;
 }
+
 .notification > a {
   display: flex;
   gap: 10px;
@@ -249,12 +252,14 @@
   min-width: 0;
   overflow-wrap: anywhere;
 }
+
 .tools {
   display: flex;
   justify-content: space-between;
   gap: 12px;
   padding: 12px 18px;
 }
+
 .tools button,
 .preferences button {
   display: inline-flex;
@@ -269,24 +274,29 @@
   cursor: pointer;
   transition: color 180ms ease;
 }
+
 .tools button:hover,
 .preferences button:hover {
   color: var(--color-brand-hover);
   text-decoration: underline;
 }
+
 .tools button:active,
 .preferences button:active {
   color: var(--color-text);
 }
+
 .tools button:disabled {
   opacity: 0.45;
   cursor: default;
 }
+
 .tools svg {
   width: 14px;
   height: 14px;
   flex-basis: 14px;
 }
+
 .readButton {
   position: absolute;
   right: 10px;
@@ -298,12 +308,15 @@
   color: var(--color-brand);
   cursor: pointer;
 }
+
 .readButton:hover {
   background: var(--color-hover);
 }
+
 .readButton:active {
   background: var(--color-border);
 }
+
 .emptyNotifications {
   display: grid;
   justify-items: center;
@@ -312,21 +325,25 @@
   text-align: center;
   font-size: 13px;
 }
+
 .emptyNotifications p {
   margin: 0;
   font-size: 12px;
   color: var(--color-text-secondary);
   line-height: 1.6;
 }
+
 .preferences {
   padding: 12px 18px 24px;
   max-height: calc(100dvh - 160px);
   overflow: auto;
 }
+
 .preferences h3 {
   font-size: 13px;
   margin: 4px 0 16px;
 }
+
 .preferences label {
   display: flex;
   gap: 16px;
@@ -337,12 +354,14 @@
   font-size: 13px;
   cursor: pointer;
 }
+
 .preferences input {
   width: 18px;
   height: 18px;
   accent-color: var(--color-brand);
   cursor: pointer;
 }
+
 .preferences p {
   font-size: 11px;
   line-height: 1.6;

@@ -9,6 +9,7 @@
   list-style: none;
   background: var(--color-surface);
 }
+
 .stepper li {
   display: flex;
   align-items: center;
@@ -17,12 +18,14 @@
   color: var(--color-text-secondary);
   font-size: 13px;
 }
+
 .stepper li:not(:last-child)::after {
   content: "";
   flex: 1;
   border-top: 1px solid var(--color-border);
   margin-left: 20px;
 }
+
 .stepper span {
   display: grid;
   place-items: center;
@@ -32,31 +35,39 @@
   border-radius: 50%;
   background: var(--color-hover);
 }
+
 .stepper [aria-current="step"] {
   color: var(--color-text);
 }
+
 .stepper [aria-current="step"] span {
   color: var(--color-on-brand);
   background: var(--color-brand);
 }
+
 .stepper [data-state="completed"] {
   color: var(--color-text);
 }
+
 .stepper [data-state="completed"] span {
   background: transparent;
 }
+
 .stepper li[data-state="completed"]::after {
   border-color: var(--color-brand);
 }
+
 .stepper li::after {
   transition: border-color 180ms ease;
 }
+
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 800fr) minmax(280px, 368fr);
   gap: 32px;
   align-items: start;
 }
+
 .form {
   min-width: 0;
   display: grid;
@@ -66,15 +77,18 @@
   padding: 32px;
   background: var(--color-surface);
 }
+
 .form h2 {
   font-size: 20px;
   margin: 0;
 }
+
 .row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
 }
+
 .segmented {
   border: 0;
   padding: 0;
@@ -84,6 +98,7 @@
   align-content: start;
   min-width: 0;
 }
+
 .segmented legend,
 .photos legend {
   font-size: 13px;
@@ -91,6 +106,7 @@
   margin: 0 0 8px;
   padding: 0;
 }
+
 .segmented label {
   flex: 1;
   display: flex;
@@ -98,6 +114,7 @@
   cursor: pointer;
   min-width: 0;
 }
+
 .segmented input {
   position: absolute;
   opacity: 0;
@@ -105,6 +122,7 @@
   height: 100%;
   margin: 0;
 }
+
 .segmented span {
   display: grid;
   place-items: center;
@@ -116,31 +134,38 @@
   background: var(--color-input);
   font-size: 14px;
 }
+
 .segmented input:checked + span {
   color: var(--color-brand);
   background: var(--color-hover);
   border-color: var(--color-brand);
 }
+
 .segmented input:focus-visible + span {
   outline: 2px solid var(--color-brand);
   outline-offset: 3px;
 }
+
 .segmented label:hover span {
   border-color: var(--color-brand);
 }
+
 .segmented label:active span {
   background: var(--color-border);
 }
+
 .count {
   text-align: right;
   margin: -18px 0 0;
   color: var(--color-text-secondary);
   font-size: 11px;
 }
+
 .aside {
   display: grid;
   gap: 24px;
 }
+
 .tip {
   position: relative;
   padding: 24px;
@@ -148,15 +173,18 @@
   background: var(--color-hover);
   color: var(--color-brand);
 }
+
 .tip > svg {
   position: absolute;
   top: 24px;
   left: 24px;
 }
+
 .tip h2 {
   font-size: 14px;
   margin: 2px 0 16px 30px;
 }
+
 .tip p,
 .actions p,
 .actions small,
@@ -168,6 +196,7 @@
   line-height: 1.7;
   margin: 0;
 }
+
 .actions {
   display: grid;
   gap: 12px;
@@ -177,6 +206,7 @@
   background: var(--color-surface);
   text-align: center;
 }
+
 .primary,
 .secondary {
   display: flex;
@@ -195,55 +225,67 @@
     background-color 180ms ease,
     transform 180ms ease;
 }
+
 .primary {
   background: var(--color-brand);
   color: var(--color-on-brand);
   border-color: var(--color-brand);
 }
+
 .secondary {
   background: var(--color-surface);
   color: var(--color-text);
 }
+
 .primary:hover:not(:disabled) {
   background: var(--color-brand-hover);
 }
+
 .secondary:hover:not(:disabled) {
   background: var(--color-hover);
 }
+
 .primary:active:not(:disabled),
 .secondary:active:not(:disabled) {
   transform: scale(0.98);
 }
+
 .actions button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
 .actions a,
 .hint a,
 .referenceError button {
   color: var(--color-brand);
   font-size: 12px;
 }
+
 .actions a:hover,
 .hint a:hover {
   color: var(--color-brand-hover);
 }
+
 .actions a:active,
 .hint a:active {
   color: var(--color-text);
 }
+
 .photos {
   min-width: 0;
   border: 0;
   margin: 0;
   padding: 0;
 }
+
 .photoList {
   display: flex;
   gap: 14px;
   flex-wrap: wrap;
   margin-bottom: 12px;
 }
+
 .addPhoto {
   position: relative;
   display: flex;
@@ -260,6 +302,7 @@
   cursor: pointer;
   font-size: 12px;
 }
+
 .addPhoto input {
   position: absolute;
   opacity: 0;
@@ -268,20 +311,25 @@
   height: 100%;
   cursor: pointer;
 }
+
 .addPhoto:focus-within {
   outline: 2px solid var(--color-brand);
   outline-offset: 3px;
 }
+
 .addPhoto:hover {
   background: var(--color-border);
 }
+
 .addPhoto:active {
   transform: scale(0.98);
 }
+
 .addPhoto span {
   font-size: 10px;
   color: var(--color-text-secondary);
 }
+
 .preview {
   position: relative;
   width: 140px;
@@ -289,9 +337,11 @@
   border-radius: 14px;
   overflow: hidden;
 }
+
 .preview > img {
   object-fit: cover;
 }
+
 .preview button {
   position: absolute;
   top: 6px;
@@ -303,12 +353,15 @@
   color: #17271e;
   cursor: pointer;
 }
+
 .preview button:hover {
   background: #d5f27b;
 }
+
 .preview button:active {
   background: #b8da63;
 }
+
 .preview .cover {
   bottom: 6px;
   top: auto;
@@ -316,10 +369,12 @@
   border-radius: 6px;
   font-size: 10px;
 }
+
 .error,
 .photos .error {
   color: var(--color-error);
 }
+
 .referenceError {
   padding: 14px;
   border: 1px solid var(--color-border);
@@ -329,21 +384,26 @@
   background: var(--color-hover);
   color: var(--color-text-secondary);
 }
+
 .referenceError p {
   margin: 0 0 8px;
 }
+
 .referenceError button {
   background: none;
   border: 0;
   text-decoration: underline;
   cursor: pointer;
 }
+
 .referenceError button:hover {
   color: var(--color-brand-hover);
 }
+
 .referenceError button:active {
   color: var(--color-text);
 }
+
 .priceSummary {
   padding: 24px;
   border-radius: 16px;
@@ -351,6 +411,7 @@
   display: grid;
   gap: 14px;
 }
+
 .priceSummary span,
 .priceSummary p {
   font-size: 13px;
@@ -358,71 +419,87 @@
   line-height: 1.6;
   margin: 0;
 }
+
 .priceSummary strong {
   font-size: 28px;
 }
+
 .review {
   display: grid;
   gap: 16px;
   overflow-wrap: anywhere;
 }
+
 .review h3,
 .review p {
   margin: 0;
 }
+
 .review > strong {
   font-size: 28px;
 }
+
 .review p {
   font-size: 14px;
   line-height: 1.7;
   white-space: pre-wrap;
   color: var(--color-text-secondary);
 }
+
 @media (max-width: 1100px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
+
   .aside {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: start;
   }
 }
+
 @media (max-width: 600px) {
   .stepper {
     gap: 12px;
     padding: 16px;
   }
+
   .stepper li {
     flex-direction: column;
     gap: 8px;
     font-size: 10px;
     text-align: center;
   }
+
   .stepper li::after {
     display: none;
   }
+
   .stepper span {
     width: 30px;
     height: 30px;
     flex-basis: 30px;
   }
+
   .form {
     padding: 20px;
     gap: 22px;
     border-radius: 16px;
   }
+
   .row,
   .aside {
     grid-template-columns: minmax(0, 1fr);
   }
+
   .layout {
     gap: 20px;
   }
+
   .actions {
     padding: 20px;
   }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .primary,
   .secondary {
@@ -437,14 +514,17 @@
   font-size: 12px;
   line-height: 1.7;
 }
+
 .preview {
   border: 1px solid var(--color-border);
   background: var(--color-surface);
 }
+
 .preview > img {
   width: 100%;
   height: 100%;
 }
+
 .coverLabel {
   position: absolute;
   bottom: 6px;
@@ -455,11 +535,13 @@
   color: #17271e;
   font-size: 10px;
 }
+
 .referenceError > button {
   display: block;
   margin-top: 8px;
   padding: 0;
 }
+
 @media (max-width: 600px) {
   .priceHint {
     margin-top: -8px;
@@ -477,11 +559,13 @@
   background: var(--color-hover);
   font-size: 13px;
 }
+
 .draftNotice p {
   flex: 1 1 260px;
   margin: 0;
   line-height: 1.6;
 }
+
 .draftNotice button {
   border: 0;
   padding: 6px 0;
@@ -491,23 +575,28 @@
   font-weight: 600;
   cursor: pointer;
 }
+
 .draftNotice button:hover {
   color: var(--color-brand-hover);
   text-decoration: underline;
 }
+
 .draftNotice button:active {
   color: var(--color-text);
 }
+
 @media (max-width: 600px) {
   .stepper li {
     position: relative;
     min-width: 0;
   }
+
   .stepper span {
     width: 36px;
     height: 36px;
     flex-basis: 36px;
   }
+
   .stepper li:not(:last-child)::after {
     display: block;
     position: absolute;
@@ -524,6 +613,7 @@
   font-size: 14px;
   line-height: 1.7;
 }
+
 .reviewWants ul {
   display: grid;
   gap: 8px;

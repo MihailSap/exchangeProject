@@ -6,6 +6,7 @@ export type Review = {
   lotTitle: string;
   authorId: number;
   authorName: string;
+  recipientName?: string;
   score: number;
   text: string;
   createdAt: string;
@@ -60,6 +61,30 @@ export const DEMO_REVIEWS: Review[] = [
     score: 5,
     text: "Всё честно и без сюрпризов. Обменяли кофемашину на объектив, остались довольны. Рекомендую участника!",
     createdAt: "2026-10-11T16:20:00Z",
+  },
+];
+export const DEMO_SENT_REVIEWS: Review[] = [
+  {
+    id: 101,
+    lotId: 90009,
+    lotTitle: "Объектив Helios 44-2",
+    authorId: 1,
+    authorName: "Участник обмена",
+    recipientName: "Анна Соколова",
+    score: 5,
+    text: "Объектив в отличном состоянии. Встретились вовремя, всё проверили на месте. Спасибо за обмен!",
+    createdAt: "2026-10-21T15:00:00Z",
+  },
+  {
+    id: 102,
+    lotId: 90010,
+    lotTitle: "Кофеварка для дома",
+    authorId: 1,
+    authorName: "Участник обмена",
+    recipientName: "Михаил Петров",
+    score: 5,
+    text: "Всё соответствует описанию, кофеварка работает отлично. Быстро договорились, обменом доволен.",
+    createdAt: "2026-10-17T10:00:00Z",
   },
 ];
 export const DEMO_EXCHANGES: CompletedExchange[] = [

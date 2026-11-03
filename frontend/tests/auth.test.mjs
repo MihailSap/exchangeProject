@@ -129,6 +129,28 @@ for (const payload of [
   });
 }
 
+test("duplicate category slug explains the conflict and preserves server messages", async () => {
+  for (const message of [null, "Адрес уже занят"]) {
+    const { apiRequest } = environment(async () => Response.json({
+      error: { code: "SLUG_EXISTS_EXCEPTION", message },
+    }, { status: 409 })).load("@/src/shared/api/client");
+
+    await assert.rejects(apiRequest("/categories", { method: "POST" }), (error) =>
+      error.status === 409 &&
+      error.code === "SLUG_EXISTS_EXCEPTION" &&
+      error.message === (message ?? "Категория с таким адресом (slug) уже существует. Укажите другой адрес."),
+    );
+  }
+});
+
+test("category fields respect the database limit of 100 characters", () => {
+  const { categoryErrors } = environment().load("@/src/features/administration/model/contracts");
+  assert.equal(categoryErrors("а".repeat(100), "a".repeat(100), "true").name, undefined);
+  assert.equal(categoryErrors("а".repeat(100), "a".repeat(100), "true").slug, undefined);
+  assert.ok(categoryErrors("а".repeat(101), "valid", "true").name);
+  assert.ok(categoryErrors("Категория", "a".repeat(101), "true").slug);
+});
+
 test("API converts network errors into UI fallback and accepts 204", async () => {
   const failed = environment(async () => {
     throw new TypeError("Failed to fetch");
@@ -1036,23 +1058,21 @@ test("catalog query validates URL values and preserves applied filters", () => {
     new URLSearchParams(
       "q=  кресло  &category=12&type=PRODUCT&min=100&max=25000&delivery=1&sort=rating&page=2",
     ),
-    false,
   );
 
   assert.equal(query.q, "кресло");
   assert.equal(query.page, 2);
   assert.equal(query.category, "12");
   assert.equal(query.delivery, true);
-  const roundtrip = readCatalogQuery(new URLSearchParams(catalogParams(query)), false);
+  const roundtrip = readCatalogQuery(new URLSearchParams(catalogParams(query)));
   assert.equal(JSON.stringify(roundtrip), JSON.stringify(query));
   assert.equal(
-    catalogQueryFromParams({ sort: "price-asc", q: ["лампа", "кресло"] }, true).sort,
+    catalogQueryFromParams({ sort: "price-asc", q: ["лампа", "кресло"] }).sort,
     "price-asc",
   );
-  assert.equal(catalogQueryFromParams({ q: ["лампа", "кресло"] }, true).q, "лампа");
+  assert.equal(catalogQueryFromParams({ q: ["лампа", "кресло"] }).q, "лампа");
   const invalid = readCatalogQuery(
     new URLSearchParams("category=-4&type=INVALID&min=-1&max=abc&page=Infinity&sort=unknown"),
-    false,
   );
 
   assert.equal(invalid.category, "");
@@ -1061,7 +1081,9 @@ test("catalog query validates URL values and preserves applied filters", () => {
   assert.equal(invalid.max, "");
   assert.equal(invalid.page, 1);
   assert.equal(invalid.sort, "newest");
-  assert.equal(readCatalogQuery(new URLSearchParams(), true).sort, "suitable");
+  assert.equal(readCatalogQuery(new URLSearchParams()).sort, "newest");
+  assert.equal(readCatalogQuery(new URLSearchParams("sort=suitable")).sort, "newest");
+  assert.equal(readCatalogQuery(new URLSearchParams("sort=oldest")).sort, "oldest");
 });
 
 test("catalog price validation handles zero, invalid numbers and reversed ranges", () => {
@@ -1079,7 +1101,7 @@ test("catalog searches the complete source and combines filters before paginatio
   const { load } = environment();
   const { readCatalogQuery, selectCatalogItems } = load("@/src/features/catalog/model/catalog");
   const { CATALOG_ITEMS, RECOMMENDED_ITEMS } = load("@/src/entities/lot/model/discovery");
-  const query = (params = "") => readCatalogQuery(new URLSearchParams(params), false);
+  const query = (params = "") => readCatalogQuery(new URLSearchParams(params));
   assert.ok(CATALOG_ITEMS.length > 12);
   assert.equal(selectCatalogItems(CATALOG_ITEMS, query("q=Реставрация"))[0].type, "SERVICE");
   assert.ok(selectCatalogItems(CATALOG_ITEMS, query("q=кресло")).length >= 4);
@@ -1103,10 +1125,10 @@ test("catalog sorts by price, date and rating with unrated owners last", () => {
   );
 
   const { CATALOG_ITEMS } = load("@/src/entities/lot/model/discovery");
-  for (const sort of ["price-asc", "price-desc", "newest", "rating"]) {
+  for (const sort of ["price-asc", "price-desc", "oldest", "newest", "rating"]) {
     const items = selectCatalogItems(
       CATALOG_ITEMS,
-      readCatalogQuery(new URLSearchParams(`sort=${sort}`), false),
+      readCatalogQuery(new URLSearchParams(`sort=${sort}`)),
     );
 
     for (let index = 1; index < items.length; index++) {
@@ -1115,6 +1137,8 @@ test("catalog sorts by price, date and rating with unrated owners last", () => {
       if (sort === "price-asc") assert.ok(a.cost <= b.cost);
 
       if (sort === "price-desc") assert.ok(a.cost >= b.cost);
+
+      if (sort === "oldest") assert.ok(Date.parse(a.publishedAt) <= Date.parse(b.publishedAt));
 
       if (sort === "newest") assert.ok(Date.parse(a.publishedAt) >= Date.parse(b.publishedAt));
 
@@ -1150,7 +1174,7 @@ test("active category tree preserves true roots and rejects cycles and bad paylo
   );
 });
 
-test("active categories cache one request, isolate sessions and retry rejected requests", async () => {
+test("public categories share cached requests across sessions and retry rejected requests", async () => {
   let calls = 0;
   let fail = false;
   const { load, storage } = environment(async () => {
@@ -1172,13 +1196,13 @@ test("active categories cache one request, isolate sessions and retry rejected r
   const { SESSION_KEY } = load("@/src/shared/lib/session-storage");
   storage.set(SESSION_KEY, JSON.stringify(session));
   await api.getActiveCategories();
-  assert.equal(calls, 2);
+  assert.equal(calls, 1);
   api.clearCategoryCache();
   fail = true;
   await assert.rejects(api.getActiveCategories(), /Нет доступа/);
   fail = false;
   await api.getActiveCategories();
-  assert.equal(calls, 4);
+  assert.equal(calls, 3);
 });
 
 test("catalog category filters use real ids and include descendants", () => {
@@ -1193,12 +1217,12 @@ test("catalog category filters use real ids and include descendants", () => {
     { id: 200, name: "Дом и уют", parentId: 100, depth: 1 },
   ];
 
-  const query = readCatalogQuery(new URLSearchParams("category=100"), false);
+  const query = readCatalogQuery(new URLSearchParams("category=100"));
   const items = selectCatalogItems(CATALOG_ITEMS, query, categories);
   assert.ok(items.length > 0);
   assert.ok(items.every((item) => item.category === "Дом и уют"));
   assert.equal(
-    readCatalogQuery(new URLSearchParams("category=9007199254740992"), false).category,
+    readCatalogQuery(new URLSearchParams("category=9007199254740992")).category,
     "",
   );
   assert.ok(!catalogParams(query).includes("demo"));
@@ -1243,5 +1267,54 @@ test("catalog batches fill exactly two rows at every grid breakpoint", () => {
     [2560, 4],
   ]) {
     assert.equal(getCatalogPageSize(width), columns * 2, `width ${width}`);
+  }
+});
+
+test("category dictionaries load without authorization or token renewal", async () => {
+  for (const signedIn of [false, true]) {
+    const requests = [];
+    const { load, storage } = environment(async (url, options) => {
+      requests.push({ url, headers: new Headers(options.headers) });
+
+      return Response.json({ data: [{ id: 1, name: "Техника", children: [] }] });
+    });
+
+    const { SESSION_KEY } = load("@/src/shared/lib/session-storage");
+    if (signedIn) storage.set(SESSION_KEY, JSON.stringify(session));
+
+    await load("@/src/entities/category/api/category-api").getActiveCategories();
+    await load("@/src/entities/lot/api/lot-api").getLotCategories();
+    assert.equal(requests.length, 2);
+    assert.ok(requests.every(({ url, headers }) => url.endsWith("/categories/active") && !headers.has("Authorization")));
+  }
+});
+
+test("public category failures do not renew or clear an existing session", async () => {
+  const requests = [];
+  const { load, storage } = environment(async (url) => {
+    requests.push(url);
+
+    return Response.json({ error: { message: "Справочник временно недоступен" } }, { status: 401 });
+  });
+
+  const { SESSION_KEY } = load("@/src/shared/lib/session-storage");
+  storage.set(SESSION_KEY, JSON.stringify(session));
+  await assert.rejects(load("@/src/entities/category/api/category-api").getActiveCategories(), /Справочник временно недоступен/);
+  await assert.rejects(load("@/src/entities/lot/api/lot-api").getLotCategories(), /Справочник временно недоступен/);
+  assert.equal(requests.length, 2);
+  assert.ok(requests.every((url) => url.endsWith("/categories/active")));
+  assert.equal(storage.get(SESSION_KEY), JSON.stringify(session));
+});
+
+test("lot access denial explains the new backend code without hiding server text", async () => {
+  for (const message of [null, "Лот доступен только владельцу"]) {
+    const { load } = environment(async () => Response.json({
+      error: { code: "LOT_FORBIDDEN", message },
+    }, { status: 403 }));
+
+    await assert.rejects(load("@/src/shared/api/client").apiRequest("/lots/42"), (error) =>
+      error.status === 403 && error.code === "LOT_FORBIDDEN" &&
+      error.message === (message ?? "У вас нет доступа к этому лоту"),
+    );
   }
 });

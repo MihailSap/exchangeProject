@@ -210,6 +210,7 @@ summary:focus-visible,
     background-color 500ms ease,
     color 500ms ease;
 }
+
 :where(
   input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
   textarea,
@@ -219,6 +220,7 @@ summary:focus-visible,
   border-color: var(--color-brand);
   box-shadow: 0 0 0 3px rgb(23 107 77 / 12%);
 }
+
 :where(input[type="checkbox"], input[type="radio"], input[type="file"]):focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 3px;

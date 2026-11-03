@@ -97,7 +97,7 @@ public class LotController {
     @SecurityRequirement(name = "bearerAuth")
     @PatchMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<LotResponse> update(
-            @PathVariable("id") long id, @Valid @RequestBody LotUpdateRequest lotUpdateRequest)
+            @PathVariable("id") long id, @Valid @ModelAttribute LotUpdateRequest lotUpdateRequest)
             throws UserNotFoundException, CategoryNotFound, LotNotFoundException {
         String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
         User user = userService.getByEmail(authenticatedUserEmail);
@@ -159,7 +159,7 @@ public class LotController {
 
     @Operation(description = "Удаление пожелания из лота")
     @SecurityRequirement(name = "bearerAuth")
-    @DeleteMapping("/{lotId}/photo/{wantId}")
+    @DeleteMapping("/{lotId}/want/{wantId}")
     public void deleteWant(@PathVariable("lotId") long lotId, @PathVariable("wantId") long wantId)
             throws WantNotFoundException, LotNotFoundException, UserNotFoundException {
         Lot lot = lotService.getById(lotId);

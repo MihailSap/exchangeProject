@@ -48,17 +48,14 @@ public class LotMapper {
         );
     }
 
-    private List<LotPhotoDataResponse> mapToLotPhotoDataResponses(List<LotPhoto> lotPhotoList){
-        List<LotPhotoDataResponse> lotPhotoDataResponses = new ArrayList<>();
-        for(LotPhoto lotPhoto : lotPhotoList){
-            lotPhotoDataResponses.add(mapToLotPhotoDataResponse(lotPhoto));
-        }
-
-        lotPhotoDataResponses.sort(Comparator.comparingInt(LotPhotoDataResponse::order));
-        return lotPhotoDataResponses;
+    private List<LotPhotoDataResponse> mapToLotPhotoDataResponses(List<LotPhoto> lotPhotoList) {
+        return lotPhotoList.stream()
+                .sorted(Comparator.comparing(LotPhoto::getId))
+                .map(this::mapToLotPhotoDataResponse)
+                .toList();
     }
 
     private LotPhotoDataResponse mapToLotPhotoDataResponse(LotPhoto lotPhoto){
-        return new LotPhotoDataResponse(lotPhoto.getPhotoOrder(), lotPhoto.getName());
+        return new LotPhotoDataResponse(lotPhoto.getName());
     }
 }

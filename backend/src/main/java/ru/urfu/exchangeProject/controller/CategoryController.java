@@ -10,8 +10,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.BaseResponse;
-import ru.urfu.exchangeProject.dto.category.CategoryRequest;
+import ru.urfu.exchangeProject.dto.category.CategoryCreateRequest;
 import ru.urfu.exchangeProject.dto.category.CategoryResponse;
+import ru.urfu.exchangeProject.dto.category.CategoryUpdateRequest;
 import ru.urfu.exchangeProject.exception.customEx.news.CategoryNotFound;
 import ru.urfu.exchangeProject.mapper.CategoryMapper;
 import ru.urfu.exchangeProject.model.category.Category;
@@ -78,7 +79,7 @@ public class CategoryController {
     @PreAuthorize("hasAuthority('ADMIN')")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public BaseResponse<CategoryResponse> create(@Valid @RequestBody CategoryRequest request) throws CategoryNotFound {
+    public BaseResponse<CategoryResponse> create(@Valid @RequestBody CategoryCreateRequest request) throws CategoryNotFound {
         Category category = categoryService.create(request);
         CategoryResponse categoryResponse = categoryMapper.mapToCategoryResponse(category, null);
         return new BaseResponse<>(categoryResponse);
@@ -87,7 +88,7 @@ public class CategoryController {
     @Operation(description = "Обновление категории")
     @PreAuthorize("hasAuthority('ADMIN')")
     @PutMapping("/{id}")
-    public BaseResponse<CategoryResponse> update(@PathVariable("id") Long id, @RequestBody CategoryRequest request) throws CategoryNotFound {
+    public BaseResponse<CategoryResponse> update(@PathVariable("id") Long id, @Valid @RequestBody CategoryUpdateRequest request) throws CategoryNotFound {
         Category category = categoryService.findById(id);
         Category updatedCategory = categoryService.update(category, request);
         CategoryResponse categoryResponse = categoryMapper.mapToCategoryResponse(updatedCategory, null);

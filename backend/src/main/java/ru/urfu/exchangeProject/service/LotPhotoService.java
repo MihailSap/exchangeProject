@@ -9,11 +9,9 @@ import java.util.List;
 
 public interface LotPhotoService {
 
-    int getMaxOrder(List<LotPhoto> photos);
-
     LotPhoto getById(long id) throws LotPhotoNotFoundException;
 
-    LotPhoto create(Lot lot, MultipartFile photo, int order);
+    LotPhoto create(Lot lot, MultipartFile photo);
 
     void delete(LotPhoto lotPhoto);
 }

@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 11
+      author: SapeginMihail
+      changes:
+        - dropColumn:
+            tableName: lot_photo
+            columnName: photo_order

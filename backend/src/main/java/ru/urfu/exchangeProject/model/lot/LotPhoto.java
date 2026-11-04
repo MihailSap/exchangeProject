@@ -9,21 +9,11 @@ import java.time.Instant;
 @Table(name = "lot_photo")
 public class LotPhoto extends BaseEntity {
 
-    //TODO: Удалить! Это лишнее поле.
-    private int photoOrder;
     private String name;
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "lot_id", nullable = false)
     private Lot lot;
     private Instant createdAt;
-
-    public int getPhotoOrder() {
-        return photoOrder;
-    }
-
-    public void setPhotoOrder(int photoOrder) {
-        this.photoOrder = photoOrder;
-    }
 
     public String getName() {
         return name;

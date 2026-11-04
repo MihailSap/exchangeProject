@@ -29,16 +29,6 @@ public class FileController {
         this.fileService = fileService;
     }
 
-//    @Operation(description = "Получение изображения")
-//    @GetMapping("/image/{imageFileTitle}")
-//    public ResponseEntity<Resource> getImageFile(@PathVariable("imageFileTitle") String imageFileTitle)
-//            throws Exception {
-//        Resource resource = fileService.getFileResource(imageFileTitle);
-//        return ResponseEntity.ok()
-//                .contentType(MediaType.IMAGE_JPEG)
-//                .body(resource);
-//    }
-
     @Operation(description = "Получение изображения")
     @GetMapping("/image/{imageFileTitle}")
     public ResponseEntity<Resource> getImageFile(

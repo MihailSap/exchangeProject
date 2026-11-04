@@ -74,9 +74,8 @@ public class LotServiceImpl implements LotService {
 
         List<MultipartFile> photos = lotCreateRequest.photos();
         if(photos != null && !photos.isEmpty()){
-            int order = 1;
             for(MultipartFile photo : photos){
-                lotPhotoService.create(lot, photo, order++);
+                lotPhotoService.create(lot, photo);
             }
         }
 
@@ -126,9 +125,8 @@ public class LotServiceImpl implements LotService {
 
         List<MultipartFile> photos = lotUpdateRequest.photos();
         if(photos != null && !photos.isEmpty()){
-            int order = lotPhotoService.getMaxOrder(lot.getLotPhotoDataList());
             for(MultipartFile photo : photos){
-                lotPhotoService.create(lot, photo, order++);
+                lotPhotoService.create(lot, photo);
             }
         }
 

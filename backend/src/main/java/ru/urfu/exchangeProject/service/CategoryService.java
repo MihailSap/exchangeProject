@@ -1,6 +1,7 @@
 package ru.urfu.exchangeProject.service;
 
-import ru.urfu.exchangeProject.dto.category.CategoryRequest;
+import ru.urfu.exchangeProject.dto.category.CategoryCreateRequest;
+import ru.urfu.exchangeProject.dto.category.CategoryUpdateRequest;
 import ru.urfu.exchangeProject.exception.customEx.news.CategoryNotFound;
 import ru.urfu.exchangeProject.model.category.Category;
 
@@ -16,9 +17,9 @@ public interface CategoryService {
 
     List<Category> filterParentsCategory(List<Category> categories);
 
-    Category create(CategoryRequest request) throws CategoryNotFound;
+    Category create(CategoryCreateRequest request) throws CategoryNotFound;
 
-    Category update(Category category, CategoryRequest request) throws CategoryNotFound;
+    Category update(Category category, CategoryUpdateRequest request) throws CategoryNotFound;
 
     Category softDelete(Category category);
 }

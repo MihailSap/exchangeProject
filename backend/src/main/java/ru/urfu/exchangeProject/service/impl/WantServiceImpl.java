@@ -49,14 +49,14 @@ public class WantServiceImpl implements WantService {
         WantType wantTypeRequest = wantCreateRequest.wantType();
         want.setWantType(wantTypeRequest);
 
-        if(WantType.LOT.equals(wantTypeRequest) || WantType.ANY.equals(wantTypeRequest)){
+        if(WantType.LOT.equals(wantTypeRequest)){
             want.setTargetLot(wantCreateRequest.targetLot());
         }
-        if(WantType.CATEGORY.equals(wantTypeRequest) || WantType.ANY.equals(wantTypeRequest)){
+        if(WantType.CATEGORY.equals(wantTypeRequest)){
             Category category = categoryService.findById(wantCreateRequest.targetCategoryId());
             want.setCategory(category);
         }
-        if(WantType.KEYWORDS.equals(wantTypeRequest) || WantType.ANY.equals(wantTypeRequest)){
+        if(WantType.KEYWORDS.equals(wantTypeRequest)){
             want.setKeywords(wantCreateRequest.keywords());
         }
 

@@ -56,11 +56,20 @@ public class LotController {
     @Operation(description = "Получение лота по id")
     @GetMapping("/{id}")
     public BaseResponse<LotResponse> getById(@PathVariable("id") long id) throws LotNotFoundException, UserNotFoundException {
+        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
+        User user = userService.getByEmail(authenticatedUserEmail);
+
         Lot lot = lotService.getById(id);
         LotStatus lotStatus = lot.getStatus();
-        if(lotStatus == LotStatus.ARCHIVED || lotStatus == LotStatus.DRAFT || lotStatus == LotStatus.DELETED){
-            validateOwner(lot.getUser());
+        if(lotStatus == LotStatus.ARCHIVED || lotStatus == LotStatus.DRAFT || lotStatus == LotStatus.DELETED
+                || lotStatus == LotStatus.MODERATION || lotStatus == LotStatus.REJECTED){
+            validateOwner(user, lot.getUser());
         }
+
+        if(lot.getUser().getStatus() == UserStatus.FROZEN){
+            throw new LotForbiddenException();
+        }
+
         LotResponse lotResponse = lotMapper.mapToLotResponse(lot);
         return new BaseResponse<>(lotResponse);
     }
@@ -73,12 +82,7 @@ public class LotController {
             throws UserNotFoundException, CategoryNotFound {
         String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
         User user = userService.getByEmail(authenticatedUserEmail);
-        if(UserStatus.FROZEN.equals(user.getStatus())){
-            throw new AccountFrozenException(user.getFrozenReason());
-        }
-        if(!user.isEmailConfirmed()){
-            throw new EmailNotConfirmedException();
-        }
+        validateUser(user);
 
         String region;
         String requestRegion = lotCreateRequest.region();
@@ -101,18 +105,13 @@ public class LotController {
             throws UserNotFoundException, CategoryNotFound, LotNotFoundException {
         String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
         User user = userService.getByEmail(authenticatedUserEmail);
-        if(UserStatus.FROZEN.equals(user.getStatus())){
-            throw new AccountFrozenException(user.getFrozenReason());
-        }
-        if(!user.isEmailConfirmed()){
-            throw new EmailNotConfirmedException();
-        }
+        validateUser(user);
 
         Lot lot = lotService.getById(id);
-        validateOwner(lot.getUser());
+        validateOwner(user, lot.getUser());
 
         if(LotStatus.IN_EXCHANGE.equals(lot.getStatus()) || LotStatus.COMPLETED.equals(lot.getStatus())){
-            throw new RuntimeException("Нельзя редактировать лот с указанным статусом");
+            throw new LotConflictException();
         }
 
         Lot updatedLot = lotService.update(lotUpdateRequest, lot);
@@ -124,8 +123,12 @@ public class LotController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{lotId}")
     public void softDelete(@PathVariable("lotId") long lotId) throws LotNotFoundException, UserNotFoundException {
+        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
+        User user = userService.getByEmail(authenticatedUserEmail);
+        validateUser(user);
+
         Lot lot = lotService.getById(lotId);
-        validateOwner(lot.getUser());
+        validateOwner(user, lot.getUser());
         lotService.softDelete(lot);
     }
 
@@ -133,11 +136,15 @@ public class LotController {
     @PatchMapping("/{lotId}/republicate")
     public BaseResponse<LotResponse> republicateLot(@PathVariable("lotId") long lotId)
             throws LotNotFoundException, UserNotFoundException {
+        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
+        User user = userService.getByEmail(authenticatedUserEmail);
+        validateUser(user);
+
         Lot lot = lotService.getById(lotId);
-        validateOwner(lot.getUser());
+        validateOwner(user, lot.getUser());
 
         if(!LotStatus.ARCHIVED.equals(lot.getStatus())){
-            throw new RuntimeException("Разархивировать лот без статуса ARCHIVED");
+            throw new LotConflictException();
         }
 
         Lot republicatedLot = lotService.republicateLot(lot);
@@ -150,8 +157,12 @@ public class LotController {
     @DeleteMapping("/{lotId}/photo/{photoId}")
     public void deletePhoto(@PathVariable("lotId") long lotId, @PathVariable("photoId") long photoId)
             throws LotPhotoNotFoundException, LotNotFoundException, UserNotFoundException {
+        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
+        User user = userService.getByEmail(authenticatedUserEmail);
+        validateUser(user);
+
         Lot lot = lotService.getById(lotId);
-        validateOwner(lot.getUser());
+        validateOwner(user, lot.getUser());
 
         LotPhoto lotPhoto = lotPhotoService.getById(photoId);
         lotPhotoService.delete(lotPhoto);
@@ -162,18 +173,29 @@ public class LotController {
     @DeleteMapping("/{lotId}/want/{wantId}")
     public void deleteWant(@PathVariable("lotId") long lotId, @PathVariable("wantId") long wantId)
             throws WantNotFoundException, LotNotFoundException, UserNotFoundException {
+        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
+        User user = userService.getByEmail(authenticatedUserEmail);
+        validateUser(user);
+
         Lot lot = lotService.getById(lotId);
-        validateOwner(lot.getUser());
+        validateOwner(user, lot.getUser());
 
         Want want = wantService.getById(wantId);
         wantService.delete(want);
     }
 
-    private void validateOwner(User owner) throws UserNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
-        if(!user.equals(owner)){
+    private void validateOwner(User authenticatedUser, User owner) {
+        if(!authenticatedUser.equals(owner)){
             throw new LotForbiddenException();
+        }
+    }
+
+    private void validateUser(User user) {
+        if(UserStatus.FROZEN.equals(user.getStatus())){
+            throw new AccountFrozenException(user.getFrozenReason());
+        }
+        if(!user.isEmailConfirmed()){
+            throw new EmailNotConfirmedException();
         }
     }
 }

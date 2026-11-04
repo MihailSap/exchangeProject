@@ -75,6 +75,8 @@ public class SecurityConfig {
                                 "/api/v1/auth/reset-password",
                                 "/api/v1/regions",
                                 "/api/v1/categories/**",
+                                "/api/v1/image/**",
+                                "/api/v1/lots/*",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()

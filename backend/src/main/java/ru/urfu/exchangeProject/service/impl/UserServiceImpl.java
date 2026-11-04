@@ -77,17 +77,6 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserNotFoundException("Ошибка поиска пользователя"));
     }
 
-    @Transactional
-    @Override
-    public void changeRole(User user) {
-        if(Role.ADMIN.equals(user.getRole())){
-            user.setRole(Role.USER);
-        } else {
-            user.setRole(Role.ADMIN);
-        }
-        userRepository.save(user);
-    }
-
     @Override
     public User getById(long id) throws UserNotFoundException {
         return userRepository.findById(id)
@@ -139,7 +128,7 @@ public class UserServiceImpl implements UserService {
             if(isExistsByEmail(newEmail)){
                 throw new EmailExistsException();
             }
-            user.setEmail(newName);
+            user.setEmail(newEmail);
         }
 
         String contacts = userUpdateRequest.contacts();
@@ -153,27 +142,13 @@ public class UserServiceImpl implements UserService {
         }
 
         MultipartFile avatar = userUpdateRequest.avatar();
-        if(avatar != null){
-            fileService.delete(user.getAvatarUrl());
+        if(avatar != null && avatar.getName() != null && !avatar.getName().isBlank()){
             String avatarFileTitle = fileService.save(avatar);
             user.setAvatarUrl(avatarFileTitle);
+            fileService.delete(user.getAvatarUrl());
         }
 
         user.setUpdatedAt(Instant.now());
-        return userRepository.save(user);
-    }
-
-    @Transactional
-    @Override
-    public User makeAdmin(User user) {
-        user.setRole(Role.ADMIN);
-        return userRepository.save(user);
-    }
-
-    @Transactional
-    @Override
-    public User makeNotAdmin(User user) {
-        user.setRole(Role.USER);
         return userRepository.save(user);
     }
 

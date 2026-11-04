@@ -3,12 +3,14 @@ package ru.urfu.exchangeProject.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.user.UserFreezeRequest;
 import ru.urfu.exchangeProject.exception.customEx.UserNotFoundException;
+import ru.urfu.exchangeProject.exception.customEx.news.UserConflictException;
 import ru.urfu.exchangeProject.model.user.User;
 import ru.urfu.exchangeProject.service.UserService;
 
@@ -28,8 +30,11 @@ public class AdminController {
 
     @Operation(description = "Заморозка пользователя")
     @PatchMapping("/users/{userId}/freeze")
-    public void freezeUser(@PathVariable("userId") long userId, @RequestBody UserFreezeRequest userFreezeRequest) throws UserNotFoundException {
+    public void freezeUser(@PathVariable("userId") long userId, @Valid @RequestBody UserFreezeRequest userFreezeRequest) throws UserNotFoundException {
         User user = userService.getById(userId);
+        if(user.getFrozenAt() != null){
+            throw new UserConflictException();
+        }
         userService.freezeUser(user, userFreezeRequest.reason());
     }
 

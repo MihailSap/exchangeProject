@@ -78,6 +78,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ExceptionResponse(exceptionErrorResponse));
     }
 
+    @ExceptionHandler(LotConflictException.class)
+    public ResponseEntity<ExceptionResponse> handleLotConflictException(LotConflictException ex){
+        logger.error("LotConflictException: {}", ex.getMessage(), ex);
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ErrorCode.LOT_CONFLICT, null, null);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
+    @ExceptionHandler(UserConflictException.class)
+    public ResponseEntity<ExceptionResponse> handleUserConflictException(UserConflictException ex){
+        logger.error("LotConflictException: {}", ex.getMessage(), ex);
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ErrorCode.USER_CONFLICT, null, null);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ExceptionResponse> handleNotFoundEx(NotFoundException ex) {
         logger.error("NotFoundException: {}", ex.getMessage(), ex);

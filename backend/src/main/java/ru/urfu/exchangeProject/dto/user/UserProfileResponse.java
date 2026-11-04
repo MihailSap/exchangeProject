@@ -2,6 +2,7 @@ package ru.urfu.exchangeProject.dto.user;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import ru.urfu.exchangeProject.model.user.Role;
 import ru.urfu.exchangeProject.model.user.UserStatus;
 
 import java.time.Instant;
@@ -22,6 +23,7 @@ public record UserProfileResponse(
         @JsonProperty("reviews_count")
         int reviewsCount,
         @JsonProperty("created_at")
-        Instant createdAt
+        Instant createdAt,
+        Role role
 ) {
 }

@@ -46,7 +46,8 @@ public class UserMapper {
                 user.getStatus(),
                 null, //TODO
                 0, //TODO
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getRole()
         );
     }
 

@@ -36,19 +36,10 @@ public class LotPhotoServiceImpl implements LotPhotoService {
                 .orElseThrow(() -> new LotPhotoNotFoundException("Фото не найдено"));
     }
 
-    @Override
-    public int getMaxOrder(List<LotPhoto> photos) {
-        return photos.stream()
-                .mapToInt(LotPhoto::getPhotoOrder)
-                .max()
-                .orElse(1);
-    }
-
     @Transactional
     @Override
-    public LotPhoto create(Lot lot, MultipartFile photo, int order){
+    public LotPhoto create(Lot lot, MultipartFile photo){
         LotPhoto lotPhoto = new LotPhoto();
-        lotPhoto.setPhotoOrder(order);
         lotPhoto.setLot(lot);
         lotPhoto.setCreatedAt(Instant.now());
 

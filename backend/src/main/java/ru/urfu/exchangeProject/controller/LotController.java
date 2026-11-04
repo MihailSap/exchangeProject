@@ -3,26 +3,33 @@ package ru.urfu.exchangeProject.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.BaseResponse;
 import ru.urfu.exchangeProject.dto.lot.LotCreateRequest;
+import ru.urfu.exchangeProject.dto.lot.LotListResponse;
 import ru.urfu.exchangeProject.dto.lot.LotResponse;
 import ru.urfu.exchangeProject.dto.lot.LotUpdateRequest;
 import ru.urfu.exchangeProject.exception.customEx.UserNotFoundException;
 import ru.urfu.exchangeProject.exception.customEx.news.*;
 import ru.urfu.exchangeProject.mapper.LotMapper;
-import ru.urfu.exchangeProject.model.lot.Lot;
-import ru.urfu.exchangeProject.model.lot.LotPhoto;
-import ru.urfu.exchangeProject.model.lot.LotStatus;
+import ru.urfu.exchangeProject.model.lot.*;
 import ru.urfu.exchangeProject.model.lot.want.Want;
 import ru.urfu.exchangeProject.model.user.User;
 import ru.urfu.exchangeProject.model.user.UserStatus;
 import ru.urfu.exchangeProject.service.*;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Tag(name = "Лоты")
 @RestController
@@ -72,6 +79,32 @@ public class LotController {
 
         LotResponse lotResponse = lotMapper.mapToLotResponse(lot);
         return new BaseResponse<>(lotResponse);
+    }
+
+    @Operation(description = "Список или поиск активных лотов")
+    @GetMapping
+    public LotListResponse searchLots(
+            @RequestParam(required = false) String q,
+            @RequestParam(name = "category_id", required = false) @Positive Long categoryId,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) LotType type,
+            @RequestParam(name = "delivery_method", required = false) DeliveryMethod deliveryMethod,
+            @RequestParam(name = "min_cost", required = false) BigDecimal minCost,
+            @RequestParam(name = "max_cost", required = false) BigDecimal maxCost,
+            @RequestParam(defaultValue = "date_desc") String sort,
+            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(name = "per_page", defaultValue = "20") @Min(1) @Max(100) int perPage
+
+    ) {
+        Page<Lot> lotPage = lotService.searchLots(
+                q, categoryId, region, type, deliveryMethod, minCost, maxCost, sort, page, perPage);
+
+        List<LotResponse> lotResponses = lotPage
+                .map(lotMapper::mapToLotResponse)
+                .getContent();
+
+        return new LotListResponse(
+                lotResponses, new LotListResponse.Meta(page, perPage, lotPage.getTotalElements()));
     }
 
     @Operation(description = "Создание лота")

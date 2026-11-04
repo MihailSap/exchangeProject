@@ -1,20 +1,23 @@
 package ru.urfu.exchangeProject.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import ru.urfu.exchangeProject.dto.lot.LotCreateRequest;
 import ru.urfu.exchangeProject.dto.lot.LotUpdateRequest;
 import ru.urfu.exchangeProject.dto.lot.want.WantCreateRequest;
 import ru.urfu.exchangeProject.exception.customEx.news.CategoryNotFound;
 import ru.urfu.exchangeProject.exception.customEx.news.LotNotFoundException;
 import ru.urfu.exchangeProject.model.category.Category;
-import ru.urfu.exchangeProject.model.lot.DeliveryMethod;
-import ru.urfu.exchangeProject.model.lot.Lot;
-import ru.urfu.exchangeProject.model.lot.LotStatus;
-import ru.urfu.exchangeProject.model.lot.LotType;
+import ru.urfu.exchangeProject.model.lot.*;
 import ru.urfu.exchangeProject.model.user.User;
+import ru.urfu.exchangeProject.model.user.UserStatus;
 import ru.urfu.exchangeProject.repository.LotRepository;
 import ru.urfu.exchangeProject.service.CategoryService;
 import ru.urfu.exchangeProject.service.LotPhotoService;
@@ -51,6 +54,64 @@ public class LotServiceImpl implements LotService {
     public Lot getById(long id) throws LotNotFoundException {
         return lotRepository.findById(id)
                 .orElseThrow(() -> new LotNotFoundException("Лот не найден"));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<Lot> searchLots(
+            String q,
+            Long categoryId,
+            String region,
+            LotType type,
+            DeliveryMethod deliveryMethod,
+            BigDecimal minCost,
+            BigDecimal maxCost,
+            String sort,
+            int page,
+            int perPage
+    ) {
+        if (minCost != null && maxCost != null
+                && minCost.compareTo(maxCost) > 0) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "min_cost не может быть больше max_cost"
+            );
+        }
+
+        LotSort lotSort;
+
+        try {
+            lotSort = LotSort.fromValue(sort);
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    exception.getMessage()
+            );
+        }
+
+        q = q != null ? q.trim() : "";
+        region = region != null ? region.trim() : "";
+
+        // В API первая страница имеет номер 1,
+        // а PageRequest начинает нумерацию с 0.
+        Pageable pageable = PageRequest.of(
+                page - 1,
+                perPage,
+                lotSort.toSort()
+        );
+
+        return lotRepository.searchLots(
+                LotStatus.ACTIVE,
+                UserStatus.FROZEN,
+                q,
+                categoryId,
+                region,
+                type,
+                deliveryMethod,
+                minCost,
+                maxCost,
+                pageable
+        );
     }
 
     @Transactional

@@ -96,9 +96,9 @@ export function LotPhotosField({ photos, onChange, error, onBlur, disabled = fal
                 >
                   На обложку
                 </button>
-              ) : (
+              ) : index === 0 ? (
                 <span className={styles.coverLabel}>Обложка</span>
-              )}
+              ) : null}
             </div>
           );
         })}

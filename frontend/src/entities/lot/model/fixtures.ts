@@ -2,6 +2,8 @@ import { isLot } from "./validation";
 
 import type { Lot, LotStatus } from "./lot";
 
+import { isRecord } from "@/src/shared/lib/validation";
+
 export function createDemoLots(ownerId: number, name: string, region: string): Lot[] {
   const entries: {
     title: string;
@@ -118,11 +120,11 @@ export function createDemoLots(ownerId: number, name: string, region: string): L
     region,
     photos:
       index === 0
-        ? ["camera-front.png", "camera-back.png", "camera-kit.png"].map((photo, order) => ({
-          order,
+        ? ["camera-front.png", "camera-back.png", "camera-kit.png"].map((photo, index) => ({
+          id: index + 1,
           name: `/images/lots/${photo}`,
         }))
-        : [{ order: 0, name: `/images/profile/${entry.image}` }],
+        : [{ id: 1, name: `/images/profile/${entry.image}` }],
     owner: { id: ownerId, name, rating: 14 / 3 },
     wants: [
       {
@@ -144,7 +146,24 @@ function readFixtureLots(): Lot[] {
   try {
     const value: unknown = JSON.parse(window.localStorage.getItem(fixtureKey) || "[]");
 
-    return Array.isArray(value) ? value.filter(isLot) : [];
+    if (!Array.isArray(value)) return [];
+
+    return value.map((entry: unknown) => {
+      if (isLot(entry)) return entry;
+
+      if (!isRecord(entry) || !Array.isArray(entry.photos)) return null;
+
+      const legacy = entry.photos.filter((photo: unknown): photo is { order: number; name: string } =>
+        isRecord(photo) && typeof photo.order === "number" && Number.isFinite(photo.order) && typeof photo.name === "string",
+      );
+
+      if (legacy.length !== entry.photos.length) return null;
+
+      const photos = [...legacy].sort((a, b) => a.order - b.order).map((photo, index) => ({ id: index + 1, name: photo.name }));
+      const migrated = { ...entry, photos };
+
+      return isLot(migrated) ? migrated : null;
+    }).filter((entry): entry is Lot => entry !== null);
   } catch {
     return [];
   }

@@ -7,11 +7,11 @@ export type LotPhotoSelection =
   | { kind: "file"; key: string; file: File };
 export function initialPhotos(lot: Lot | null): LotPhotoSelection[] {
   return [...(lot?.photos ?? [])]
-    .sort((a, b) => a.order - b.order)
-    .map((photo) => ({ kind: "existing", key: `${photo.order}:${photo.name}`, photo }));
+    .sort((a, b) => a.id - b.id)
+    .map((photo) => ({ kind: "existing", key: `${photo.id}:${photo.name}`, photo }));
 }
 export function photosChanged(lot: Lot, selection: LotPhotoSelection[]): boolean {
-  const original = [...lot.photos].sort((a, b) => a.order - b.order);
+  const original = [...lot.photos].sort((a, b) => a.id - b.id);
 
   return (
     original.length !== selection.length ||
@@ -22,8 +22,8 @@ export function photosChanged(lot: Lot, selection: LotPhotoSelection[]): boolean
 }
 export async function serializePhotos(selection: LotPhotoSelection[]): Promise<Lot["photos"]> {
   return Promise.all(
-    selection.map(async (item, order) => ({
-      order,
+    selection.map(async (item, index) => ({
+      id: index + 1,
       name: item.kind === "existing" ? item.photo.name : await storeLocalImage(item.file),
     })),
   );

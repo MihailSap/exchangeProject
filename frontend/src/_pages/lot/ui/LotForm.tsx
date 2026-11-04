@@ -64,6 +64,7 @@ export function LotForm({
   const [referenceAttempt, setReferenceAttempt] = useState(0);
   const [step, setStep] = useState(1);
   const [lotQuery, setLotQuery] = useState("");
+  const [keywordQuery, setKeywordQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [savedAt, setSavedAt] = useState("");
   const { notify } = useToast();
@@ -71,7 +72,6 @@ export function LotForm({
   const valuesRef = useRef(values);
   valuesRef.current = values;
   const fixture = Boolean(lot && getFixtureLot(lot.id));
-  const wantsEditable = !lot || fixture;
   const errors = validateLotForm(
     values,
     regions,
@@ -80,15 +80,13 @@ export function LotForm({
   );
 
   const photoChanges = Boolean(lot && photosChanged(lot, photos));
-  const unsupportedPhotoChanges = Boolean(lot && !fixture && photoChanges);
-  const dirty = !lot || photoChanges || hasFormChanges(values, initial, wantsEditable);
+  const dirty = !lot || photoChanges || hasFormChanges(values, initial);
   const firstValid = !FIRST_FIELDS.some((field) => errors[field]);
-  const wantsValid = wantsEditable
-    ? !["wantTypes", "keywords", "targetCategoryIds", "targetLots"].some(
-      (field) => errors[field as LotField],
-    ) &&
-      (!values.wantTypes.includes("LOT") || !lotQuery.trim())
-    : true;
+  const wantsValid = !["wantTypes", "keywords", "targetCategoryIds", "targetLots"].some(
+    (field) => errors[field as LotField],
+  ) &&
+      (!values.wantTypes.includes("LOT") || !lotQuery.trim()) &&
+      (!values.wantTypes.includes("KEYWORDS") || !keywordQuery.trim());
 
   useEffect(() => {
     let active = true;
@@ -135,18 +133,10 @@ export function LotForm({
       const stored = readFormValues(JSON.parse(localStorage.getItem(draftKey) || "null"));
       if (!stored) return;
 
-      const saved = wantsEditable
-        ? stored
-        : {
-          ...stored,
-          wantTypes: initial.wantTypes,
-          keywords: initial.keywords,
-          targetCategoryIds: initial.targetCategoryIds,
-          targetLots: initial.targetLots,
-        };
+      const saved = stored;
 
       if (lot) {
-        if (hasFormChanges(saved, initial, wantsEditable)) setSavedDraft(saved);
+        if (hasFormChanges(saved, initial)) setSavedDraft(saved);
       } else {
         setValues(saved);
         setSavedAt("Восстановлен сохранённый текст");
@@ -154,12 +144,12 @@ export function LotForm({
     } catch {
       return;
     }
-  }, [draftKey, lot, initial, wantsEditable]);
+  }, [draftKey, lot, initial]);
   useEffect(() => {
     if (savedDraft) return;
 
     const timer = window.setInterval(() => {
-      if (lot && !hasFormChanges(valuesRef.current, initial, wantsEditable)) return;
+      if (lot && !hasFormChanges(valuesRef.current, initial)) return;
 
       try {
         localStorage.setItem(draftKey, JSON.stringify(valuesRef.current));
@@ -170,7 +160,7 @@ export function LotForm({
     }, 30_000);
 
     return () => clearInterval(timer);
-  }, [draftKey, savedDraft, lot, initial, wantsEditable]);
+  }, [draftKey, savedDraft, lot, initial]);
 
   function change<K extends keyof LotFormValues>(field: K, value: LotFormValues[K]) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -255,7 +245,7 @@ export function LotForm({
     try {
       let result: Lot;
       if (lot) {
-        const wants = wantsEditable ? formWants(values, categories) : lot.wants;
+        const wants = formWants(values, categories);
         result = await updateLot(
           lot,
           {
@@ -268,7 +258,9 @@ export function LotForm({
             estimated_cost: Number(values.cost.replace(",", ".")),
           },
           wants,
-          photoChanges ? await serializePhotos(photos) : undefined,
+          fixture && photoChanges ? await serializePhotos(photos) : undefined,
+          files,
+          !fixture && photoChanges ? photos.map((photo) => photo.kind === "existing" ? photo.photo.id : null) : undefined,
         );
       } else result = await createLot(toMultipart(values, files));
 
@@ -292,7 +284,7 @@ export function LotForm({
     }
   }
 
-  const canPublish = !busy && firstValid && wantsValid && dirty && !unsupportedPhotoChanges;
+  const canPublish = !busy && firstValid && wantsValid && dirty;
 
   return (
     <>
@@ -380,15 +372,6 @@ export function LotForm({
                 onBlur={() => touch("photos")}
                 error={touched.photos ? errors.photos : undefined}
               />
-              {unsupportedPhotoChanges && (
-                <p className={styles.referenceError} role="status">
-                  Сервер пока не поддерживает сохранение изменений фотографий. Верните исходный
-                  набор фото, чтобы сохранить остальные изменения, или дождитесь обновления API.
-                  <button type="button" onClick={() => setPhotos(initialPhotos(lot))}>
-                    Вернуть исходные фотографии
-                  </button>
-                </p>
-              )}
               <div className={styles.row}>
                 <FormField
                   name="region"
@@ -438,19 +421,15 @@ export function LotForm({
                 Отметьте один или несколько вариантов. Приоритет между ними не задаётся — все
                 варианты равнозначны.
               </p>
-              {!wantsEditable && (
-                <p className={styles.referenceError}>
-                  Пожелания текущего лота сохранены. Их изменение станет доступно после поддержки
-                  замены пожеланий на сервере.
-                </p>
-              )}
               <LotWants
                 values={values}
                 categories={categories}
                 userId={user.id}
-                disabled={!wantsEditable || busy}
+                disabled={busy}
                 errors={errors}
                 touched={touched}
+                keywordQuery={keywordQuery}
+                onKeywordQuery={setKeywordQuery}
                 query={lotQuery}
                 onQuery={setLotQuery}
                 onChange={setValues}
@@ -481,7 +460,7 @@ export function LotForm({
                   <ul>
                     {formWants(values, categories).map((want) => (
                       <li
-                        key={`${want.want_type}:${want.target_lot ?? want.target_category?.id ?? "text"}`}
+                        key={`${want.want_type}:${want.target_lot ?? want.target_category?.id ?? want.keywords ?? "any"}`}
                       >
                         {want.want_type === "ANY"
                           ? "Готов рассмотреть ваши варианты"
@@ -545,7 +524,6 @@ export function LotForm({
               {savedAt || "Текст автоматически сохраняется каждые 30 секунд"}
             </p>
             <small>Фотографии не сохраняются в черновике.</small>
-            <Link href={lot ? `/lots/${lot.id}` : "/profile"}>Отмена</Link>
           </section>
         </aside>
       </div>

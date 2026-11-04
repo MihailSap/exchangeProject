@@ -1,0 +1,156 @@
+.field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.field > label {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-input);
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    background-color 500ms ease,
+    color 500ms ease;
+}
+
+.control:hover {
+  border-color: var(--color-brand);
+}
+
+.control:focus-within {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 12%, transparent);
+}
+
+.invalid {
+  border-color: var(--color-error-border);
+  background: var(--color-error-input);
+}
+
+.tags {
+  display: contents;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 3px 7px 3px 14px;
+  border-radius: 999px;
+  background: var(--color-success-bg);
+  color: var(--color-brand);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  transition:
+    background-color 500ms ease,
+    color 500ms ease;
+}
+
+.tag > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tag button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: 16px;
+  cursor: pointer;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.tag button:hover:not(:disabled) {
+  background: var(--color-hover);
+  color: var(--color-error);
+}
+
+.tag button:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.tag button:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+.tag button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.control input {
+  flex: 1 1 240px;
+  width: 100%;
+  min-width: 0;
+  min-height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.control input:focus {
+  box-shadow: none;
+}
+
+.control input::placeholder {
+  color: var(--color-placeholder);
+}
+
+.hint,
+.error {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.hint {
+  color: var(--color-text-secondary);
+}
+
+.error {
+  color: var(--color-error);
+}
+
+@media (max-width: 600px) {
+  .control {
+    padding: 7px 10px;
+  }
+
+  .control input {
+    flex-basis: 100%;
+  }
+}

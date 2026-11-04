@@ -211,7 +211,7 @@ export function getCatalogLot(id: string): Lot | undefined {
       name: item.category,
     },
     region: item.region,
-    photos: [{ order: 0, name: item.image }],
+    photos: [{ id: 1, name: item.image }],
     owner: { id: index + 1, name: "Владелец лота", rating: item.rating },
     wants: [{ want_type: "ANY", keywords: null, target_category: null, target_lot: null }],
     status: "ACTIVE",

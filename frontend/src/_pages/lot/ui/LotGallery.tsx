@@ -10,7 +10,7 @@ import { AssetImage } from "@/src/shared/ui/asset-image";
 import { Icon } from "@/src/shared/ui/icon";
 
 export function LotGallery({ lot }: { lot: Lot }) {
-  const photos = [...lot.photos].sort((a, b) => a.order - b.order);
+  const photos = [...lot.photos].sort((a, b) => a.id - b.id);
   const [index, setIndex] = useState(0);
   const photo = photos[index] ?? photos[0];
 
@@ -71,7 +71,7 @@ export function LotGallery({ lot }: { lot: Lot }) {
           {photos.map((item, itemIndex) => (
             <button
               type="button"
-              key={`${item.order}:${item.name}`}
+              key={`${item.id}:${item.name}`}
               aria-label={`Показать фото ${itemIndex + 1}`}
               aria-pressed={index === itemIndex}
               onClick={() => setIndex(itemIndex)}

@@ -39,8 +39,9 @@ export function isLot(value: unknown): value is Lot {
     Array.isArray(value.photos) &&
     value.photos.every(
       (photo) =>
-        isRecord(photo) && typeof photo.name === "string" && typeof photo.order === "number",
+        isRecord(photo) && typeof photo.name === "string" && Number.isSafeInteger(photo.id) && Number(photo.id) > 0,
     ) &&
+    new Set(value.photos.map((photo) => photo.id)).size === value.photos.length &&
     isRecord(value.owner) &&
     Number.isSafeInteger(value.owner.id) &&
     Number(value.owner.id) > 0 &&
@@ -51,6 +52,7 @@ export function isLot(value: unknown): value is Lot {
     value.wants.every(
       (want) =>
         isRecord(want) &&
+        (want.id === undefined || (Number.isSafeInteger(want.id) && Number(want.id) > 0)) &&
         ["LOT", "KEYWORDS", "CATEGORY", "ANY"].includes(String(want.want_type)) &&
         nullableString(want.keywords) &&
         nullableString(want.target_lot) &&

@@ -7,7 +7,7 @@ import styles from "./AdminPage.module.scss";
 
 import type { AdminCategory } from "@/src/features/administration";
 
-import { readSession, updateSessionProfile, useSession } from "@/src/entities/session";
+import { updateSessionProfile, useSession } from "@/src/entities/session";
 import { AdminWorkspace, getAdminCategories } from "@/src/features/administration";
 import { ApiError } from "@/src/shared/api/client";
 import { Breadcrumbs } from "@/src/shared/ui/breadcrumbs";
@@ -53,7 +53,7 @@ export function AdminPage() {
       const profile = await updateSessionProfile();
       if (!current) return;
 
-      if (profile.status !== "ACTIVE" || readSession()?.user.role !== "ADMIN") {
+      if (profile.status !== "ACTIVE" || profile.role !== "ADMIN") {
         router.replace("/");
 
         return;

@@ -135,8 +135,8 @@ export function HomeDiscovery() {
         <div className={styles.sectionHeader}>
           <div>
             <div className={styles.headingLine}>
-              <h2 id="recommendations-heading">{personalized ? "Подобрали для вас" : "Найдите свой обмен"}</h2>
-              <span className={styles.badge}>{personalized ? "РЕКОМЕНДАЦИИ" : "КАТАЛОГ"}</span>
+              <h2 id="recommendations-heading">Подобрали для вас</h2>
+              <span className={styles.badge}>{personalized ? "РЕКОМЕНДАЦИИ" : "НОВЫЕ ЛОТЫ"}</span>
             </div>
             <p className={styles.subtitle}>
               {personalized

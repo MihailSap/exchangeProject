@@ -39,6 +39,7 @@ export function isAuthUser(value: unknown): value is AuthUser {
     isNonEmptyString(value.email) &&
     isNonEmptyString(value.name) &&
     isNonEmptyString(value.status) &&
+    (value.role === undefined || value.role === "USER" || value.role === "ADMIN") &&
     (value.createdAt === undefined ||
       (typeof value.createdAt === "string" && Number.isFinite(Date.parse(value.createdAt)))) &&
     (value.emailConfirmed === undefined || typeof value.emailConfirmed === "boolean") &&
@@ -66,7 +67,7 @@ export function readSession(): AuthSession | null {
   return {
     accessToken: session.accessToken,
     refreshToken: session.refreshToken,
-    user: { ...session.user, role: accessTokenRole(session.accessToken) },
+    user: { ...session.user, role: session.user.role ?? accessTokenRole(session.accessToken) },
   };
 }
 

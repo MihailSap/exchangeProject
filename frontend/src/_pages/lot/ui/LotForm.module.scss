@@ -255,19 +255,16 @@
   cursor: not-allowed;
 }
 
-.actions a,
 .hint a,
 .referenceError button {
   color: var(--color-brand);
   font-size: 12px;
 }
 
-.actions a:hover,
 .hint a:hover {
   color: var(--color-brand-hover);
 }
 
-.actions a:active,
 .hint a:active {
   color: var(--color-text);
 }
@@ -354,12 +351,17 @@
   cursor: pointer;
 }
 
-.preview button:hover {
+.preview button:hover:not(:disabled) {
   background: #d5f27b;
 }
 
-.preview button:active {
+.preview button:active:not(:disabled) {
   background: #b8da63;
+}
+
+.preview button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .preview .cover {

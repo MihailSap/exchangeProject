@@ -13,3 +13,6 @@ export {
 export type { LotCategory } from "./api/lot-api";
 export type { CatalogItem } from "./model/discovery";
 export { CATALOG_ITEMS, RECOMMENDED_ITEMS, getCatalogLot } from "./model/discovery";
+
+export { getCatalogPage } from "./api/catalog-api";
+export type { CatalogRequest } from "./api/catalog-api";

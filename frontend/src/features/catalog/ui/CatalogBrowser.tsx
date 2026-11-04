@@ -14,6 +14,7 @@ import {
   selectCatalogItems,
 } from "../model/catalog";
 import { useCatalogPageSize } from "../model/use-catalog-page-size";
+import { useServerCatalog } from "../model/use-server-catalog";
 
 import type { CatalogQuery } from "../model/catalog";
 
@@ -36,6 +37,7 @@ export function CatalogBrowser({
   const pathname = usePathname();
   const router = useRouter();
   const pageSize = useCatalogPageSize();
+  const server = useServerCatalog(query, pageSize, !recommendations);
   const [pending, startTransition] = useTransition();
   const [navigationKind, setNavigationKind] = useState<"replace" | "append">("replace");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -86,10 +88,11 @@ export function CatalogBrowser({
   }));
 
   const source = recommendations ? RECOMMENDED_ITEMS : CATALOG_ITEMS;
-  const items = selectCatalogItems(source, query, categoryTree);
-  const visible = items.slice(0, query.page * (pageSize ?? 0));
-  const replacing = pending && navigationKind === "replace";
-  const appending = pending && navigationKind === "append";
+  const items = recommendations ? selectCatalogItems(source, query, categoryTree) : server.items;
+  const visible = recommendations ? items.slice(0, query.page * (pageSize ?? 0)) : items;
+  const total = recommendations ? items.length : server.total;
+  const replacing = (pending && navigationKind === "replace") || (!recommendations && server.loading && !server.appending);
+  const appending = (pending && navigationKind === "append") || (!recommendations && server.appending);
   const filterKey = JSON.stringify([
     query.type,
     query.category,
@@ -114,7 +117,7 @@ export function CatalogBrowser({
         <span aria-live="polite">
           {replacing || categoryPending || pageSize === null
             ? "Обновляем предложения…"
-            : resultLabel(items.length)}
+            : resultLabel(total)}
         </span>
         <div className={styles.sort}>
           <label id="catalog-sort-label" htmlFor="catalog-sort">
@@ -187,9 +190,15 @@ export function CatalogBrowser({
         <section
           className={styles.results}
           aria-label="Результаты поиска"
-          aria-busy={pending || Boolean(categoryPending) || pageSize === null}
+          aria-busy={pending || (!recommendations && server.loading) || Boolean(categoryPending) || pageSize === null}
         >
-          {replacing || categoryPending || pageSize === null ? (
+          {!recommendations && server.error && visible.length === 0 ? (
+            <div className={styles.empty} role="status">
+              <p>{server.error}</p>
+              <button type="button" className={styles.secondaryButton} onClick={server.retry}>Повторить</button>
+              <button type="button" className={styles.secondaryButton} onClick={() => navigate({ ...EMPTY_FILTERS, sort: "newest", q: "" })}>Сбросить поиск и фильтры</button>
+            </div>
+          ) : replacing || categoryPending || pageSize === null ? (
             <div className={styles.resultsLoading}>
               <Loading label="Ищем подходящие варианты…" />
               <div className={styles.skeletonGrid} aria-hidden="true">
@@ -226,15 +235,21 @@ export function CatalogBrowser({
                   </li>
                 ))}
               </ul>
+              {!recommendations && server.error && (
+                <div className={styles.referenceError} role="status">
+                  <p>{server.error}</p>
+                  <button type="button" onClick={server.retry}>Повторить загрузку</button>
+                </div>
+              )}
               <div className={styles.pagination}>
                 <span aria-live="polite">
-                  Показано {visible.length} из {items.length}
+                  Показано {visible.length} из {total}
                 </span>
                 <div className={styles.loadMoreSlot}>
                   {appending ? (
                     <Loading compact label="Загружаем лоты…" />
                   ) : (
-                    visible.length < items.length && (
+                    visible.length < total && (recommendations || !server.error) && (
                       <button
                         type="button"
                         className={styles.secondaryButton}

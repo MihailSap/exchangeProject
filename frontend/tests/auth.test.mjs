@@ -193,7 +193,7 @@ test("profile requests share one in-flight response and validate DTO", async () 
     requests += 1;
 
     return Response.json({
-      data: { ...session.user, email_confirmed: true, avatar_url: null, reviews_count: 2 },
+      data: { ...session.user, email_confirmed: true, role: "USER", avatar_url: null, reviews_count: 2 },
     });
   });
 
@@ -256,7 +256,7 @@ test("profile 401 renews tokens and retries once with the new access", async () 
 
     assert.equal(options.headers.get("Authorization"), "Bearer rotated-access");
 
-    return Response.json({ data: { ...session.user, email_confirmed: true } });
+    return Response.json({ data: { ...session.user, email_confirmed: true, role: "USER" } });
   });
 
   const model = env.load("@/src/entities/session/model/session");
@@ -421,6 +421,7 @@ test("multipart profile update preserves boundary headers and synchronizes the s
         ...session.user,
         region: "Москва",
         avatar_url: "new-avatar.png",
+        role: "USER",
         email_confirmed: true,
       },
     });
@@ -502,13 +503,13 @@ test("lot form rejects invalid fields, photos and serializes Spring multipart na
     categoryId: "1",
     cost: "12000,50",
     wantTypes: ["KEYWORDS"],
-    keywords: "Книги",
+    keywords: ["Книги"],
   };
 
   assert.equal(Object.keys(form.validateLotForm(values, ["Москва"], [1], 1)).length, 0);
   assert.ok(
     form.validateLotForm(
-      { ...values, title: "x", cost: "-1", region: "Unknown", keywords: "" },
+      { ...values, title: "x", cost: "-1", region: "Unknown", keywords: [] },
       ["Москва"],
       [1],
       0,
@@ -518,11 +519,11 @@ test("lot form rejects invalid fields, photos and serializes Spring multipart na
   assert.ok(form.validatePhotos([{ type: "image/svg+xml", size: 1 }]));
   assert.ok(form.validatePhotos([{ type: "image/png", size: 11 * 1024 * 1024 }]));
   const body = form.toMultipart(values, []);
-  assert.equal(body.get("categoryId"), "1");
-  assert.equal(body.get("estimatedCost"), "12000.50");
+  assert.equal(body.get("category_id"), "1");
+  assert.equal(body.get("estimated_cost"), "12000.50");
   assert.equal(body.get("wants[0].wantType"), "KEYWORDS");
   assert.equal(body.get("wants[0].keywords"), "Книги");
-  assert.equal(body.has("category_id"), false);
+  assert.equal(body.has("categoryId"), false);
 });
 
 test("lot API validates nullable dates, caches per session and sends text updates without appending wants", async () => {
@@ -530,10 +531,13 @@ test("lot API validates nullable dates, caches per session and sends text update
   const env = environment(async (_url, options) => {
     calls++;
     if (options.method === "PATCH") {
-      const body = JSON.parse(options.body);
-      assert.equal(body.title, "Обновлённая камера");
-      assert.equal("photos" in body, false);
-      assert.equal("wants" in body, false);
+      const body = options.body;
+      assert.ok(body instanceof FormData);
+      assert.equal(body.get("title"), "Обновлённая камера");
+      assert.equal(body.get("categoryId"), "1");
+      assert.equal(body.get("estimatedCost"), "1000");
+      assert.equal(body.has("photos"), false);
+      assert.equal([...body.keys()].some((key) => key.startsWith("wants")), false);
     }
 
     return Response.json({ data: lot });
@@ -632,7 +636,7 @@ test("lot progression validates only the current step and edits require meaningf
   assert.equal(form.hasFormChanges(initial, initial), false);
   assert.equal(
     form.hasFormChanges(
-      { ...initial, title: "  Камера ", cost: "12000,00", keywords: "Неактивное поле" },
+      { ...initial, title: "  Камера ", cost: "12000,00", keywords: ["Неактивное поле"] },
       initial,
     ),
     false,
@@ -642,7 +646,7 @@ test("lot progression validates only the current step and edits require meaningf
     true,
   );
   assert.equal(
-    form.hasFormChanges({ ...initial, wantTypes: ["KEYWORDS"], keywords: "Книги" }, initial),
+    form.hasFormChanges({ ...initial, wantTypes: ["KEYWORDS"], keywords: ["Книги"] }, initial),
     true,
   );
 });
@@ -658,24 +662,28 @@ test("lot photo selection detects additions, removal and cover changes", () => {
   assert.equal(model.photosChanged(lot, [...photos, { kind: "file", key: "new", file: {} }]), true);
 });
 
-test("server photo changes fail before sending an incompatible PATCH", async () => {
-  let calls = 0;
-  const env = environment(async () => {
-    calls++;
+test("server photo deletion uses the real endpoint and verifies the saved selection", async () => {
+  const calls = [];
+  const env = environment(async (url, options) => {
+    calls.push([new URL(url).pathname, options.method ?? "GET"]);
+    if (options.method === "DELETE") {
+      lot = { ...lot, photos: lot.photos.filter((photo) => photo.id !== 2) };
 
-    return new Response(null, { status: 204 });
+      return new Response(null, { status: 204 });
+    }
+
+    return Response.json({ data: lot });
   });
 
-  const lot = {
-    ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0],
-    id: 42,
-  };
+  let lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42 };
+  const saved = await env.load("@/src/entities/lot/api/lot-api").updateLot(lot, {
+    title: lot.title, description: lot.description, category_id: 1, region: lot.region,
+    type: lot.type, delivery_method: lot.delivery_method, estimated_cost: lot.estimated_cost,
+  }, lot.wants, undefined, [], [1, 3]);
 
-  const api = env.load("@/src/entities/lot/api/lot-api");
-  await assert.rejects(api.updateLot(lot, {}, lot.wants, []), (error) =>
-    error.message.includes("фотографий"),
-  );
-  assert.equal(calls, 0);
+  assert.deepEqual(Array.from(saved.photos, (photo) => photo.id), [1, 3]);
+  assert.deepEqual(calls.map((entry) => entry[1]), ["GET", "DELETE", "PATCH", "GET"]);
+  assert.ok(calls[1][0].endsWith("/lots/42/photo/2"));
 });
 
 test("estimate marker stays within the scale and verdict follows the entered price", () => {
@@ -689,7 +697,7 @@ test("estimate marker stays within the scale and verdict follows the entered pri
   assert.ok(estimate.pricePosition(24000) < estimate.pricePosition(31000));
 });
 
-test("administrative menu role comes from token claims instead of editable user storage", () => {
+test("profile role takes priority over stale token claims, token is only the login fallback", () => {
   const env = environment();
   const model = env.load("@/src/entities/session/model/session");
   const token = (role) =>
@@ -700,7 +708,7 @@ test("administrative menu role comes from token claims instead of editable user 
     accessToken: token("USER"),
     user: { ...session.user, role: "ADMIN" },
   });
-  assert.equal(model.readSession().user.role, "USER");
+  assert.equal(model.readSession().user.role, "ADMIN");
   model.writeSession({ ...session, accessToken: token("ADMIN") });
   assert.equal(model.readSession().user.role, "ADMIN");
   const { accessTokenRole } = env.load("@/src/entities/session/model/role");
@@ -891,7 +899,7 @@ test("exchange choices serialize every selected lot, category, free text and ANY
     categoryId: "1",
     cost: "12000",
     wantTypes: ["ANY", "KEYWORDS", "CATEGORY", "LOT"],
-    keywords: " Велосипед или самокат ",
+    keywords: [" Велосипед или самокат "],
     targetCategoryIds: ["2", "3"],
     targetLots: ["42", "https://example.com/lots/43"],
   };
@@ -913,7 +921,7 @@ test("exchange choices serialize every selected lot, category, free text and ANY
   );
   assert.ok(form.validateLotForm({ ...values, wantTypes: [] }, ["Москва"], [1, 2, 3], 1).wantTypes);
   const invalid = form.validateLotForm(
-    { ...values, keywords: "", targetCategoryIds: [], targetLots: ["42", "/lots/42"] },
+    { ...values, keywords: [], targetCategoryIds: [], targetLots: ["42", "/lots/42"] },
     ["Москва"],
     [1, 2, 3],
     1,
@@ -979,7 +987,7 @@ test("existing lot restores every exchange choice and dirty state ignores select
   assert.equal(form.hasFormChanges({ ...values, wantTypes: ["ANY"] }, values, false), false);
   assert.equal(
     form.hasFormChanges(
-      { ...values, wantTypes: ["ANY"], keywords: "Скрытый текст" },
+      { ...values, wantTypes: ["ANY"], keywords: ["Скрытый текст"] },
       { ...values, wantTypes: ["ANY"] },
     ),
     false,
@@ -1317,4 +1325,140 @@ test("lot access denial explains the new backend code without hiding server text
       error.message === (message ?? "У вас нет доступа к этому лоту"),
     );
   }
+});
+
+test("keyword tags validate duplicates and limits and serialize as separate wishes", () => {
+  const env = environment();
+  const form = env.load("@/src/_pages/lot/model/form");
+  const { keywordError } = env.load("@/src/_pages/lot/model/keywords");
+  assert.ok(keywordError("а", []));
+  assert.ok(keywordError(" КНИГИ ", ["Книги"]));
+  assert.ok(keywordError("Фотоаппарат", ["x".repeat(295)]));
+  assert.ok(keywordError("Новый тег", Array.from({ length: 10 }, (_, index) => `Тег ${index}`)));
+  assert.equal(keywordError("Объектив", ["Книги"]), undefined);
+  const initial = form.initialValues(null, "Москва");
+  const values = { ...initial, wantTypes: ["KEYWORDS"], keywords: ["Объектив", "Плёнка", "Instax"] };
+  const body = form.toMultipart(values, []);
+  assert.deepEqual([0, 1, 2].map((index) => body.get(`wants[${index}].keywords`)), values.keywords);
+  assert.equal(form.hasFormChanges({ ...values, keywords: [...values.keywords].reverse() }, values), false);
+  const old = form.readFormValues({ ...values, keywords: "Книги; журналы или учебники" });
+  assert.deepEqual(Array.from(old.keywords), ["Книги; журналы или учебники"]);
+  assert.equal(form.readFormValues({ ...values, keywords: [null] }), null);
+  assert.equal(form.readFormValues({ ...values, keywords: ["x".repeat(301)] }), null);
+});
+
+test("lot API accepts photo ids without order and appends new uploads with multipart", async () => {
+  const env = environment(async (url, options) => {
+    assert.ok(url.endsWith("/lots/42"));
+    assert.equal(options.method, "PATCH");
+    assert.ok(options.body instanceof FormData);
+    assert.equal(options.body.get("deliveryMethod"), "BOTH");
+    assert.equal(options.body.getAll("photos").length, 1);
+    assert.equal(options.headers.has("Content-Type"), false);
+    assert.equal([...options.body.keys()].some((key) => key.startsWith("wants")), false);
+
+    return Response.json({ data: lot });
+  });
+
+  const lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42 };
+  const validate = env.load("@/src/entities/lot/model/validation").isLot;
+  assert.equal(validate(lot), true);
+  assert.equal(validate({ ...lot, photos: [{ order: 1, name: "old.png" }] }), false);
+  assert.equal(validate({ ...lot, photos: [{ id: -1, name: "bad.png" }] }), false);
+  const upload = new Blob(["photo"], { type: "image/png" });
+  await env.load("@/src/entities/lot/api/lot-api").updateLot(lot, {
+    title: lot.title, description: lot.description, category_id: 1, region: lot.region,
+    type: lot.type, delivery_method: "BOTH", estimated_cost: 1000,
+  }, lot.wants, undefined, [upload]);
+});
+
+test("public catalog maps the real paginated DTO, caches pages and rejects malformed metadata", async () => {
+  let calls = 0;
+  const env = environment(async (url, options) => {
+    calls++;
+    const params = new URL(url).searchParams;
+    assert.equal(params.get("category_id"), "2");
+    assert.equal(params.get("sort"), "cost_asc");
+    assert.equal(params.get("page"), "1");
+    assert.equal(params.get("per_page"), "6");
+    assert.equal(options.headers.has("Authorization"), false);
+
+    return Response.json({ data: [lot], meta: { page: 1, per_page: 6, total: 1 } });
+  });
+
+  const lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42 };
+  const api = env.load("@/src/entities/lot/api/catalog-api");
+  const query = { category_id: "2", sort: "cost_asc", page: 1, per_page: 6 };
+  const page = await api.getCatalogPage(query);
+  assert.equal(page.total, 1);
+  assert.equal(page.items[0].id, "42");
+  assert.equal(page.items[0].image, lot.photos[0].name);
+  await api.getCatalogPage(query);
+  assert.equal(calls, 1);
+  api.invalidateCatalog();
+  await api.getCatalogPage(query);
+  assert.equal(calls, 2);
+  const invalid = environment(async () => Response.json({ data: [lot], meta: { page: 0, per_page: 6, total: 1 } }));
+  await assert.rejects(invalid.load("@/src/entities/lot/api/catalog-api").getCatalogPage(query));
+});
+
+test("server profile role overrides a stale administrative token and rejects unknown roles", async () => {
+  let role = "USER";
+  const env = environment(async () => Response.json({ data: { ...session.user, email_confirmed: true, role } }));
+  const model = env.load("@/src/entities/session/model/session");
+  model.writeSession({ ...session, accessToken: `h.${Buffer.from(JSON.stringify({ role: "ADMIN", exp: 2_000_000_000 })).toString("base64url")}.s` });
+  const api = env.load("@/src/entities/session/api/profile");
+  await api.updateSessionProfile();
+  assert.equal(model.readSession().user.role, "USER");
+  role = "SUPERADMIN";
+  await assert.rejects(api.updateSessionProfile());
+  assert.equal(model.readSession().user.role, "USER");
+});
+
+test("legacy local photo order migrates without losing the saved lot", () => {
+  const env = environment();
+  const fixtures = env.load("@/src/entities/lot/model/fixtures");
+  const lot = fixtures.createDemoLots(1, "User", "Москва")[0];
+  env.storage.set("exchange.lot-fixtures.v1", JSON.stringify([{ ...lot, title: "Сохранённое изменение", photos: [{ order: 2, name: "second.png" }, { order: 1, name: "first.png" }] }]));
+  const migrated = fixtures.getFixtureLot(lot.id);
+  assert.equal(migrated.title, "Сохранённое изменение");
+  assert.deepEqual(Array.from(migrated.photos, (photo) => photo.name), ["first.png", "second.png"]);
+  assert.ok(migrated.photos.every((photo) => photo.id > 0 && !("order" in photo)));
+});
+
+test("catalog sends selected rating and delivery filters without a frontend availability gate", () => {
+  const env = environment();
+  const model = env.load("@/src/features/catalog/model/catalog");
+  const { serverCatalogRequest } = env.load("@/src/features/catalog/model/server-request");
+  const query = model.readCatalogQuery(new URLSearchParams("sort=rating&delivery=1"));
+  const request = serverCatalogRequest(query, 2, 6);
+  assert.equal(request.sort, "rating");
+  assert.equal(request.delivery_method, "DELIVERY");
+  assert.equal(request.page, 2);
+  assert.equal(serverCatalogRequest({ ...query, delivery: false, pickup: true }, 1, 6).delivery_method, "PICKUP");
+  assert.equal(serverCatalogRequest({ ...query, pickup: true }, 1, 6).delivery_method, undefined);
+});
+
+test("lot edits append only new wishes and detect a server that ignores removals", async () => {
+  const env = environment(async (_url, options) => {
+    if (options.method === "PATCH") {
+      assert.equal(options.body.has("wants[1].wantType"), false);
+      if (options.body.has("wants[0].keywords")) {
+        assert.equal(options.body.get("wants[0].keywords"), "Самокат");
+        lot = { ...lot, wants: [...lot.wants, added] };
+      }
+    }
+
+    return Response.json({ data: lot });
+  });
+
+  let lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42 };
+  const added = { want_type: "KEYWORDS", keywords: "Самокат", target_category: null, target_lot: null };
+  const body = { title: lot.title, description: lot.description, category_id: 1, region: lot.region,
+    type: lot.type, delivery_method: lot.delivery_method, estimated_cost: lot.estimated_cost };
+
+  const api = env.load("@/src/entities/lot/api/lot-api");
+  const saved = await api.updateLot(lot, body, [...lot.wants, added]);
+  assert.equal(saved.wants.length, 2);
+  await assert.rejects(api.updateLot(saved, body, [added]), (error) => error.message.includes("не полностью"));
 });

@@ -16,9 +16,10 @@ export type Lot = {
   estimated_cost: number;
   category: { id: number; name: string };
   region: string;
-  photos: { order: number; name: string }[];
+  photos: { id: number; name: string }[];
   owner: { id: number; name: string; rating: number | null };
   wants: {
+    id?: number;
     want_type: "LOT" | "KEYWORDS" | "CATEGORY" | "ANY";
     keywords: string | null;
     target_category: { id: number; name: string } | null;

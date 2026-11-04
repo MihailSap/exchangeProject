@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { LotKeywordField } from "./LotKeywordField";
 import styles from "./LotWants.module.scss";
 import { parseTargetLot } from "../model/form";
 
@@ -21,6 +22,8 @@ type Props = {
   disabled: boolean;
   errors: Partial<Record<LotField, string>>;
   touched: Partial<Record<LotField, boolean>>;
+  keywordQuery: string;
+  onKeywordQuery: (value: string) => void;
   query: string;
   onQuery: (value: string) => void;
   onChange: Dispatch<SetStateAction<LotFormValues>>;
@@ -78,6 +81,8 @@ export function LotWants({
   disabled,
   errors,
   touched,
+  keywordQuery,
+  onKeywordQuery,
   query,
   onQuery,
   onChange,
@@ -344,21 +349,16 @@ export function LotWants({
         title="Мои пожелания"
         description="Расскажите, какие вещи или услуги вам интересны"
       >
-        <FormField
-          name="keywords"
-          label="Что хотите получить"
-          maxLength={300}
-          value={values.keywords}
-          multiline
-          required
+        <LotKeywordField
+          tags={values.keywords}
+          query={keywordQuery}
           disabled={disabled}
-          error={touched.keywords ? errors.keywords : undefined}
-          onChange={(keywords) => onChange({ ...values, keywords })}
+          touched={Boolean(touched.keywords)}
+          error={errors.keywords}
+          onQuery={onKeywordQuery}
+          onChange={(keywords) => onChange((current) => ({ ...current, keywords }))}
           onBlur={() => onBlur("keywords")}
         />
-        <p className={styles.hint}>
-          Свободный текст до 300 символов, например: «Велосипед или самокат».
-        </p>
       </Choice>
       <Choice
         {...choiceProps}

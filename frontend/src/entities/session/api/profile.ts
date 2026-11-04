@@ -55,13 +55,14 @@ function parseProfile(envelope: unknown): AuthUser {
     contacts: data.contacts,
     emailConfirmed: data.email_confirmed,
     status: data.status,
+    role: data.role,
     frozenReason: data.frozen_reason,
     rating: data.rating,
     reviewsCount: data.reviews_count,
     createdAt: data.created_at,
   };
 
-  if (!isAuthUser(user) || typeof user.emailConfirmed !== "boolean")
+  if (!isAuthUser(user) || typeof user.emailConfirmed !== "boolean" || !["USER", "ADMIN"].includes(String(user.role)))
     throw new ApiError("Не удалось загрузить профиль. Попробуйте позже.", 502);
 
   return user;

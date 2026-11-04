@@ -13,7 +13,7 @@ export type LotFormValues = {
   delivery: Lot["delivery_method"];
   cost: string;
   wantTypes: WantType[];
-  keywords: string;
+  keywords: string[];
   targetCategoryIds: string[];
   targetLots: string[];
 };
@@ -50,7 +50,7 @@ export function initialValues(lot: Lot | null, region: string): LotFormValues {
         .filter((want) => want.want_type === "KEYWORDS")
         .map((want) => want.keywords ?? "")
         .filter(Boolean),
-    ).join("; "),
+    ),
     targetCategoryIds: unique(
       wants
         .filter((want) => want.want_type === "CATEGORY" && want.target_category)
@@ -96,9 +96,13 @@ export function validateLotForm(
 
   if (
     values.wantTypes.includes("KEYWORDS") &&
-    (values.keywords.trim().length < 2 || values.keywords.length > 300)
+    (values.keywords.length === 0 ||
+      values.keywords.length > 10 ||
+      values.keywords.some((word) => word.trim().length < 2) ||
+      values.keywords.join("").length > 300 ||
+      new Set(values.keywords.map((word) => word.trim().toLocaleLowerCase("ru-RU"))).size !== values.keywords.length)
   )
-    errors.keywords = "Укажите пожелания: от 2 до 300 символов";
+    errors.keywords = "Добавьте от 1 до 10 разных пожеланий, от 2 символов каждое, до 300 символов суммарно";
 
   if (
     values.wantTypes.includes("CATEGORY") &&
@@ -138,14 +142,18 @@ export function validatePhotos(files: File[]): string | null {
 export function isFormValues(value: unknown): value is LotFormValues {
   if (!isRecord(value)) return false;
 
-  const stringsValid = ["title", "description", "categoryId", "region", "cost", "keywords"].every(
+  const stringsValid = ["title", "description", "categoryId", "region", "cost"].every(
     (key) =>
       typeof value[key] === "string" &&
-      value[key].length <= (key === "description" ? 1000 : key === "keywords" ? 300 : 120),
+      value[key].length <= (key === "description" ? 1000 : 120),
   );
 
   return (
     stringsValid &&
+    Array.isArray(value.keywords) &&
+    value.keywords.length <= 10 &&
+    value.keywords.every((word) => typeof word === "string" && word.length <= 300) &&
+    value.keywords.join("").length <= 300 &&
     ["PRODUCT", "SERVICE"].includes(String(value.type)) &&
     ["BOTH", "PICKUP", "DELIVERY"].includes(String(value.delivery)) &&
     Array.isArray(value.wantTypes) &&
@@ -162,6 +170,13 @@ export function isFormValues(value: unknown): value is LotFormValues {
 }
 export function readFormValues(value: unknown): LotFormValues | null {
   if (isFormValues(value)) return value;
+
+  if (isRecord(value) && typeof value.keywords === "string" && value.keywords.length <= 300) {
+    const migrated = { ...value, keywords: value.keywords.trim() ? [value.keywords.trim()] : [] };
+    if (isFormValues(migrated)) return migrated;
+
+    value = migrated;
+  }
 
   if (
     !isRecord(value) ||
@@ -222,12 +237,14 @@ export function formWants(values: LotFormValues, categories: LotCategory[]): Lot
     );
 
   if (values.wantTypes.includes("KEYWORDS"))
-    wants.push({
-      want_type: "KEYWORDS",
-      keywords: values.keywords.trim(),
-      target_category: null,
-      target_lot: null,
-    });
+    values.keywords.forEach((keyword) =>
+      wants.push({
+        want_type: "KEYWORDS",
+        keywords: keyword.trim(),
+        target_category: null,
+        target_lot: null,
+      }),
+    );
 
   if (values.wantTypes.includes("ANY"))
     wants.push({ want_type: "ANY", keywords: null, target_category: null, target_lot: null });
@@ -238,11 +255,11 @@ export function toMultipart(values: LotFormValues, files: File[]): FormData {
   const body = new FormData();
   body.set("title", values.title.trim());
   body.set("description", values.description.trim());
-  body.set("categoryId", values.categoryId);
+  body.set("category_id", values.categoryId);
   body.set("region", values.region);
   body.set("type", values.type);
-  body.set("deliveryMethod", values.delivery);
-  body.set("estimatedCost", values.cost.replace(",", "."));
+  body.set("delivery_method", values.delivery);
+  body.set("estimated_cost", values.cost.replace(",", "."));
   files.forEach((file) => body.append("photos", file));
   formWants(values, []).forEach((want, index) => {
     body.set(`wants[${index}].wantType`, want.want_type);
@@ -272,7 +289,7 @@ export function hasFormChanges(
     ...(includeWants
       ? {
         wantTypes: ordered(value.wantTypes),
-        keywords: value.wantTypes.includes("KEYWORDS") ? value.keywords.trim() : "",
+        keywords: value.wantTypes.includes("KEYWORDS") ? ordered(value.keywords.map((word) => word.trim())) : [],
         targetCategoryIds: value.wantTypes.includes("CATEGORY")
           ? ordered(value.targetCategoryIds.map((id) => String(Number(id))))
           : [],

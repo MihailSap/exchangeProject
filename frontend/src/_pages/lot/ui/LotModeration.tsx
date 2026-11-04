@@ -16,7 +16,7 @@ import { Icon } from "@/src/shared/ui/icon";
 const asset = (name: string) => `/images/lot-moderation/${name}.svg`;
 export function LotModeration({ lot, onCreateAnother }: { lot: Lot; onCreateAnother: () => void }) {
   const heading = useRef<HTMLHeadingElement>(null);
-  const cover = [...lot.photos].sort((a, b) => a.order - b.order)[0];
+  const cover = [...lot.photos].sort((a, b) => a.id - b.id)[0];
   const [targetTitles, setTargetTitles] = useState<Record<string, string>>({});
   useEffect(() => {
     heading.current?.focus();

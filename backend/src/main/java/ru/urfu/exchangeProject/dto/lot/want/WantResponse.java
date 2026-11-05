@@ -5,6 +5,7 @@ import ru.urfu.exchangeProject.dto.category.CategoryTargetResponse;
 import ru.urfu.exchangeProject.model.lot.want.WantType;
 
 public record WantResponse(
+        Long id,
         @JsonProperty("want_type")
         WantType wantType,
         String keywords,

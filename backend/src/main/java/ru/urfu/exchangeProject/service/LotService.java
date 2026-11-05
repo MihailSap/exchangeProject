@@ -29,11 +29,12 @@ public interface LotService {
             Long categoryId,
             String region,
             LotType type,
-            DeliveryMethod deliveryMethod,
+            boolean delivery,
+            boolean pickup,
             BigDecimal minCost,
             BigDecimal maxCost,
             String sort,
             int page,
             int perPage
-    );
+    ) throws CategoryNotFound;
 }

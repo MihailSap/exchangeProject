@@ -60,7 +60,9 @@ public class WantServiceImpl implements WantService {
             want.setKeywords(wantCreateRequest.keywords());
         }
 
-        return wantRepository.save(want);
+        Want savedWant = wantRepository.save(want);
+        lot.getWants().add(savedWant);
+        return savedWant;
     }
 
     @Transactional

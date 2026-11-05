@@ -46,7 +46,9 @@ public class LotPhotoServiceImpl implements LotPhotoService {
         String fileName = fileService.save(photo);
         lotPhoto.setName(fileName);
 
-        return lotPhotoDataRepository.save(lotPhoto);
+        LotPhoto savedPhoto = lotPhotoDataRepository.save(lotPhoto);
+        lot.getLotPhotoDataList().add(savedPhoto);
+        return savedPhoto;
     }
 
     @Transactional

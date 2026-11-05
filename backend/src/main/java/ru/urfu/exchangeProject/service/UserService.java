@@ -14,8 +14,6 @@ public interface UserService {
 
     String setPasswordResetToken(User user);
 
-    Page<User> getAll(int page, int size, String filter);
-
     User getById(long id) throws UserNotFoundException;
 
     User freezeUser(User user, String frozenReason);

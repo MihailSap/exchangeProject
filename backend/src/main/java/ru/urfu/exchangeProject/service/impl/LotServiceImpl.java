@@ -1,17 +1,17 @@
+
 package ru.urfu.exchangeProject.service.impl;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 import ru.urfu.exchangeProject.dto.lot.LotCreateRequest;
 import ru.urfu.exchangeProject.dto.lot.LotUpdateRequest;
 import ru.urfu.exchangeProject.dto.lot.want.WantCreateRequest;
+import ru.urfu.exchangeProject.exception.customEx.news.BadRequestException;
 import ru.urfu.exchangeProject.exception.customEx.news.CategoryNotFound;
 import ru.urfu.exchangeProject.exception.customEx.news.LotNotFoundException;
 import ru.urfu.exchangeProject.model.category.Category;
@@ -27,7 +27,10 @@ import ru.urfu.exchangeProject.service.WantService;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class LotServiceImpl implements LotService {
@@ -41,7 +44,8 @@ public class LotServiceImpl implements LotService {
     public LotServiceImpl(
             LotRepository lotRepository,
             CategoryService categoryService,
-            LotPhotoService lotPhotoService, WantService wantService
+            LotPhotoService lotPhotoService,
+            WantService wantService
     ) {
         this.lotRepository = lotRepository;
         this.categoryService = categoryService;
@@ -63,19 +67,18 @@ public class LotServiceImpl implements LotService {
             Long categoryId,
             String region,
             LotType type,
-            DeliveryMethod deliveryMethod,
+            boolean delivery,
+            boolean pickup,
             BigDecimal minCost,
             BigDecimal maxCost,
             String sort,
             int page,
             int perPage
-    ) {
+    ) throws CategoryNotFound {
+
         if (minCost != null && maxCost != null
                 && minCost.compareTo(maxCost) > 0) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "min_cost не может быть больше max_cost"
-            );
+            throw new BadRequestException();
         }
 
         LotSort lotSort;
@@ -83,40 +86,102 @@ public class LotServiceImpl implements LotService {
         try {
             lotSort = LotSort.fromValue(sort);
         } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    exception.getMessage()
-            );
+            throw new BadRequestException();
         }
 
         q = q != null ? q.trim() : "";
         region = region != null ? region.trim() : "";
 
-        // В API первая страница имеет номер 1,
-        // а PageRequest начинает нумерацию с 0.
         Pageable pageable = PageRequest.of(
                 page - 1,
                 perPage,
                 lotSort.toSort()
         );
 
+        List<Long> categoryIds = categoryId == null
+                ? List.of(-1L)
+                : getCategoryIdsWithDescendants(categoryId);
+
+        boolean filterByDeliveryMethod = delivery || pickup;
+
+        List<DeliveryMethod> deliveryMethods;
+
+        if (delivery && pickup) {
+            deliveryMethods = List.of(
+                    DeliveryMethod.DELIVERY,
+                    DeliveryMethod.PICKUP,
+                    DeliveryMethod.BOTH
+            );
+        } else if (delivery) {
+            deliveryMethods = List.of(
+                    DeliveryMethod.DELIVERY,
+                    DeliveryMethod.BOTH
+            );
+        } else if (pickup) {
+            deliveryMethods = List.of(
+                    DeliveryMethod.PICKUP,
+                    DeliveryMethod.BOTH
+            );
+        } else {
+            deliveryMethods = List.of(
+                    DeliveryMethod.DELIVERY,
+                    DeliveryMethod.PICKUP,
+                    DeliveryMethod.BOTH
+            );
+        }
+
         return lotRepository.searchLots(
                 LotStatus.ACTIVE,
                 UserStatus.FROZEN,
                 q,
                 categoryId,
+                categoryIds,
                 region,
                 type,
-                deliveryMethod,
+                filterByDeliveryMethod,
+                deliveryMethods,
                 minCost,
                 maxCost,
                 pageable
         );
     }
 
+    private List<Long> getCategoryIdsWithDescendants(Long categoryId)
+            throws CategoryNotFound {
+
+        Category category = categoryService.findById(categoryId);
+
+        Set<Long> categoryIds = new LinkedHashSet<>();
+        collectCategoryIds(category, categoryIds);
+
+        return new ArrayList<>(categoryIds);
+    }
+
+    private void collectCategoryIds(
+            Category category,
+            Set<Long> categoryIds
+    ) {
+        if (category == null || !categoryIds.add(category.getId())) {
+            return;
+        }
+
+        if (category.getChildren() == null) {
+            return;
+        }
+
+        for (Category child : category.getChildren()) {
+            collectCategoryIds(child, categoryIds);
+        }
+    }
+
     @Transactional
     @Override
-    public Lot create(LotCreateRequest lotCreateRequest, String region, User user) throws CategoryNotFound {
+    public Lot create(
+            LotCreateRequest lotCreateRequest,
+            String region,
+            User user
+    ) throws CategoryNotFound {
+
         Lot lot = new Lot();
         lot.setTitle(lotCreateRequest.title());
         lot.setDescription(lotCreateRequest.description());
@@ -129,13 +194,17 @@ public class LotServiceImpl implements LotService {
         lot.setCreatedAt(Instant.now());
         lot.setUpdatedAt(Instant.now());
 
-        Category category = categoryService.findById(lotCreateRequest.categoryId());
+        Category category = categoryService.findById(
+                lotCreateRequest.categoryId()
+        );
         lot.setCategory(category);
+
         lotRepository.save(lot);
 
         List<MultipartFile> photos = lotCreateRequest.photos();
-        if(photos != null && !photos.isEmpty()){
-            for(MultipartFile photo : photos){
+
+        if (photos != null && !photos.isEmpty()) {
+            for (MultipartFile photo : photos) {
                 lotPhotoService.create(lot, photo);
             }
         }
@@ -147,46 +216,51 @@ public class LotServiceImpl implements LotService {
 
     @Transactional
     @Override
-    public Lot update(LotUpdateRequest lotUpdateRequest, Lot lot) throws CategoryNotFound {
+    public Lot update(
+            LotUpdateRequest lotUpdateRequest,
+            Lot lot
+    ) throws CategoryNotFound {
+
         String title = lotUpdateRequest.title();
-        if(title != null && !title.isBlank()){
+        if (title != null && !title.isBlank()) {
             lot.setTitle(title);
         }
 
         String description = lotUpdateRequest.description();
-        if(description != null && !description.isBlank()){
+        if (description != null && !description.isBlank()) {
             lot.setDescription(description);
         }
 
         Long categoryId = lotUpdateRequest.categoryId();
-        if(categoryId != null){
+        if (categoryId != null) {
             Category category = categoryService.findById(categoryId);
             lot.setCategory(category);
         }
 
         String region = lotUpdateRequest.region();
-        if(region != null && !region.isBlank()){
+        if (region != null && !region.isBlank()) {
             lot.setRegion(region);
         }
 
         LotType lotType = lotUpdateRequest.type();
-        if(lotType != null){
+        if (lotType != null) {
             lot.setType(lotType);
         }
 
         DeliveryMethod deliveryMethod = lotUpdateRequest.deliveryMethod();
-        if(deliveryMethod != null){
+        if (deliveryMethod != null) {
             lot.setDeliveryMethod(deliveryMethod);
         }
 
         BigDecimal estimatedCost = lotUpdateRequest.estimatedCost();
-        if(estimatedCost != null){
+        if (estimatedCost != null) {
             lot.setEstimatedCost(estimatedCost);
         }
 
         List<MultipartFile> photos = lotUpdateRequest.photos();
-        if(photos != null && !photos.isEmpty()){
-            for(MultipartFile photo : photos){
+
+        if (photos != null && !photos.isEmpty()) {
+            for (MultipartFile photo : photos) {
                 lotPhotoService.create(lot, photo);
             }
         }
@@ -195,15 +269,17 @@ public class LotServiceImpl implements LotService {
 
         lot.setStatus(LotStatus.MODERATION);
         lot.setUpdatedAt(Instant.now());
+
         return lotRepository.save(lot);
     }
 
     @Transactional
     @Override
-    public Lot republicateLot(Lot lot){
+    public Lot republicateLot(Lot lot) {
         lot.setStatus(LotStatus.ACTIVE);
         lot.setPublishedAt(Instant.now());
         lot.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
+
         return lotRepository.save(lot);
     }
 
@@ -214,10 +290,13 @@ public class LotServiceImpl implements LotService {
         return lotRepository.save(lot);
     }
 
-    @Transactional
-    private void createWantsForLot(List<WantCreateRequest> wantCreateRequests, Lot lot) throws CategoryNotFound {
-        if(wantCreateRequests != null && !wantCreateRequests.isEmpty()){
-            for(WantCreateRequest wantCreateRequest : wantCreateRequests){
+    private void createWantsForLot(
+            List<WantCreateRequest> wantCreateRequests,
+            Lot lot
+    ) throws CategoryNotFound {
+
+        if (wantCreateRequests != null && !wantCreateRequests.isEmpty()) {
+            for (WantCreateRequest wantCreateRequest : wantCreateRequests) {
                 wantService.create(wantCreateRequest, lot);
             }
         }

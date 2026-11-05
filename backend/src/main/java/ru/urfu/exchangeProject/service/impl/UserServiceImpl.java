@@ -23,7 +23,6 @@ import ru.urfu.exchangeProject.model.user.UserStatus;
 import ru.urfu.exchangeProject.repository.UserRepository;
 import ru.urfu.exchangeProject.service.FileService;
 import ru.urfu.exchangeProject.service.UserService;
-import ru.urfu.exchangeProject.specification.UserSpecification;
 
 import java.time.Instant;
 import java.util.List;
@@ -34,7 +33,6 @@ public class UserServiceImpl implements UserService {
     private final FileService fileService;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final UserSpecification userSpecification;
 
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final int TOKEN_BYTES = 32;
@@ -46,29 +44,16 @@ public class UserServiceImpl implements UserService {
     public UserServiceImpl(
             FileService fileService,
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder,
-            UserSpecification userSpecification
+            PasswordEncoder passwordEncoder
     ) {
         this.fileService = fileService;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.userSpecification = userSpecification;
     }
 
     public User getByEmailConfirmationToken(String token) {
         return userRepository.findByEmailConfirmationToken(token)
                 .orElseThrow(EmailConfirmationTokenInvalidException::new);
-    }
-
-    @Override
-    public Page<User> getAll(int page, int size, String filter) {
-        Sort sort = Sort.by(
-                Sort.Order.by("role").with(Sort.Direction.DESC),
-                Sort.Order.by("id").with(Sort.Direction.ASC));
-
-        Pageable pageable = PageRequest.of(page, size, sort);
-        Specification<User> spec = userSpecification.loginOrEmailContains(filter);
-        return userRepository.findAll(spec, pageable);
     }
 
     @Override
@@ -143,9 +128,10 @@ public class UserServiceImpl implements UserService {
 
         MultipartFile avatar = userUpdateRequest.avatar();
         if(avatar != null && avatar.getName() != null && !avatar.getName().isBlank()){
-            String avatarFileTitle = fileService.save(avatar);
-            user.setAvatarUrl(avatarFileTitle);
-            fileService.delete(user.getAvatarUrl());
+            String oldAvatarUrl = user.getAvatarUrl();
+            String newAvatarUrl = fileService.save(avatar);
+            user.setAvatarUrl(newAvatarUrl);
+            fileService.delete(oldAvatarUrl);
         }
 
         user.setUpdatedAt(Instant.now());

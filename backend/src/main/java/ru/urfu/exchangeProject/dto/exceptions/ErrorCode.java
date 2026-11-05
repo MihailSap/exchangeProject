@@ -18,5 +18,5 @@ public enum ErrorCode {
     TOKEN_INVALID,
     LOT_FORBIDDEN,
     LOT_CONFLICT,
-    USER_CONFLICT
+    BAD_REQUEST, USER_CONFLICT
 }

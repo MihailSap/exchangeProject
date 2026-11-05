@@ -1,3 +1,4 @@
+
 package ru.urfu.exchangeProject.repository;
 
 import org.springframework.data.domain.Page;
@@ -13,6 +14,7 @@ import ru.urfu.exchangeProject.model.lot.LotType;
 import ru.urfu.exchangeProject.model.user.UserStatus;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Repository
 public interface LotRepository extends JpaRepository<Lot, Long> {
@@ -35,7 +37,7 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
 
                       AND (
                           :categoryId IS NULL
-                          OR l.category.id = :categoryId
+                          OR l.category.id IN :categoryIds
                       )
 
                       AND (
@@ -49,8 +51,8 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
                       )
 
                       AND (
-                          :deliveryMethod IS NULL
-                          OR l.deliveryMethod = :deliveryMethod
+                          :filterByDeliveryMethod = false
+                          OR l.deliveryMethod IN :deliveryMethods
                       )
 
                       AND (
@@ -81,7 +83,7 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
 
                       AND (
                           :categoryId IS NULL
-                          OR l.category.id = :categoryId
+                          OR l.category.id IN :categoryIds
                       )
 
                       AND (
@@ -95,8 +97,8 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
                       )
 
                       AND (
-                          :deliveryMethod IS NULL
-                          OR l.deliveryMethod = :deliveryMethod
+                          :filterByDeliveryMethod = false
+                          OR l.deliveryMethod IN :deliveryMethods
                       )
 
                       AND (
@@ -115,9 +117,11 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
             @Param("frozenStatus") UserStatus frozenStatus,
             @Param("q") String q,
             @Param("categoryId") Long categoryId,
+            @Param("categoryIds") List<Long> categoryIds,
             @Param("region") String region,
             @Param("type") LotType type,
-            @Param("deliveryMethod") DeliveryMethod deliveryMethod,
+            @Param("filterByDeliveryMethod") boolean filterByDeliveryMethod,
+            @Param("deliveryMethods") List<DeliveryMethod> deliveryMethods,
             @Param("minCost") BigDecimal minCost,
             @Param("maxCost") BigDecimal maxCost,
             Pageable pageable

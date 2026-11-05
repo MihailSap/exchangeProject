@@ -30,6 +30,7 @@ public class WantMapper {
     public WantResponse mapToWantResponse(Want want){
         WantType wantType = want.getWantType();
         return new WantResponse(
+                want.getId(),
                 wantType,
                 WantType.KEYWORDS.equals(wantType) || WantType.ANY.equals(wantType) ? want.getKeywords() : null,
                 WantType.CATEGORY.equals(wantType) || WantType.ANY.equals(wantType)

@@ -63,18 +63,24 @@ public class LotController {
     @Operation(description = "Получение лота по id")
     @GetMapping("/{id}")
     public BaseResponse<LotResponse> getById(@PathVariable("id") long id) throws LotNotFoundException, UserNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
-
         Lot lot = lotService.getById(id);
         LotStatus lotStatus = lot.getStatus();
         if(lotStatus == LotStatus.ARCHIVED || lotStatus == LotStatus.DRAFT || lotStatus == LotStatus.DELETED
                 || lotStatus == LotStatus.MODERATION || lotStatus == LotStatus.REJECTED){
-            validateOwner(user, lot.getUser());
+            try{
+                String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
+                User user = userService.getByEmail(authenticatedUserEmail);
+                validateOwner(user, lot.getUser());
+            } catch (Exception e){
+                throw new LotForbiddenException();
+            }
         }
 
-        if(lot.getUser().getStatus() == UserStatus.FROZEN){
-            throw new LotForbiddenException();
+        User lotOwner = lot.getUser();
+        if(lotOwner.getStatus() == UserStatus.FROZEN){
+            String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
+            User user = userService.getByEmail(authenticatedUserEmail);
+            validateOwner(user, lotOwner);
         }
 
         LotResponse lotResponse = lotMapper.mapToLotResponse(lot);
@@ -85,26 +91,48 @@ public class LotController {
     @GetMapping
     public LotListResponse searchLots(
             @RequestParam(required = false) String q,
-            @RequestParam(name = "category_id", required = false) @Positive Long categoryId,
+            @RequestParam(name = "category_id", required = false)
+            @Positive Long categoryId,
             @RequestParam(required = false) String region,
             @RequestParam(required = false) LotType type,
-            @RequestParam(name = "delivery_method", required = false) DeliveryMethod deliveryMethod,
-            @RequestParam(name = "min_cost", required = false) BigDecimal minCost,
-            @RequestParam(name = "max_cost", required = false) BigDecimal maxCost,
+            @RequestParam(defaultValue = "false") boolean delivery,
+            @RequestParam(defaultValue = "false") boolean pickup,
+            @RequestParam(name = "min_cost", required = false)
+            BigDecimal minCost,
+            @RequestParam(name = "max_cost", required = false)
+            BigDecimal maxCost,
             @RequestParam(defaultValue = "date_desc") String sort,
             @RequestParam(defaultValue = "1") @Min(1) int page,
-            @RequestParam(name = "per_page", defaultValue = "20") @Min(1) @Max(100) int perPage
+            @RequestParam(name = "per_page", defaultValue = "20")
+            @Min(1) @Max(100) int perPage
+    ) throws CategoryNotFound {
 
-    ) {
         Page<Lot> lotPage = lotService.searchLots(
-                q, categoryId, region, type, deliveryMethod, minCost, maxCost, sort, page, perPage);
+                q,
+                categoryId,
+                region,
+                type,
+                delivery,
+                pickup,
+                minCost,
+                maxCost,
+                sort,
+                page,
+                perPage
+        );
 
         List<LotResponse> lotResponses = lotPage
                 .map(lotMapper::mapToLotResponse)
                 .getContent();
 
         return new LotListResponse(
-                lotResponses, new LotListResponse.Meta(page, perPage, lotPage.getTotalElements()));
+                lotResponses,
+                new LotListResponse.Meta(
+                        page,
+                        perPage,
+                        lotPage.getTotalElements()
+                )
+        );
     }
 
     @Operation(description = "Создание лота")
@@ -123,6 +151,11 @@ public class LotController {
             region = requestRegion;
         } else {
             region = user.getRegion();
+        }
+
+        int lotPhotoCount = lotCreateRequest.photos().size();
+        if(lotPhotoCount < 1 || lotPhotoCount > 10 || lotCreateRequest.wants().isEmpty()){
+            throw new BadRequestException();
         }
 
         Lot lot = lotService.create(lotCreateRequest, region, user);
@@ -145,6 +178,10 @@ public class LotController {
 
         if(LotStatus.IN_EXCHANGE.equals(lot.getStatus()) || LotStatus.COMPLETED.equals(lot.getStatus())){
             throw new LotConflictException();
+        }
+
+        if(lot.getLotPhotoDataList().size() + lotUpdateRequest.photos().size() > 10){
+            throw new BadRequestException();
         }
 
         Lot updatedLot = lotService.update(lotUpdateRequest, lot);
@@ -198,6 +235,10 @@ public class LotController {
         validateOwner(user, lot.getUser());
 
         LotPhoto lotPhoto = lotPhotoService.getById(photoId);
+        if(!lot.equals(lotPhoto.getLot()) || lot.getLotPhotoDataList().size() <= 1
+                || lot.getStatus() == LotStatus.IN_EXCHANGE || lot.getStatus() == LotStatus.COMPLETED){
+            throw new LotConflictException();
+        }
         lotPhotoService.delete(lotPhoto);
     }
 
@@ -214,6 +255,10 @@ public class LotController {
         validateOwner(user, lot.getUser());
 
         Want want = wantService.getById(wantId);
+        if(!lot.equals(want.getLot()) || lot.getWants().size() <= 1
+                || lot.getStatus() == LotStatus.IN_EXCHANGE || lot.getStatus() == LotStatus.COMPLETED){
+            throw new LotConflictException();
+        }
         wantService.delete(want);
     }
 

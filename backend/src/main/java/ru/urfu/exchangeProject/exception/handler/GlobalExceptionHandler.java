@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import ru.urfu.exchangeProject.dto.exceptions.*;
 import ru.urfu.exchangeProject.exception.customEx.InvalidRefreshTokenException;
 import ru.urfu.exchangeProject.exception.customEx.news.*;
-import ru.urfu.exchangeProject.exception.globalEx.InvalidException;
 import ru.urfu.exchangeProject.exception.globalEx.NotFoundException;
 
 import java.util.List;
@@ -59,6 +58,14 @@ public class GlobalExceptionHandler {
         logger.error("CategoryCircularHierarchyException");
         ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
                 ErrorCode.CATEGORY_CIRCULAR_HIERARCHY_EXCEPTION, null, null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ExceptionResponse> handleSlugExistsException(BadRequestException ex){
+        logger.error("BadRequestException");
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ErrorCode.BAD_REQUEST, null, null);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ExceptionResponse(exceptionErrorResponse));
     }
 

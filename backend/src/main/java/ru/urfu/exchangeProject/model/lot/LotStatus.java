@@ -1,12 +1,12 @@
 package ru.urfu.exchangeProject.model.lot;
 
 public enum LotStatus {
-    DRAFT,
-    MODERATION,
-    REJECTED,
+    DRAFT, //
+    MODERATION, //
+    REJECTED, //
     ACTIVE,
-    ARCHIVED,
+    ARCHIVED, //
     IN_EXCHANGE,
     COMPLETED,
-    DELETED
+    DELETED //
 }

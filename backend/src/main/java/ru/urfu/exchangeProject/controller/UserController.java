@@ -61,6 +61,16 @@ public class UserController {
         return new BaseResponse<>(userProfileResponse);
     }
 
+    @Operation(description = "Удаление аватара текущего пользователя")
+    @DeleteMapping("/me/avatar")
+    public BaseResponse<UserProfileResponse> deleteAvatar() throws UserNotFoundException {
+        String email = authService.getAuthenticatedUserEmail();
+        User user = userService.getByEmail(email);
+        User updatedUser = userService.deleteAvatar(user);
+        UserProfileResponse userProfileResponse = userMapper.mapToUserProfileResponse(updatedUser);
+        return new BaseResponse<>(userProfileResponse);
+    }
+
     @Operation(description = "Получение публичного профиля пользователя")
     @GetMapping("/{userId}")
     public BaseResponse<UserPublicProfileResponse> getUserPublicProfile(@PathVariable("userId") long userId)

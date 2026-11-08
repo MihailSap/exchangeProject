@@ -76,8 +76,10 @@ public class LotServiceImpl implements LotService {
             int perPage
     ) throws CategoryNotFound {
 
-        if (minCost != null && maxCost != null
-                && minCost.compareTo(maxCost) > 0) {
+        if (minCost != null && maxCost != null && minCost.compareTo(maxCost) > 0
+                || (minCost != null && minCost.compareTo(BigDecimal.ZERO) < 0)
+                || (maxCost != null && maxCost.compareTo(BigDecimal.ZERO) < 0)
+                || (q != null && q.length() > 200)) {
             throw new BadRequestException();
         }
 

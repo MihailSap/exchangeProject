@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import ru.urfu.exchangeProject.dto.exceptions.*;
 import ru.urfu.exchangeProject.exception.customEx.InvalidRefreshTokenException;
 import ru.urfu.exchangeProject.exception.customEx.news.*;
@@ -111,6 +112,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(FileInvalidException.class)
     public ResponseEntity<ExceptionResponse> handleFileInvalidEx(FileInvalidException ex) {
+        logger.error("FileInvalidException: {}", ex.getMessage(), ex);
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ErrorCode.INVALID_EXCEPTION, null, null);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ExceptionResponse> handleFileInvalidExByMaxUploadSizeExceededException(
+            FileInvalidException ex) {
         logger.error("FileInvalidException: {}", ex.getMessage(), ex);
         ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
                 ErrorCode.INVALID_EXCEPTION, null, null);

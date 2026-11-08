@@ -26,6 +26,8 @@ public interface UserService {
 
     User update(UserUpdateRequest userUpdateRequest, User user);
 
+    User deleteAvatar(User user);
+
     void updatePassword(User user, String newPassword);
 
     void setNullPasswordResetToken(User user);

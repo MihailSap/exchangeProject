@@ -13,12 +13,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.BaseResponse;
 import ru.urfu.exchangeProject.dto.lot.LotCreateRequest;
 import ru.urfu.exchangeProject.dto.lot.LotListResponse;
 import ru.urfu.exchangeProject.dto.lot.LotResponse;
 import ru.urfu.exchangeProject.dto.lot.LotUpdateRequest;
+import ru.urfu.exchangeProject.dto.lot.want.WantCreateRequest;
 import ru.urfu.exchangeProject.exception.customEx.UserNotFoundException;
 import ru.urfu.exchangeProject.exception.customEx.news.*;
 import ru.urfu.exchangeProject.mapper.LotMapper;
@@ -78,9 +80,13 @@ public class LotController {
 
         User lotOwner = lot.getUser();
         if(lotOwner.getStatus() == UserStatus.FROZEN){
-            String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-            User user = userService.getByEmail(authenticatedUserEmail);
-            validateOwner(user, lotOwner);
+            try{
+                String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
+                User user = userService.getByEmail(authenticatedUserEmail);
+                validateOwner(user, lotOwner);
+            } catch (Exception e){
+                throw new LotForbiddenException();
+            }
         }
 
         LotResponse lotResponse = lotMapper.mapToLotResponse(lot);
@@ -153,9 +159,13 @@ public class LotController {
             region = user.getRegion();
         }
 
-        int lotPhotoCount = lotCreateRequest.photos().size();
-        if(lotPhotoCount < 1 || lotPhotoCount > 10 || lotCreateRequest.wants().isEmpty()){
-            throw new BadRequestException();
+        List<MultipartFile> lotCreateRequestPhotos = lotCreateRequest.photos();
+        List<WantCreateRequest> lotCreateRequestWants = lotCreateRequest.wants();
+        if(lotCreateRequestPhotos != null && lotCreateRequestWants != null){
+            int lotPhotoCount = lotCreateRequestPhotos.size();
+            if(lotPhotoCount < 1 || lotPhotoCount > 10 || lotCreateRequestWants.isEmpty()){
+                throw new BadRequestException();
+            }
         }
 
         Lot lot = lotService.create(lotCreateRequest, region, user);
@@ -180,7 +190,10 @@ public class LotController {
             throw new LotConflictException();
         }
 
-        if(lot.getLotPhotoDataList().size() + lotUpdateRequest.photos().size() > 10){
+        List<MultipartFile> lotUpdateRequestPhotos = lotUpdateRequest.photos();
+        List<LotPhoto> lotPhotoDataList = lot.getLotPhotoDataList();
+        if(lotUpdateRequestPhotos != null && lotPhotoDataList != null
+                && (lotPhotoDataList.size() + lotUpdateRequestPhotos.size() > 10)){
             throw new BadRequestException();
         }
 

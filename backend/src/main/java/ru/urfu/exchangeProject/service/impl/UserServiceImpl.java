@@ -138,6 +138,14 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+    @Override
+    public User deleteAvatar(User user) {
+        String avatarUrl = user.getAvatarUrl();
+        user.setAvatarUrl(null);
+        fileService.delete(avatarUrl);
+        return userRepository.save(user);
+    }
+
     @Transactional
     @Override
     public void delete(User user) {

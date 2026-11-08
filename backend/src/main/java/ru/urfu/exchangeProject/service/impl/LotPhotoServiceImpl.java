@@ -54,7 +54,7 @@ public class LotPhotoServiceImpl implements LotPhotoService {
     @Transactional
     @Override
     public void delete(LotPhoto lotPhoto){
-        fileService.delete(lotPhoto.getName());
         lotPhotoDataRepository.delete(lotPhoto);
+        fileService.delete(lotPhoto.getName());
     }
 }

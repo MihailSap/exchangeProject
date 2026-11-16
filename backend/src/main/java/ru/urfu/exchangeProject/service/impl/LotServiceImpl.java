@@ -292,6 +292,29 @@ public class LotServiceImpl implements LotService {
         return lotRepository.save(lot);
     }
 
+    @Transactional
+    @Override
+    public Lot approve(Lot lot){
+        lot.setStatus(LotStatus.ACTIVE);
+
+        Instant now = Instant.now();
+        lot.setPublishedAt(now);
+        lot.setExpiresAt(getExpiresAt(now));
+        return lotRepository.save(lot);
+    }
+
+    @Transactional
+    @Override
+    public Lot reject(Lot lot, String rejectReason){
+        lot.setStatus(LotStatus.REJECTED);
+        lot.setRejectReason(rejectReason);
+        return lotRepository.save(lot);
+    }
+
+    private Instant getExpiresAt(Instant now){
+        return now.plus(30, ChronoUnit.DAYS);
+    }
+
     private void createWantsForLot(
             List<WantCreateRequest> wantCreateRequests,
             Lot lot

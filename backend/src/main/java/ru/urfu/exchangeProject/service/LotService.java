@@ -22,6 +22,10 @@ public interface LotService {
 
     Lot republicateLot(Lot lot);
 
+    Lot approve(Lot lot);
+
+    Lot reject(Lot lot, String rejectReason);
+
     Lot softDelete(Lot lot);
 
     Page<Lot> searchLots(

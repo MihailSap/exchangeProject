@@ -1,0 +1,85 @@
+.panel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 20px;
+  margin-bottom: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: var(--color-surface);
+}
+
+.panel h2,
+.panel p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.panel p {
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.list span {
+  overflow-wrap: anywhere;
+}
+
+.panel button {
+  flex-shrink: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 500ms ease, color 500ms ease, border-color 500ms ease, transform 180ms ease;
+}
+
+.panel button:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.panel button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.panel button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+@media (max-width: 600px) {
+  .panel {
+    padding: 16px;
+  }
+
+  .list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -37,6 +37,20 @@ export function readTokens(): { accessToken: string; refreshToken: string } | nu
     : null;
 }
 
+export function accessTokenNeedsRenewal(token: string): boolean {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3 || !parts[1] || token.length > 16_384) return false;
+
+    const payload: unknown = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/")));
+
+    return isRecord(payload) && typeof payload.exp === "number" &&
+      Number.isFinite(payload.exp) && payload.exp <= Date.now() / 1000 + 5;
+  } catch {
+    return false;
+  }
+}
+
 export function replaceTokens(
   previousRefreshToken: string,
   accessToken: string,

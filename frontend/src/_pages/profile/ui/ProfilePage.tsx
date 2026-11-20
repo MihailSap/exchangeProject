@@ -16,7 +16,7 @@ import type { Lot, LotStatus } from "@/src/entities/lot";
 import type { UserProfile } from "@/src/entities/profile";
 import type { IconName } from "@/src/shared/ui/icon";
 
-import { archiveLot, republishLot, initializeFixtureLots } from "@/src/entities/lot";
+import { archiveFixtureLot, getLotPath, republishLot, initializeFixtureLots } from "@/src/entities/lot";
 import { getPublicProfile, resendConfirmation } from "@/src/entities/profile";
 import { updateSessionProfile, useSession } from "@/src/entities/session";
 import { HelpDialog } from "@/src/features/help";
@@ -208,30 +208,31 @@ export function ProfilePage({ userId }: { userId?: number }) {
 
   async function onAction(action: LotAction, lot: Lot) {
     if (action === "view") {
-      router.push(`/lots/${lot.id}`);
+      router.push(getLotPath(lot));
 
       return;
     }
 
-    if (!own) return;
+    if (!own || !canManage) return;
 
     if ((action === "archive" || action === "republish" || action === "edit") && !canManage) return;
 
     if (action === "edit") {
-      router.push(`/lots/${lot.id}/edit`);
+      router.push(`${getLotPath(lot)}/edit`);
 
       return;
     }
 
     if (action === "archive" || action === "republish") {
       try {
-        const updated = action === "archive" ? await archiveLot(lot) : await republishLot(lot);
+        const updated = action === "archive" ? archiveFixtureLot(lot) : await republishLot(lot);
         setLots((current) => current.map((item) => (item.id === lot.id ? updated : item)));
         if (action === "republish")
           receive({
             id: `republished:${lot.id}:${updated.published_at}`,
             type: "LOT_REPUBLISHED",
             lotId: lot.id,
+            lotPath: getLotPath(lot),
             lotTitle: lot.title,
             createdAt: new Date().toISOString(),
           });
@@ -476,11 +477,13 @@ export function ProfilePage({ userId }: { userId?: number }) {
                     </div>
                   ) : (
                     <div className={styles.empty}>
-                      <h3>Здесь пока нет лотов</h3>
-                      <p>Лоты с выбранным статусом появятся в этом разделе.</p>
-                      <button type="button" onClick={() => navigate("lots", "all")}>
-                        Показать все лоты
-                      </button>
+                      <h3>{visibleLots.length === 0 ? own ? "У вас пока нет лотов" : "У пользователя пока нет лотов" : "Нет лотов с выбранным статусом"}</h3>
+                      <p>{visibleLots.length === 0 ? "Разместите первое объявление, чтобы найти свой обмен." : "Выберите другой статус или посмотрите все объявления."}</p>
+                      {visibleLots.length === 0 && own && canManage ? (
+                        <Link className={styles.newLot} href="/lots/new">Разместить лот</Link>
+                      ) : visibleLots.length > 0 ? (
+                        <button type="button" onClick={() => navigate("lots", "all")}>Показать все лоты</button>
+                      ) : null}
                     </div>
                   )}
                 </>

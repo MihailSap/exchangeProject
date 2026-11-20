@@ -24,6 +24,7 @@ export type NotificationEvent = {
   type: NotificationType;
   createdAt: string;
   lotId?: number;
+  lotPath?: string;
   lotTitle?: string;
   offerId?: number;
   chatId?: number;
@@ -51,6 +52,7 @@ export function isNotificationEvent(value: unknown): value is NotificationEvent 
     NOTIFICATION_TYPES.some((type) => type === value.type) &&
     typeof value.createdAt === "string" &&
     Number.isFinite(Date.parse(value.createdAt)) &&
+    (value.lotPath === undefined || (typeof value.lotPath === "string" && /^\/lots\/(?:demo-)?[1-9]\d{0,15}$/.test(value.lotPath))) &&
     ["lotId", "offerId", "chatId", "reviewId"].every(
       (key) =>
         value[key] === undefined || (Number.isSafeInteger(value[key]) && Number(value[key]) > 0),
@@ -176,6 +178,8 @@ export function notificationHref(item: NotificationEvent): string {
 
   if (item.type === "NEW_REVIEW")
     return `/profile?section=reviews${item.reviewId ? `#review-${item.reviewId}` : ""}`;
+
+  if (item.lotPath) return item.lotPath;
 
   if (item.lotId) return `/lots/${item.lotId}`;
 

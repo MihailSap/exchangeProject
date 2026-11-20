@@ -15,9 +15,8 @@ export function serverCatalogRequest(query: CatalogQuery, page: number, size: nu
     category_id: query.category,
     region: query.region,
     type: query.type,
-    ...(query.delivery !== query.pickup
-      ? { delivery_method: query.delivery ? "DELIVERY" as const : "PICKUP" as const }
-      : {}),
+    delivery: query.delivery,
+    pickup: query.pickup,
     min_cost: query.min,
     max_cost: query.max,
     sort: sort[query.sort],

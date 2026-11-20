@@ -1,4 +1,4 @@
-import { clearStoredSession, readTokens, replaceTokens } from "@/src/shared/lib/session-storage";
+import { accessTokenNeedsRenewal, clearStoredSession, readTokens, replaceTokens } from "@/src/shared/lib/session-storage";
 import { isNonEmptyString, isRecord } from "@/src/shared/lib/validation";
 
 export class ApiError extends Error {
@@ -180,7 +180,21 @@ export async function apiRequest(path: string, options: ApiRequestOptions = {}):
     ...requestOptions
   } = options;
 
-  const session = readTokens();
+  let session = readTokens();
+  if (authenticated && session && accessTokenNeedsRenewal(session.accessToken)) {
+    const previousRefreshToken = session.refreshToken;
+    const renewed = await renewSession();
+    const current = readTokens();
+    if (!renewed || !current ||
+      (current.refreshToken !== previousRefreshToken &&
+        (lastRenewal?.previousRefreshToken !== previousRefreshToken ||
+          lastRenewal.refreshToken !== current.refreshToken ||
+          lastRenewal.accessToken !== current.accessToken)))
+      throw new ApiError("Сессия истекла. Войдите в аккаунт снова.", 401);
+
+    session = current;
+  }
+
   const headers = new Headers(requestOptions.headers);
   const multipart = typeof FormData !== "undefined" && body instanceof FormData;
   if (body !== undefined && !multipart && !headers.has("Content-Type"))

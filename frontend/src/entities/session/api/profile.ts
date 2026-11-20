@@ -69,11 +69,22 @@ function parseProfile(envelope: unknown): AuthUser {
 }
 
 export async function saveSessionProfile(body: FormData): Promise<AuthUser> {
+  return mutateProfile("/users/me", "PATCH", body);
+}
+
+export async function deleteSessionAvatar(): Promise<AuthUser> {
+  const user = await mutateProfile("/users/me/avatar", "DELETE");
+  if (user.avatarUrl != null) throw new ApiError("Сервер не подтвердил удаление аватара. Обновите профиль.", 502);
+
+  return user;
+}
+
+async function mutateProfile(path: string, method: "PATCH" | "DELETE", body?: FormData): Promise<AuthUser> {
   const session = readSession();
   if (!session) throw new ApiError("Войдите в аккаунт.", 401);
 
-  const envelope = await apiRequest("/users/me", {
-    method: "PATCH",
+  const envelope = await apiRequest(path, {
+    method,
     body,
     authenticated: true,
     fallbackMessage: "Не удалось сохранить профиль. Попробуйте позже.",

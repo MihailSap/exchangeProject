@@ -10,7 +10,8 @@ export type CatalogRequest = {
   category_id?: string;
   region?: string;
   type?: "PRODUCT" | "SERVICE" | "";
-  delivery_method?: "DELIVERY" | "PICKUP" | "BOTH";
+  delivery?: boolean;
+  pickup?: boolean;
   min_cost?: string;
   max_cost?: string;
   sort: "date_desc" | "date_asc" | "cost_asc" | "cost_desc" | "rating";

@@ -18,6 +18,10 @@ export default async function Page({ params }: Props) {
   const localLot = getCatalogLot(id);
   if (localLot) return <LotPage id={localLot.id} localLot={localLot} />;
 
+  const fixtureId = id.startsWith("demo-") ? id.slice(5) : null;
+  if (fixtureId && /^\d+$/.test(fixtureId) && Number.isSafeInteger(Number(fixtureId)) && Number(fixtureId) > 0)
+    return <LotPage id={Number(fixtureId)} fixture />;
+
   if (!/^\d+$/.test(id) || !Number.isSafeInteger(Number(id)) || Number(id) < 1) redirect("/");
 
   return <LotPage id={Number(id)} />;

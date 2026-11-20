@@ -581,27 +581,24 @@ test("lot API validates nullable dates, caches per session and sends text update
   );
 });
 
-test("fixture changes persist across reads, isolate owners and never send fixture ids to backend", async () => {
-  let calls = 0;
-  const env = environment(async () => {
-    calls++;
-    throw new Error("Unexpected network call");
+test("numeric lot reads and mutations never use old local fixtures instead of the server", async () => {
+  const calls = [];
+  const env = environment(async (url, options) => {
+    calls.push(options.method ?? "GET");
+    if (options.method === "DELETE") return new Response(null, { status: 204 });
+
+    return Response.json({ data: { ...lot, title: "Серверный лот" } });
   });
 
   const fixtures = env.load("@/src/entities/lot/model/fixtures");
-  const first = fixtures.initializeFixtureLots(1, "First", "Москва");
-  const second = fixtures.initializeFixtureLots(2, "Second", "Москва");
-  assert.notEqual(first[0].id, second[0].id);
+  const [lot] = fixtures.initializeFixtureLots(1, "First", "Москва");
   const api = env.load("@/src/entities/lot/api/lot-api");
-  const archived = await api.archiveLot(first[0]);
-  assert.equal(archived.status, "ARCHIVED");
-  assert.equal(fixtures.initializeFixtureLots(1, "First", "Москва")[0].status, "ARCHIVED");
-  assert.equal(fixtures.getFixtureLot(second[0].id).status, "ACTIVE");
-  const published = await api.republishLot(archived);
-  assert.equal(published.id, first[0].id);
-  await api.deleteLot(published);
-  assert.equal(fixtures.getFixtureLot(published.id).status, "DELETED");
-  assert.equal(calls, 0);
+  const serverLot = await api.getLot(lot.id);
+  assert.equal(serverLot.title, "Серверный лот");
+  assert.equal(serverLot.source, "server");
+  await api.deleteLot(serverLot);
+  assert.deepEqual(calls, ["GET", "DELETE"]);
+  assert.equal(fixtures.getFixtureLot(lot.id).status, "ACTIVE");
 });
 
 test("header selects only the current FAQ or owned lot workspace", () => {
@@ -662,7 +659,7 @@ test("lot photo selection detects additions, removal and cover changes", () => {
   assert.equal(model.photosChanged(lot, [...photos, { kind: "file", key: "new", file: {} }]), true);
 });
 
-test("server photo deletion uses the real endpoint and verifies the saved selection", async () => {
+test("photo deletion is explicit and subsequent saving only appends uploads", async () => {
   const calls = [];
   const env = environment(async (url, options) => {
     calls.push([new URL(url).pathname, options.method ?? "GET"]);
@@ -672,18 +669,23 @@ test("server photo deletion uses the real endpoint and verifies the saved select
       return new Response(null, { status: 204 });
     }
 
+    if (options.method === "PATCH")
+      lot = { ...lot, photos: [...lot.photos, { id: 4, name: "new.png" }] };
+
     return Response.json({ data: lot });
   });
 
   let lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42 };
-  const saved = await env.load("@/src/entities/lot/api/lot-api").updateLot(lot, {
+  const api = env.load("@/src/entities/lot/api/lot-api");
+  await api.deleteLotAttachment(lot, "photo", 2);
+  const saved = await api.updateLot(lot, {
     title: lot.title, description: lot.description, category_id: 1, region: lot.region,
     type: lot.type, delivery_method: lot.delivery_method, estimated_cost: lot.estimated_cost,
-  }, lot.wants, undefined, [], [1, 3]);
+  }, lot.wants, [new Blob(["photo"], { type: "image/png" })], [1, 3, null]);
 
-  assert.deepEqual(Array.from(saved.photos, (photo) => photo.id), [1, 3]);
-  assert.deepEqual(calls.map((entry) => entry[1]), ["GET", "DELETE", "PATCH", "GET"]);
-  assert.ok(calls[1][0].endsWith("/lots/42/photo/2"));
+  assert.deepEqual(Array.from(saved.photos, (photo) => photo.id), [1, 3, 4]);
+  assert.deepEqual(calls.map((entry) => entry[1]), ["DELETE", "GET", "PATCH", "GET"]);
+  assert.ok(calls[0][0].endsWith("/lots/42/photo/2"));
 });
 
 test("estimate marker stays within the scale and verdict follows the entered price", () => {
@@ -839,9 +841,10 @@ test("admin freeze and category mutations use real protected API contracts", asy
   assert.equal(JSON.parse(requests[2].body).isActive, false);
 });
 
-test("protected avatar URLs survive remounts and are isolated between sessions", async () => {
+test("public avatar URLs support guests and keep cache namespaces isolated", async () => {
   let requests = 0;
-  const env = environment(async () => {
+  const env = environment(async (_url, options) => {
+    assert.equal(options.headers.has("Authorization"), false);
     requests += 1;
 
     return new Response(new Blob(["image"], { type: "image/png" }));
@@ -867,7 +870,9 @@ test("protected avatar URLs survive remounts and are isolated between sessions",
   assert.equal(requests, 2);
   sessionModel.clearSession();
   assert.equal(images.getCachedProtectedImageUrl("avatar.png"), null);
-  await assert.rejects(images.getProtectedImageUrl("avatar.png"));
+  const guest = await images.getProtectedImageUrl("avatar.png");
+  assert.notEqual(guest, second);
+  assert.equal(requests, 3);
 });
 
 test("avatar URL cache evicts and revokes old entries without keeping failed downloads", async () => {
@@ -1369,7 +1374,7 @@ test("lot API accepts photo ids without order and appends new uploads with multi
   await env.load("@/src/entities/lot/api/lot-api").updateLot(lot, {
     title: lot.title, description: lot.description, category_id: 1, region: lot.region,
     type: lot.type, delivery_method: "BOTH", estimated_cost: 1000,
-  }, lot.wants, undefined, [upload]);
+  }, lot.wants, [upload]);
 });
 
 test("public catalog maps the real paginated DTO, caches pages and rejects malformed metadata", async () => {
@@ -1433,13 +1438,15 @@ test("catalog sends selected rating and delivery filters without a frontend avai
   const query = model.readCatalogQuery(new URLSearchParams("sort=rating&delivery=1"));
   const request = serverCatalogRequest(query, 2, 6);
   assert.equal(request.sort, "rating");
-  assert.equal(request.delivery_method, "DELIVERY");
+  assert.equal(request.delivery, true);
+  assert.equal(request.pickup, false);
   assert.equal(request.page, 2);
-  assert.equal(serverCatalogRequest({ ...query, delivery: false, pickup: true }, 1, 6).delivery_method, "PICKUP");
-  assert.equal(serverCatalogRequest({ ...query, pickup: true }, 1, 6).delivery_method, undefined);
+  assert.equal(serverCatalogRequest({ ...query, delivery: false, pickup: true }, 1, 6).pickup, true);
+  assert.equal(serverCatalogRequest({ ...query, pickup: true }, 1, 6).delivery, true);
+  assert.equal(serverCatalogRequest({ ...query, pickup: true }, 1, 6).pickup, true);
 });
 
-test("lot edits append only new wishes and detect a server that ignores removals", async () => {
+test("lot edits append only new wishes and require separate explicit deletion", async () => {
   const env = environment(async (_url, options) => {
     if (options.method === "PATCH") {
       assert.equal(options.body.has("wants[1].wantType"), false);
@@ -1460,5 +1467,310 @@ test("lot edits append only new wishes and detect a server that ignores removals
   const api = env.load("@/src/entities/lot/api/lot-api");
   const saved = await api.updateLot(lot, body, [...lot.wants, added]);
   assert.equal(saved.wants.length, 2);
-  await assert.rejects(api.updateLot(saved, body, [added]), (error) => error.message.includes("не полностью"));
+  await assert.rejects(api.updateLot(saved, body, [added]), (error) => error.status === 409 && error.message.includes("отдельно"));
+});
+
+test("guest lot reads send no authorization and preserve access errors without token renewal", async () => {
+  let denied = false;
+  const env = environment(async (url, options) => {
+    assert.ok(url.endsWith("/lots/42"));
+    assert.equal(options.headers.has("Authorization"), false);
+
+    return denied
+      ? Response.json({ error: { code: "LOT_FORBIDDEN" } }, { status: 403 })
+      : Response.json({ data: lot });
+  });
+
+  const lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42 };
+  const api = env.load("@/src/entities/lot/api/lot-api");
+  assert.equal((await api.getLot(42)).id, 42);
+  denied = true;
+  const other = environment(async () => Response.json({ error: { code: "LOT_FORBIDDEN" } }, { status: 403 }));
+  await assert.rejects(other.load("@/src/entities/lot/api/lot-api").getLot(42), (error) => error.status === 403);
+});
+
+test("catalog serializes delivery and pickup as independent backend flags", async () => {
+  const env = environment(async (url) => {
+    const params = new URL(url).searchParams;
+    assert.equal(params.get("delivery"), "true");
+    assert.equal(params.get("pickup"), "false");
+    assert.equal(params.has("delivery_method"), false);
+
+    return Response.json({ data: [], meta: { page: 1, per_page: 6, total: 0 } });
+  });
+
+  await env.load("@/src/entities/lot/api/catalog-api").getCatalogPage({ delivery: true, pickup: false, sort: "date_desc", page: 1, per_page: 6 });
+});
+
+test("wish deletion uses its id separately and PATCH never hides deletion requests", async () => {
+  const methods = [];
+  const retained = { id: 7, want_type: "ANY", keywords: null, target_category: null, target_lot: null };
+  const removed = { id: 8, want_type: "KEYWORDS", keywords: "Камера", target_category: null, target_lot: null };
+  const env = environment(async (url, options) => {
+    methods.push(options.method ?? "GET");
+    if (options.method === "DELETE") {
+      assert.ok(url.endsWith("/lots/42/want/8"));
+      lot = { ...lot, wants: [retained] };
+
+      return new Response(null, { status: 204 });
+    }
+
+    if (options.method === "PATCH") assert.equal(options.body.has("wants[0].wantType"), false);
+
+    return Response.json({ data: lot });
+  });
+
+  let lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42, wants: [retained, removed] };
+  const api = env.load("@/src/entities/lot/api/lot-api");
+  const body = { title: lot.title, description: lot.description, category_id: 1, region: lot.region,
+    type: lot.type, delivery_method: lot.delivery_method, estimated_cost: lot.estimated_cost };
+
+  await assert.rejects(api.updateLot(lot, body, [retained]), (error) => error.status === 409);
+  assert.deepEqual(methods, ["GET"]);
+  await api.deleteLotAttachment(lot, "want", removed.id);
+  const saved = await api.updateLot(lot, body, lot.wants);
+  assert.deepEqual(methods, ["GET", "DELETE", "PATCH"]);
+  assert.equal(saved.wants[0].id, 7);
+});
+
+test("avatar deletion calls the explicit endpoint and synchronizes the returned profile", async () => {
+  const env = environment(async (url, options) => {
+    assert.ok(url.endsWith("/users/me/avatar"));
+    assert.equal(options.method, "DELETE");
+    assert.equal(options.body, undefined);
+    assert.equal(options.headers.has("Content-Type"), false);
+
+    return Response.json({ data: { ...session.user, avatar_url: null, email_confirmed: true, role: "USER" } });
+  });
+
+  const model = env.load("@/src/entities/session/model/session");
+  model.writeSession({ ...session, user: { ...session.user, avatarUrl: "previous.png" } });
+  const saved = await env.load("@/src/entities/session/api/profile").deleteSessionAvatar();
+  assert.equal(saved.avatarUrl, null);
+  assert.equal(model.readSession().user.avatarUrl, null);
+});
+
+test("failed avatar deletion preserves the session and the server error message", async () => {
+  const env = environment(async () => Response.json({ error: { message: "Удаление недоступно" } }, { status: 409 }));
+  const model = env.load("@/src/entities/session/model/session");
+  model.writeSession({ ...session, user: { ...session.user, avatarUrl: "previous.png" } });
+  await assert.rejects(env.load("@/src/entities/session/api/profile").deleteSessionAvatar(), (error) => error.message === "Удаление недоступно");
+  assert.equal(model.readSession().user.avatarUrl, "previous.png");
+});
+
+test("full photo replacement and cover changes fail before any mutation", async () => {
+  const methods = [];
+  const env = environment(async (_url, options) => {
+    methods.push(options.method ?? "GET");
+
+    return Response.json({ data: lot });
+  });
+
+  const lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42 };
+  const api = env.load("@/src/entities/lot/api/lot-api");
+  const body = { title: lot.title, description: lot.description, category_id: 1, region: lot.region,
+    type: lot.type, delivery_method: lot.delivery_method, estimated_cost: lot.estimated_cost };
+
+  for (const order of [[null], [3, 2, 1]])
+    await assert.rejects(api.updateLot(lot, body, lot.wants, [], order), (error) => error.status === 409);
+
+  assert.deepEqual(methods, ["GET", "GET"]);
+});
+
+test("deleting the last saved photo or wish never sends a request", async () => {
+  const env = environment(async () => {
+    throw new Error("Unexpected mutation");
+  });
+
+  const lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42,
+    photos: [{ id: 4, name: "last.png" }], wants: [{ id: 7, want_type: "ANY", keywords: null, target_category: null, target_lot: null }] };
+
+  const api = env.load("@/src/entities/lot/api/lot-api");
+  await assert.rejects(api.deleteLotAttachment(lot, "photo", 4), (error) => error.status === 409);
+  await assert.rejects(api.deleteLotAttachment(lot, "want", 7), (error) => error.status === 409);
+});
+
+test("restoring an old edit draft keeps saved wishes and preserves draft text", () => {
+  const env = environment();
+  const form = env.load("@/src/_pages/lot/model/form");
+  const lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], wants: [{ id: 7, want_type: "ANY", keywords: null, target_category: null, target_lot: null }] };
+  const draft = { ...form.initialValues(null, "Москва"), title: "Название из черновика", wantTypes: ["KEYWORDS"], keywords: ["Самокат"] };
+  const restored = form.restoreLotDraft(draft, lot);
+  assert.equal(restored.title, draft.title);
+  assert.ok(restored.wantTypes.includes("ANY"));
+  assert.ok(restored.wantTypes.includes("KEYWORDS"));
+  assert.equal(restored.keywords[0], "Самокат");
+  assert.equal(form.restoreLotDraft(draft, null), draft);
+});
+
+test("restored fixture actions persist locally and never mutate matching server ids", async () => {
+  const env = environment(async () => {
+    throw new Error("Unexpected server mutation");
+  });
+
+  const fixtures = env.load("@/src/entities/lot/model/fixtures");
+  const [lot] = fixtures.initializeFixtureLots(1, "User", "Москва");
+  const api = env.load("@/src/entities/lot/api/lot-api");
+  assert.equal(fixtures.getLotPath(lot), `/lots/demo-${lot.id}`);
+  assert.equal(fixtures.getLotPath({ ...lot, source: "server" }), `/lots/${lot.id}`);
+  const notifications = env.load("@/src/features/notifications/model/notifications");
+  const event = { id: "republished", type: "LOT_REPUBLISHED", createdAt: new Date().toISOString(), lotId: lot.id, lotPath: fixtures.getLotPath(lot) };
+  assert.equal(notifications.isNotificationEvent(event), true);
+  assert.equal(notifications.notificationHref(event), fixtures.getLotPath(lot));
+  assert.equal(notifications.isNotificationEvent({ ...event, lotPath: "https://example.com" }), false);
+  const archived = fixtures.archiveFixtureLot(lot);
+  assert.equal(fixtures.getFixtureLot(lot.id).status, "ARCHIVED");
+  const republished = await api.republishLot(archived);
+  assert.equal(republished.status, "ACTIVE");
+  const body = { title: "Изменённое название", description: lot.description, category_id: lot.category.id,
+    region: lot.region, type: lot.type, delivery_method: lot.delivery_method, estimated_cost: lot.estimated_cost };
+
+  const saved = await api.updateLot(republished, body, lot.wants, [], undefined, lot.photos.slice(0, 1));
+  assert.equal(saved.status, "MODERATION");
+  assert.equal(fixtures.getFixtureLot(lot.id).title, body.title);
+  assert.equal(fixtures.getFixtureLot(lot.id).photos.length, 1);
+  await api.deleteLot(saved);
+  assert.equal(fixtures.getFixtureLot(lot.id).status, "DELETED");
+  assert.equal(fixtures.initializeFixtureLots(1, "User", "Москва")[0].status, "DELETED");
+});
+
+test("creating a new lot still uses the real POST and preserves request failures", async () => {
+  let fail = false;
+  const env = environment(async (url, options) => {
+    assert.ok(url.endsWith("/lots"));
+    assert.equal(options.method, "POST");
+    assert.equal(options.body, body);
+    assert.equal(options.headers.has("Content-Type"), false);
+
+    return fail
+      ? Response.json({ error: { message: "Не удалось сохранить объявление" } }, { status: 500 })
+      : Response.json({ data: lot }, { status: 201 });
+  });
+
+  const lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42 };
+  const body = new FormData();
+  body.set("title", lot.title);
+  const api = env.load("@/src/entities/lot/api/lot-api");
+  assert.equal((await api.createLot(body)).source, "server");
+  fail = true;
+  await assert.rejects(api.createLot(body), (error) => error.status === 500 && error.message === "Не удалось сохранить объявление");
+});
+
+test("expired access is renewed before creating a lot and no expired POST is sent", async () => {
+  const expired = `h.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) - 10 })).toString("base64url")}.s`;
+  const fresh = `h.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 600 })).toString("base64url")}.s`;
+  const calls = [];
+  const body = new FormData();
+  body.set("title", "Камера");
+  const env = environment(async (url, options) => {
+    const pathname = new URL(url).pathname;
+    calls.push(pathname);
+    if (pathname.endsWith("/auth/token")) return Response.json({ data: { accessToken: fresh } });
+
+    if (pathname.endsWith("/auth/refresh")) return Response.json({ data: { accessToken: fresh, refreshToken: "rotated" } });
+
+    assert.ok(pathname.endsWith("/lots"));
+    assert.equal(options.method, "POST");
+    assert.equal(options.body, body);
+    assert.equal(options.headers.get("Authorization"), `Bearer ${fresh}`);
+    assert.equal(options.headers.has("Content-Type"), false);
+
+    return Response.json({ data: lot }, { status: 201 });
+  });
+
+  const lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42 };
+  env.load("@/src/entities/session/model/session").writeSession({ ...session, accessToken: expired });
+  assert.equal((await env.load("@/src/entities/lot/api/lot-api").createLot(body)).id, 42);
+  assert.deepEqual(calls, ["/api/v1/auth/token", "/api/v1/auth/refresh", "/api/v1/lots"]);
+});
+
+test("failed proactive renewal prevents a mutation and clears only the expired session", async () => {
+  const expired = `h.${Buffer.from(JSON.stringify({ exp: 1 })).toString("base64url")}.s`;
+  let requests = 0;
+  const env = environment(async (url) => {
+    requests++;
+    assert.ok(url.endsWith("/auth/token"));
+
+    return Response.json({ data: { accessToken: null } });
+  });
+
+  const model = env.load("@/src/entities/session/model/session");
+  model.writeSession({ ...session, accessToken: expired });
+  await assert.rejects(env.load("@/src/shared/api/client").apiRequest("/lots", {
+    method: "POST", authenticated: true, body: new FormData(),
+  }), (error) => error.status === 401);
+  assert.equal(requests, 1);
+  assert.equal(model.readSession(), null);
+});
+
+test("parallel requests with nearly expired access share renewal before sending", async () => {
+  const expiring = `h.${Buffer.from(JSON.stringify({ exp: Date.now() / 1000 + 2 })).toString("base64url")}.s`;
+  let renewals = 0;
+  let requests = 0;
+  const env = environment(async (url, options) => {
+    if (url.endsWith("/auth/token")) {
+      renewals++;
+
+      return Response.json({ data: { accessToken: "new-access" } });
+    }
+
+    if (url.endsWith("/auth/refresh")) return Response.json({ data: { accessToken: "rotated-access", refreshToken: "rotated" } });
+
+    requests++;
+    assert.equal(options.headers.get("Authorization"), "Bearer rotated-access");
+
+    return Response.json({ data: true });
+  });
+
+  env.load("@/src/entities/session/model/session").writeSession({ ...session, accessToken: expiring });
+  const { apiRequest } = env.load("@/src/shared/api/client");
+  await Promise.all([apiRequest("/first", { authenticated: true }), apiRequest("/second", { authenticated: true })]);
+  assert.equal(renewals, 1);
+  assert.equal(requests, 2);
+});
+
+test("proactive renewal does not send a mutation after logout while renewal is pending", async () => {
+  const expired = `h.${Buffer.from(JSON.stringify({ exp: 1 })).toString("base64url")}.s`;
+  let release;
+  const env = environment(async (url) => {
+    assert.ok(url.endsWith("/auth/token"));
+
+    return new Promise((resolve) => {
+      release = () => resolve(Response.json({ data: { accessToken: "new-access" } }));
+    });
+  });
+
+  const model = env.load("@/src/entities/session/model/session");
+  model.writeSession({ ...session, accessToken: expired });
+  const request = env.load("@/src/shared/api/client").apiRequest("/lots", { method: "POST", authenticated: true });
+  while (!release) await new Promise((resolve) => setImmediate(resolve));
+
+  model.clearSession();
+  release();
+  await assert.rejects(request, (error) => error.status === 401);
+  assert.equal(model.readSession(), null);
+});
+
+test("public requests do not renew expired access and mutation 500 is never retried", async () => {
+  const expired = `h.${Buffer.from(JSON.stringify({ exp: 1 })).toString("base64url")}.s`;
+  const calls = [];
+  const env = environment(async (url, options) => {
+    calls.push(new URL(url).pathname);
+    assert.equal(options.headers.has("Authorization"), false);
+
+    return Response.json({ data: [] });
+  });
+
+  env.load("@/src/entities/session/model/session").writeSession({ ...session, accessToken: expired });
+  await env.load("@/src/shared/api/client").apiRequest("/lots");
+  assert.deepEqual(calls, ["/api/v1/lots"]);
+  let mutations = 0;
+  const failed = environment(async () => {
+    mutations++;
+
+    return Response.json({ error: { code: "UNKNOWN_EXCEPTION" } }, { status: 500 });
+  });
+
+  await assert.rejects(failed.load("@/src/shared/api/client").apiRequest("/lots", { method: "POST", authenticated: true }), (error) => error.status === 500);
+  assert.equal(mutations, 1);
 });

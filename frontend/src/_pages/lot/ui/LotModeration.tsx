@@ -9,7 +9,7 @@ import { LotStepper } from "./LotStepper";
 
 import type { Lot } from "@/src/entities/lot";
 
-import { getLot } from "@/src/entities/lot";
+import { getLot, getLotPath } from "@/src/entities/lot";
 import { AssetImage } from "@/src/shared/ui/asset-image";
 import { Icon } from "@/src/shared/ui/icon";
 
@@ -118,7 +118,7 @@ export function LotModeration({ lot, onCreateAnother }: { lot: Lot; onCreateAnot
           <section className={styles.summary} aria-label="Ваш лот">
             <p className={styles.caption}>Ваш лот</p>
             <div className={styles.lot}>
-              <Link className={styles.lotLink} href={`/lots/${lot.id}`}>
+              <Link className={styles.lotLink} href={getLotPath(lot)}>
                 <span className={styles.thumb}>
                   {cover ? (
                     <AssetImage src={cover.name} alt="" width={44} height={44} eager />
@@ -162,14 +162,14 @@ export function LotModeration({ lot, onCreateAnother }: { lot: Lot; onCreateAnot
             <h2>Что будет дальше</h2>
             <ol>
               <li>Мы проверим фото, описание и условия обмена.</li>
-              <li>Результат придёт уведомлением и на email.</li>
-              <li>После публикации лот появится в каталоге и станет доступен для предложений.</li>
+              <li>Статус проверки можно посмотреть на странице отправленного лота.</li>
+              <li>После публикации лот появится в каталоге.</li>
             </ol>
-            <p className={styles.note}>Статус лота можно посмотреть в разделе «Мои лоты».</p>
+            <p className={styles.note}>Сохраните ссылку на лот, чтобы вернуться к нему позже.</p>
           </section>
           <section className={styles.actions} aria-label="Действия после отправки">
-            <Link className={styles.primary} href="/profile?status=MODERATION">
-              К моим лотам
+            <Link className={styles.primary} href={getLotPath(lot)}>
+              Открыть отправленный лот
               {" "}
               <Icon name="arrow" />
             </Link>

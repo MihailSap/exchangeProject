@@ -170,7 +170,7 @@ function readFixtureLots(): Lot[] {
 }
 
 export function saveFixtureLot(lot: Lot): void {
-  const next = [...readFixtureLots().filter((item) => item.id !== lot.id), lot];
+  const next = [...readFixtureLots().filter((item) => item.id !== lot.id), { ...lot, source: "fixture" }];
   try {
     window.localStorage.setItem(fixtureKey, JSON.stringify(next));
   } catch {
@@ -180,7 +180,7 @@ export function saveFixtureLot(lot: Lot): void {
 export function initializeFixtureLots(ownerId: number, name: string, region: string): Lot[] {
   const stored = readFixtureLots();
   const lots = createDemoLots(ownerId, name, region).map(
-    (lot) => stored.find((item) => item.id === lot.id && item.owner.id === ownerId) ?? lot,
+    (lot): Lot => ({ ...(stored.find((item) => item.id === lot.id && item.owner.id === ownerId) ?? lot), source: "fixture" }),
   );
 
   try {
@@ -195,5 +195,20 @@ export function initializeFixtureLots(ownerId: number, name: string, region: str
   return lots;
 }
 export function getFixtureLot(id: number): Lot | undefined {
-  return readFixtureLots().find((lot) => lot.id === id);
+  const lot = readFixtureLots().find((lot) => lot.id === id);
+
+  return lot ? { ...lot, source: "fixture" } : undefined;
+}
+
+export function getLotPath(lot: Lot): string {
+  return `/lots/${lot.source === "fixture" ? "demo-" : ""}${lot.id}`;
+}
+
+export function archiveFixtureLot(lot: Lot): Lot {
+  if (lot.source !== "fixture") throw new Error("Не удалось изменить состояние объявления");
+
+  const next: Lot = { ...lot, status: "ARCHIVED" };
+  saveFixtureLot(next);
+
+  return next;
 }

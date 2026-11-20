@@ -10,18 +10,14 @@ const sources = new Map<string, ImageSource>();
 
 export function getCachedProtectedImageUrl(name: string): string | null {
   const tokens = readTokens();
-  if (!tokens) return null;
-
-  const source = sources.get(`${tokens.refreshToken}:${name}`);
+  const source = sources.get(`${tokens?.refreshToken ?? "guest"}:${name}`);
 
   return source && source.expires > Date.now() ? source.url : null;
 }
 
 export function getProtectedImageUrl(name: string): Promise<string> {
   const tokens = readTokens();
-  if (!tokens) return Promise.reject(new Error("Изображение требует авторизации"));
-
-  const key = `${tokens.refreshToken}:${name}`;
+  const key = `${tokens?.refreshToken ?? "guest"}:${name}`;
   for (const [cachedKey, source] of sources) {
     if (source.expires <= Date.now()) {
       if (source.url) URL.revokeObjectURL(source.url);
@@ -68,14 +64,11 @@ export function getProtectedImageUrl(name: string): Promise<string> {
 
 export function getProtectedImage(name: string): Promise<Blob> {
   const tokens = readTokens();
-  if (!tokens) return Promise.reject(new Error("Изображение требует авторизации"));
-
-  const key = `${tokens.refreshToken}:${name}`;
+  const key = `${tokens?.refreshToken ?? "guest"}:${name}`;
   const cached = images.get(key);
   if (cached && cached.expires > Date.now()) return cached.promise;
 
   const promise = apiRequest(`/files/image/${encodeURIComponent(name)}`, {
-    authenticated: true,
     responseType: "blob",
   })
     .then((result) => {

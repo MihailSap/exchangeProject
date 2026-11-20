@@ -8,6 +8,7 @@ import { LOT_STATUS_LABELS } from "../model/demo-data";
 
 import type { Lot } from "@/src/entities/lot";
 
+import { getLotPath } from "@/src/entities/lot";
 import { useDismissable } from "@/src/shared/lib/use-dismissable";
 import { AssetImage } from "@/src/shared/ui/asset-image";
 import { Icon } from "@/src/shared/ui/icon";
@@ -41,7 +42,7 @@ export function LotCard({
     <article className={styles.card}>
       <Link
         className={styles.imageButton}
-        href={`/lots/${lot.id}`}
+        href={getLotPath(lot)}
         aria-label={`Посмотреть лот: ${lot.title}`}
       >
         <AssetImage
@@ -53,7 +54,7 @@ export function LotCard({
         />
       </Link>
       <div className={styles.copy}>
-        <Link className={styles.title} href={`/lots/${lot.id}`}>
+        <Link className={styles.title} href={getLotPath(lot)}>
           {lot.title}
         </Link>
         <p>
@@ -79,7 +80,7 @@ export function LotCard({
                 <Icon name="arrow" />
               </button>
             ) : editable ? (
-              <Link className={styles.action} href={`/lots/${lot.id}/edit`}>
+              <Link className={styles.action} href={`${getLotPath(lot)}/edit`}>
                 Редактировать
                 {" "}
                 <Icon name="arrow" />
@@ -114,7 +115,7 @@ export function LotCard({
                   aria-label="Действия с лотом"
                 >
                   {editable ? (
-                    <Link href={`/lots/${lot.id}/edit`}>Редактировать</Link>
+                    <Link href={`${getLotPath(lot)}/edit`}>Редактировать</Link>
                   ) : (
                     <button type="button" disabled>
                       Редактировать
@@ -127,12 +128,12 @@ export function LotCard({
                   )}
                   <button
                     type="button"
-                    disabled={!canManage || lot.status !== "ACTIVE"}
+                    disabled={!canManage || lot.status !== "ACTIVE" || lot.source !== "fixture"}
                     onClick={() => choose("archive")}
                   >
                     В архив
                   </button>
-                  <button type="button" className={styles.danger} onClick={() => choose("delete")}>
+                  <button type="button" className={styles.danger} disabled={!canManage || ["IN_EXCHANGE", "COMPLETED"].includes(lot.status)} onClick={() => choose("delete")}>
                     Удалить
                   </button>
                 </div>
@@ -140,7 +141,7 @@ export function LotCard({
             </div>
           </>
         ) : (
-          <Link className={styles.action} href={`/lots/${lot.id}`}>
+          <Link className={styles.action} href={getLotPath(lot)}>
             Посмотреть лот
             {" "}
             <Icon name="arrow" />

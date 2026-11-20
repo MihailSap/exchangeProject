@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import styles from "./ProfileSettings.module.scss";
@@ -10,10 +11,12 @@ import type { AuthUser } from "@/src/entities/session";
 import type { FormEvent } from "react";
 
 import { getRegions } from "@/src/entities/profile";
-import { saveSessionProfile } from "@/src/entities/session";
+import { deleteSessionAvatar, saveSessionProfile } from "@/src/entities/session";
+import { ApiError } from "@/src/shared/api/client";
 import { Avatar } from "@/src/shared/ui/avatar";
 import { FormField } from "@/src/shared/ui/form-field";
 import { Icon } from "@/src/shared/ui/icon";
+import { Modal } from "@/src/shared/ui/modal";
 import { useToast } from "@/src/shared/ui/toast/ToastProvider";
 
 function valuesOf(user: AuthUser): ProfileValues {
@@ -42,6 +45,7 @@ export function ProfileSettings({
   const [preview, setPreview] = useState<string>();
   const [saving, setSaving] = useState(false);
   const { notify } = useToast();
+  const router = useRouter();
   useEffect(() => {
     let active = true;
     setRegionsState("loading");
@@ -81,7 +85,6 @@ export function ProfileSettings({
   }, [avatar]);
   const errors = validateProfile(values, regions);
   const changed =
-    removeAvatar ||
     avatar !== null ||
     Object.keys(PROFILE_LIMITS).some(
       (key) => values[key as keyof ProfileValues] !== initial[key as keyof ProfileValues],
@@ -104,7 +107,6 @@ export function ProfileSettings({
       body.append("contacts", values.contacts.trim());
 
     if (avatar) body.append("avatar", avatar);
-    else if (removeAvatar) body.append("avatar", new Blob([]), "");
 
     setSaving(true);
     try {
@@ -120,9 +122,36 @@ export function ProfileSettings({
 
       notify({ kind: "success", title: "Профиль обновлён" });
     } catch (error) {
+      redirectDenied(error);
       notify({
         kind: "error",
         title: error instanceof Error ? error.message : "Не удалось сохранить профиль",
+      });
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function redirectDenied(error: unknown) {
+    if (error instanceof ApiError && error.status === 401) router.replace("/login");
+
+    if (error instanceof ApiError && error.status === 403) router.replace("/");
+  }
+
+  async function removeSavedAvatar() {
+    if (saving) return;
+
+    setSaving(true);
+    try {
+      const updated = await deleteSessionAvatar();
+      onSaved(updated);
+      setRemoveAvatar(false);
+      notify({ kind: "success", title: "Аватар удалён" });
+    } catch (error) {
+      redirectDenied(error);
+      notify({
+        kind: "error",
+        title: error instanceof Error ? error.message : "Не удалось удалить аватар",
       });
     } finally {
       setSaving(false);
@@ -138,7 +167,7 @@ export function ProfileSettings({
       <form onSubmit={submit} noValidate className={styles.form}>
         <fieldset disabled={saving} className={styles.fields}>
           <div className={styles.avatarRow}>
-            <Avatar name={values.name} src={removeAvatar ? null : preview || user.avatarUrl} large />
+            <Avatar name={values.name} src={preview || user.avatarUrl} large />
             <div>
               <div className={styles.avatarActions}>
                 <label className={styles.upload} htmlFor="profile-avatar">
@@ -159,33 +188,27 @@ export function ProfileSettings({
                     onBlur={() => setTouched((state) => ({ ...state, avatar: true }))}
                   />
                 </label>
-                {(avatar || user.avatarUrl || removeAvatar) && (
+                {(avatar || user.avatarUrl) && (
                   <button
                     type="button"
                     className={styles.removeAvatar}
                     disabled={saving}
-                    aria-describedby={removeAvatar ? "avatar-delete-hint" : undefined}
                     onClick={() => {
-                      if (!avatar) setRemoveAvatar((value) => !value);
+                      if (!avatar) setRemoveAvatar(true);
 
                       setAvatar(null);
                       setTouched((state) => ({ ...state, avatar: false }));
                       if (fileRef.current) fileRef.current.value = "";
                     }}
                   >
-                    <Icon name={removeAvatar ? "back" : "trash"} />
-                    {removeAvatar
-                      ? "Отменить удаление"
-                      : avatar
-                        ? "Убрать выбранное фото"
-                        : "Удалить аватар"}
+                    <Icon name="trash" />
+                    {avatar
+                      ? "Убрать выбранное фото"
+                      : "Удалить аватар"}
                   </button>
                 )}
               </div>
               <p id="avatar-hint">JPG или PNG, один файл до 10 МБ</p>
-              {removeAvatar && (
-                <p id="avatar-delete-hint">Аватар будет удалён после сохранения изменений.</p>
-              )}
               {touched.avatar && avatarError && (
                 <p id="avatar-error" className={styles.error} role="alert">
                   {avatarError}
@@ -267,6 +290,19 @@ export function ProfileSettings({
           </div>
         </fieldset>
       </form>
+      {removeAvatar && (
+        <Modal title="Удалить аватар?" busy={saving} onClose={() => setRemoveAvatar(false)}>
+          <p>Сохранённое фото будет удалено сразу. Остальные изменения профиля сохраняются отдельной кнопкой.</p>
+          <div className={styles.actions}>
+            <button type="button" className={styles.cancel} disabled={saving} onClick={() => setRemoveAvatar(false)}>
+              Отмена
+            </button>
+            <button type="button" className={styles.save} disabled={saving} onClick={() => void removeSavedAvatar()}>
+              {saving ? "Удаляем…" : "Удалить аватар"}
+            </button>
+          </div>
+        </Modal>
+      )}
     </section>
   );
 }

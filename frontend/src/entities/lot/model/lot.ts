@@ -8,6 +8,7 @@ export type LotStatus =
   | "COMPLETED"
   | "DELETED";
 export type Lot = {
+  source?: "server" | "fixture";
   id: number;
   title: string;
   description: string;

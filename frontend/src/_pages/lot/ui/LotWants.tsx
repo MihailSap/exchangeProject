@@ -28,6 +28,7 @@ type Props = {
   onQuery: (value: string) => void;
   onChange: Dispatch<SetStateAction<LotFormValues>>;
   onBlur: (field: LotField) => void;
+  savedWants?: Lot["wants"];
 };
 
 type ChoiceProps = {
@@ -87,6 +88,7 @@ export function LotWants({
   onQuery,
   onChange,
   onBlur,
+  savedWants = [],
 }: Props) {
   const [queryTouched, setQueryTouched] = useState(false);
   const [requestError, setRequestError] = useState("");
@@ -120,6 +122,8 @@ export function LotWants({
   }, [values.targetLots, userId]);
 
   function toggle(type: WantType) {
+    if (savedWants.some((want) => want.want_type === type)) return;
+
     onChange({
       ...values,
       wantTypes: values.wantTypes.includes(type)
@@ -203,6 +207,7 @@ export function LotWants({
     <fieldset className={styles.options} disabled={disabled} aria-label="Варианты обмена">
       <Choice
         {...choiceProps}
+        disabled={choiceProps.disabled || savedWants.some((want) => want.want_type === "LOT")}
         type="LOT"
         title="Конкретные лоты"
         description="Добавьте лоты, которые хотите получить взамен"
@@ -266,7 +271,7 @@ export function LotWants({
                   {!disabled && (
                     <button
                       type="button"
-                      disabled={loading}
+                      disabled={loading || savedWants.some((want) => want.want_type === "LOT" && want.target_lot === id)}
                       aria-label={`Убрать лот ${lot?.title ?? id}`}
                       onClick={() => {
                         onChange({
@@ -292,6 +297,7 @@ export function LotWants({
       </Choice>
       <Choice
         {...choiceProps}
+        disabled={choiceProps.disabled || savedWants.some((want) => want.want_type === "CATEGORY")}
         type="CATEGORY"
         title="Категории"
         description="Подойдёт любой лот из выбранных категорий"
@@ -310,6 +316,7 @@ export function LotWants({
                 checked={values.targetCategoryIds.includes(String(category.id))}
                 disabled={
                   disabled ||
+                  savedWants.some((want) => want.want_type === "CATEGORY" && want.target_category?.id === category.id) ||
                   (!values.targetCategoryIds.includes(String(category.id)) &&
                     values.targetCategoryIds.length >= 10)
                 }
@@ -345,12 +352,14 @@ export function LotWants({
       </Choice>
       <Choice
         {...choiceProps}
+        disabled={choiceProps.disabled || savedWants.some((want) => want.want_type === "KEYWORDS")}
         type="KEYWORDS"
         title="Мои пожелания"
         description="Расскажите, какие вещи или услуги вам интересны"
       >
         <LotKeywordField
           tags={values.keywords}
+          lockedTags={savedWants.filter((want) => want.want_type === "KEYWORDS").flatMap((want) => want.keywords === null ? [] : [want.keywords])}
           query={keywordQuery}
           disabled={disabled}
           touched={Boolean(touched.keywords)}
@@ -362,6 +371,7 @@ export function LotWants({
       </Choice>
       <Choice
         {...choiceProps}
+        disabled={choiceProps.disabled || savedWants.some((want) => want.want_type === "ANY")}
         type="ANY"
         title="Готов рассмотреть ваши варианты"
         description="Другие участники смогут предложить свой вариант обмена"

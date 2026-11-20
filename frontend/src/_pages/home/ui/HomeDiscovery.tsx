@@ -5,8 +5,10 @@ import { useEffect, useRef, useState } from "react";
 
 import styles from "./HomePage.module.scss";
 
+import type { CatalogItem } from "@/src/entities/lot";
+
 import { useCategories } from "@/src/entities/category/client";
-import { CATALOG_ITEMS, RECOMMENDED_ITEMS } from "@/src/entities/lot";
+import { getCatalogPage, RECOMMENDED_ITEMS } from "@/src/entities/lot";
 import { CatalogLotCard } from "@/src/entities/lot/ui";
 import { useSession, updateSessionProfile } from "@/src/entities/session";
 import { ApiError } from "@/src/shared/api/client";
@@ -18,8 +20,31 @@ export function HomeDiscovery() {
   const { user, ready, setUser } = useSession();
   const { notify } = useToast();
   const { state, retry } = useCategories();
+  const [lots, setLots] = useState<{ status: "loading" } | { status: "error"; message: string } | { status: "ready"; items: CatalogItem[] }>({ status: "loading" });
+  const [attempt, setAttempt] = useState(0);
   const personalized = ready && Boolean(user);
-  const items = (personalized ? RECOMMENDED_ITEMS : CATALOG_ITEMS).slice(0, 10);
+  const items = personalized ? RECOMMENDED_ITEMS.slice(0, 10) : lots.status === "ready" ? lots.items : [];
+  useEffect(() => {
+    if (!ready || personalized) return;
+
+    let active = true;
+    setLots({ status: "loading" });
+    getCatalogPage({ sort: "date_desc", page: 1, per_page: 10 })
+      .then((page) => {
+        if (active) setLots({ status: "ready", items: page.items });
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+
+        const message = error instanceof Error ? error.message : "Не удалось загрузить предложения";
+        setLots({ status: "error", message });
+        notify({ kind: "error", title: message });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [attempt, notify, ready, personalized]);
   const track = useRef<HTMLUListElement>(null);
   const [position, setPosition] = useState({ start: true, end: false });
   useEffect(() => {
@@ -64,7 +89,7 @@ export function HomeDiscovery() {
       observer.disconnect();
       element.removeEventListener("scroll", sync);
     };
-  }, [ready, personalized]);
+  }, [lots, personalized]);
 
   function scroll(direction: number): void {
     const element = track.current;
@@ -135,15 +160,11 @@ export function HomeDiscovery() {
         <div className={styles.sectionHeader}>
           <div>
             <div className={styles.headingLine}>
-              <h2 id="recommendations-heading">Подобрали для вас</h2>
+              <h2 id="recommendations-heading">{personalized ? "Подобрали для вас" : "Новые предложения"}</h2>
               <span className={styles.badge}>{personalized ? "РЕКОМЕНДАЦИИ" : "НОВЫЕ ЛОТЫ"}</span>
             </div>
             <p className={styles.subtitle}>
-              {personalized
-                ? user?.emailConfirmed
-                  ? "Варианты, которые могут подойти под ваши лоты"
-                  : "Варианты, которые могут подойти под ваши интересы"
-                : "Вещи и услуги, которые можно обменять уже сейчас"}
+              {personalized ? "Варианты, которые могут подойти под ваши интересы" : "Вещи и услуги, которые можно обменять уже сейчас"}
             </p>
           </div>
           <Link className={styles.more} href={personalized ? "/recommendations" : "/catalog"}>
@@ -157,7 +178,7 @@ export function HomeDiscovery() {
             <button
               type="button"
               aria-label="Предыдущие лоты"
-              disabled={position.start}
+              disabled={(!personalized && lots.status !== "ready") || !items.length || position.start}
               onClick={() => scroll(-1)}
             >
               <Icon name="back" />
@@ -165,17 +186,26 @@ export function HomeDiscovery() {
             <button
               type="button"
               aria-label="Следующие лоты"
-              disabled={position.end}
+              disabled={(!personalized && lots.status !== "ready") || !items.length || position.end}
               onClick={() => scroll(1)}
             >
               <Icon name="arrow" />
             </button>
           </div>
         </div>
-        <ul className={styles.carousel} ref={track} aria-label={personalized ? "10 рекомендаций" : "Первые 10 лотов каталога"} aria-busy={!ready} tabIndex={0}>
-          {!ready ? (
+        <ul className={styles.carousel} ref={track} aria-label={personalized ? "10 рекомендаций" : "Последние 10 лотов каталога"} aria-busy={!ready || (!personalized && lots.status === "loading")} tabIndex={0}>
+          {!ready || (!personalized && lots.status === "loading") ? (
             <li>
               <Loading compact label="Загружаем предложения…" />
+            </li>
+          ) : !personalized && lots.status === "error" ? (
+            <li role="status">
+              <p>{lots.message}</p>
+              <button type="button" className={styles.textButton} onClick={() => setAttempt((value) => value + 1)}>Повторить загрузку</button>
+            </li>
+          ) : items.length === 0 ? (
+            <li>
+              <p>Опубликованных предложений пока нет.</p>
             </li>
           ) : items.map((item, index) => (
             <li key={item.id}>

@@ -52,11 +52,7 @@ export function AdminUsers({ userId, active, onDenied }: Props) {
 
         setResult(null);
         setError(
-          error instanceof ApiError && error.status === 404
-            ? "Список пользователей пока недоступен: на сервере не подключён маршрут получения пользователей. Раздел заработает после подключения API."
-            : error instanceof Error
-              ? error.message
-              : "Не удалось загрузить пользователей",
+          error instanceof Error ? error.message : "Не удалось загрузить пользователей",
         );
       })
       .finally(() => {

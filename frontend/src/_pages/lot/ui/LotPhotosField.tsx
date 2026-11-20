@@ -16,9 +16,10 @@ type Props = {
   error?: string;
   onBlur: () => void;
   disabled?: boolean;
+  savedPhotosLocked?: boolean;
 };
 
-export function LotPhotosField({ photos, onChange, error, onBlur, disabled = false }: Props) {
+export function LotPhotosField({ photos, onChange, error, onBlur, disabled = false, savedPhotosLocked = false }: Props) {
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [fileError, setFileError] = useState("");
   const id = useId();
@@ -76,17 +77,19 @@ export function LotPhotosField({ photos, onChange, error, onBlur, disabled = fal
           return (
             <div className={styles.preview} key={item.key}>
               {src && <AssetImage src={src} alt={`Фото ${index + 1}`} width={140} height={140} />}
-              <button
-                type="button"
-                aria-label={`Удалить фото ${index + 1}`}
-                onClick={() => {
-                  onChange(photos.filter((photo) => photo.key !== item.key));
-                  setFileError("");
-                }}
-              >
-                <Icon name="close" />
-              </button>
-              {index > 0 ? (
+              {(!savedPhotosLocked || item.kind === "file") && (
+                <button
+                  type="button"
+                  aria-label={`Удалить фото ${index + 1}`}
+                  onClick={() => {
+                    onChange(photos.filter((photo) => photo.key !== item.key));
+                    setFileError("");
+                  }}
+                >
+                  <Icon name="close" />
+                </button>
+              )}
+              {index > 0 && !savedPhotosLocked ? (
                 <button
                   type="button"
                   className={styles.cover}
@@ -103,7 +106,7 @@ export function LotPhotosField({ photos, onChange, error, onBlur, disabled = fal
           );
         })}
       </div>
-      <p id={`${id}-hint`}>До 10 фото. Первое станет обложкой лота.</p>
+      <p id={`${id}-hint`}>{savedPhotosLocked ? "До 10 фото. Новые добавляются в конец. Сохранённые удаляются в разделе выше. Первое фото служит обложкой." : "До 10 фото. Первое станет обложкой лота."}</p>
       {(fileError || error) && (
         <p id={`${id}-error`} className={styles.error} role="alert">
           {fileError || error}

@@ -117,9 +117,8 @@ export function HeaderNotifications({
                               markRead(item.id);
                               notify({
                                 kind: "info",
-                                title: href.startsWith("/offers/")
-                                  ? "Предложения обмена пока недоступны"
-                                  : "Чаты пока недоступны",
+                                title: text.title,
+                                description: text.text,
                               });
 
                               return;

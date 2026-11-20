@@ -1,5 +1,5 @@
 import { invalidateCatalog } from "./catalog-api";
-import { getFixtureLot, saveFixtureLot } from "../model/fixtures";
+import { saveFixtureLot } from "../model/fixtures";
 import { isLot } from "../model/validation";
 import { sameWants, wantKey } from "../model/wants";
 
@@ -25,13 +25,10 @@ function parseLot(value: unknown): Lot {
   if (!isRecord(value) || !isLot(value.data))
     throw new ApiError("Сервер вернул некорректные данные лота", 0);
 
-  return value.data;
+  return { ...value.data, source: "server" };
 }
 
 export async function getLot(id: number): Promise<Lot> {
-  const fixture = getFixtureLot(id);
-  if (fixture) return fixture;
-
   const key = `${readTokens()?.refreshToken ?? "guest"}:${id}`;
   const saved = cache.get(key);
   if (saved && saved.expires > Date.now()) return saved.lot;
@@ -69,18 +66,18 @@ export async function updateLot(
   lot: Lot,
   body: LotUpdate,
   wants: Lot["wants"],
-  photos?: Lot["photos"],
   newFiles: File[] = [],
   photoOrder?: (number | null)[],
+  fixturePhotos?: Lot["photos"],
 ): Promise<Lot> {
-  if (getFixtureLot(lot.id)) {
-    const next = {
+  if (lot.source === "fixture") {
+    const next: Lot = {
       ...lot,
       ...body,
       category: { ...lot.category, id: body.category_id },
+      photos: fixturePhotos ?? lot.photos,
       wants,
-      photos: photos ?? lot.photos,
-      status: "MODERATION" as const,
+      status: "MODERATION",
     };
 
     saveFixtureLot(next);
@@ -95,28 +92,20 @@ export async function updateLot(
   const current = reconcile ? await readServerLot(lot.id) : lot;
   const retainedWants = new Set(wants.map(wantKey));
   const currentWants = new Set(current.wants.map(wantKey));
-  if (wantsChanged) {
-    for (const want of current.wants) {
-      if (want.id !== undefined && !retainedWants.has(wantKey(want)))
-        await apiRequest(`/lots/${lot.id}/want/${want.id}`, {
-          method: "DELETE",
-          authenticated: true,
-          fallbackMessage: "Не удалось удалить вариант обмена",
-        });
-    }
-  }
+  if (current.wants.some((want) => !retainedWants.has(wantKey(want))))
+    throw new ApiError("Удаляйте сохранённые варианты обмена отдельно перед изменением формы.", 409);
 
   if (photoOrder) {
-    const retainedPhotos = new Set(photoOrder.filter((id) => id !== null));
-    for (const photo of current.photos) {
-      if (!retainedPhotos.has(photo.id))
-        await apiRequest(`/lots/${lot.id}/photo/${photo.id}`, {
-          method: "DELETE",
-          authenticated: true,
-          fallbackMessage: "Не удалось удалить фотографию",
-        });
-    }
+    const existing = photoOrder.filter((id) => id !== null);
+    if (existing.length !== current.photos.length ||
+      current.photos.some((photo, index) => existing[index] !== photo.id) ||
+      photoOrder.slice(0, existing.length).some((id) => id === null) ||
+      photoOrder.length !== current.photos.length + newFiles.length)
+      throw new ApiError("Сохранённые фото удаляются отдельно. Новые фото добавляются в конец, порядок сохранённых фото изменить нельзя.", 409);
   }
+
+  if (current.photos.length + newFiles.length > 10)
+    throw new ApiError("Можно сохранить не больше 10 фотографий. Сначала удалите лишние фото отдельно.", 409);
 
   const multipart = new FormData();
   multipart.set("title", body.title);
@@ -151,6 +140,8 @@ export async function updateLot(
   cache.clear();
   invalidateCatalog();
 
+  if (updated.id !== lot.id) throw new ApiError("Сервер вернул данные другого лота", 502);
+
   if (!reconcile) return updated;
 
   const saved = await readServerLot(lot.id);
@@ -163,6 +154,34 @@ export async function updateLot(
     throw new ApiError("Сервер сохранил изменения лота не полностью. Обновите страницу и проверьте фотографии и варианты обмена.", 502);
 
   return saved;
+}
+
+export async function deleteLotAttachment(lot: Lot, kind: "photo" | "want", id: number): Promise<void> {
+  const items = kind === "photo" ? lot.photos : lot.wants;
+  if (!Number.isSafeInteger(id) || !items.some((item) => item.id === id) || items.length <= 1)
+    throw new ApiError("Нужно оставить хотя бы одно фото и один вариант обмена.", 409);
+
+  if (["IN_EXCHANGE", "COMPLETED", "DELETED"].includes(lot.status))
+    throw new ApiError("Текущее состояние лота не позволяет удалить вложение.", 409);
+
+  if (lot.source === "fixture") {
+    saveFixtureLot(kind === "photo"
+      ? { ...lot, photos: lot.photos.filter((photo) => photo.id !== id) }
+      : { ...lot, wants: lot.wants.filter((want) => want.id !== id) });
+
+    return;
+  }
+
+  try {
+    await apiRequest(`/lots/${lot.id}/${kind}/${id}`, {
+      method: "DELETE",
+      authenticated: true,
+      fallbackMessage: kind === "photo" ? "Не удалось удалить фотографию" : "Не удалось удалить вариант обмена",
+    });
+  } finally {
+    cache.clear();
+    invalidateCatalog();
+  }
 }
 
 async function readServerLot(id: number): Promise<Lot> {
@@ -178,7 +197,7 @@ async function readServerLot(id: number): Promise<Lot> {
 }
 
 export async function deleteLot(lot: Lot): Promise<void> {
-  if (getFixtureLot(lot.id)) {
+  if (lot.source === "fixture") {
     saveFixtureLot({ ...lot, status: "DELETED" });
 
     return;
@@ -193,10 +212,10 @@ export async function deleteLot(lot: Lot): Promise<void> {
   invalidateCatalog();
 }
 export async function republishLot(lot: Lot): Promise<Lot> {
-  if (getFixtureLot(lot.id)) {
-    const next = {
+  if (lot.source === "fixture") {
+    const next: Lot = {
       ...lot,
-      status: "ACTIVE" as const,
+      status: "ACTIVE",
       published_at: new Date().toISOString(),
       expires_at: new Date(Date.now() + 30 * 86400_000).toISOString(),
     };
@@ -218,15 +237,6 @@ export async function republishLot(lot: Lot): Promise<Lot> {
   invalidateCatalog();
 
   return updated;
-}
-export async function archiveLot(lot: Lot): Promise<Lot> {
-  if (!getFixtureLot(lot.id))
-    throw new ApiError("Сервер пока не поддерживает перенос лота в архив вручную", 0);
-
-  const next = { ...lot, status: "ARCHIVED" as const };
-  saveFixtureLot(next);
-
-  return next;
 }
 let categoryCache: { promise: Promise<LotCategory[]>; expires: number } | null = null;
 

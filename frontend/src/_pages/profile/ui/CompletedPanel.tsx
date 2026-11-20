@@ -7,6 +7,7 @@ import { formatDate } from "../model/demo-data";
 import type { CompletedExchange } from "../model/demo-data";
 import type { Lot } from "@/src/entities/lot";
 
+import { getLotPath } from "@/src/entities/lot";
 import { Icon } from "@/src/shared/ui/icon";
 
 export function CompletedPanel({
@@ -42,7 +43,7 @@ export function CompletedPanel({
                 <div>
                   <span>Передано</span>
                   <h3>
-                    <Link href={`/lots/${lot.id}`}>{lot.title}</Link>
+                    <Link href={getLotPath(lot)}>{lot.title}</Link>
                   </h3>
                   <strong>{lot.estimated_cost.toLocaleString("ru-RU")} ₽</strong>
                 </div>

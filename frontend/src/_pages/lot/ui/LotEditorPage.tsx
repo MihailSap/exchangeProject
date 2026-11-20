@@ -10,12 +10,14 @@ import { useLot } from "../model/use-lot";
 
 import type { Lot } from "@/src/entities/lot";
 
+import { getLotPath } from "@/src/entities/lot";
 import { Breadcrumbs } from "@/src/shared/ui/breadcrumbs";
 import { Loading } from "@/src/shared/ui/loading";
 import { SiteHeader, SiteFooter } from "@/src/widgets/site-chrome";
 
-export function LotEditorPage({ id }: { id?: number }) {
-  const { lot, loaded, error, retry, user, router } = useLot(id, true);
+export function LotEditorPage({ id, fixture = false }: { id?: number; fixture?: boolean }) {
+  const { lot, setLot, loaded, error, retry, user, router } = useLot(id, true, undefined, fixture);
+  const [revision, setRevision] = useState(0);
   const [submittedLot, setSubmittedLot] = useState<Lot | null>(null);
   useEffect(() => {
     document.title = submittedLot
@@ -33,7 +35,7 @@ export function LotEditorPage({ id }: { id?: number }) {
           items={[
             { label: "Главная", href: "/" },
             { label: "Личный кабинет", href: "/profile" },
-            ...(lot ? [{ label: lot.title, href: `/lots/${lot.id}` }] : []),
+            ...(lot ? [{ label: lot.title, href: getLotPath(lot) }] : []),
             { label: id ? "Редактирование лота" : "Новый лот" },
           ]}
         />
@@ -54,7 +56,16 @@ export function LotEditorPage({ id }: { id?: number }) {
               }}
             />
           ) : (
-            <LotForm key={lot?.id ?? "new"} lot={lot} user={user} onSaved={setSubmittedLot} />
+            <LotForm
+              key={`${lot?.id ?? "new"}:${revision}`}
+              lot={lot}
+              user={user}
+              onSaved={setSubmittedLot}
+              onUpdated={(next) => {
+                setLot(next);
+                setRevision((value) => value + 1);
+              }}
+            />
           )
         ) : (
           <section className={styles.loading} aria-live="polite">

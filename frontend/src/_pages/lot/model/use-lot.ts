@@ -5,12 +5,12 @@ import { useEffect, useState } from "react";
 
 import type { Lot } from "@/src/entities/lot";
 
-import { getLot } from "@/src/entities/lot";
+import { getFixtureLot, getLot } from "@/src/entities/lot";
 import { useSession, updateSessionProfile } from "@/src/entities/session";
 import { ApiError } from "@/src/shared/api/client";
 import { useToast } from "@/src/shared/ui/toast/ToastProvider";
 
-export function useLot(id?: number, edit = false, localLot?: Lot) {
+export function useLot(id?: number, edit = false, localLot?: Lot, fixture = false) {
   const { user, ready } = useSession();
   const userId = user?.id;
   const router = useRouter();
@@ -22,7 +22,7 @@ export function useLot(id?: number, edit = false, localLot?: Lot) {
   useEffect(() => {
     if (localLot || !ready) return;
 
-    if (!userId) {
+    if (!userId && (edit || !id)) {
       router.replace("/login");
 
       return;
@@ -31,13 +31,30 @@ export function useLot(id?: number, edit = false, localLot?: Lot) {
     let active = true;
     setLoaded(false);
     setError("");
-    Promise.all([updateSessionProfile(), id ? getLot(id) : Promise.resolve(null)])
-      .then(([profile, next]) => {
+    const request = async () => {
+      const profile = userId ? await updateSessionProfile() : null;
+      const next = id
+        ? fixture
+          ? getFixtureLot(id) ?? null
+          : await getLot(id)
+        : null;
+
+      return { profile, next };
+    };
+
+    request()
+      .then(({ profile, next }) => {
         if (!active) return;
+
+        if (id && !next) {
+          router.replace("/");
+
+          return;
+        }
 
         if (
           (edit || !id) &&
-          (profile.status !== "ACTIVE" ||
+          (!profile || profile.status !== "ACTIVE" ||
             !profile.emailConfirmed ||
             (next &&
               (next.owner.id !== profile.id ||
@@ -52,7 +69,7 @@ export function useLot(id?: number, edit = false, localLot?: Lot) {
           next?.status === "DELETED" ||
           (next &&
             ["DRAFT", "MODERATION", "REJECTED"].includes(next.status) &&
-            next.owner.id !== profile.id)
+            next.owner.id !== profile?.id)
         ) {
           router.replace("/");
 
@@ -78,7 +95,7 @@ export function useLot(id?: number, edit = false, localLot?: Lot) {
     return () => {
       active = false;
     };
-  }, [ready, userId, id, edit, localLot, router, notify, attempt]);
+  }, [ready, userId, id, edit, localLot, fixture, router, notify, attempt]);
 
   return {
     lot: localLot ?? lot,

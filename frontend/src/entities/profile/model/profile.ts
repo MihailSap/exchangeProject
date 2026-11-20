@@ -6,4 +6,5 @@ export type UserProfile = {
   contacts?: string | null;
   emailConfirmed: boolean;
   createdAt?: string;
+  rating?: number | null;
 };

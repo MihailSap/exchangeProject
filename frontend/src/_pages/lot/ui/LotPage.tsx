@@ -9,7 +9,7 @@ import { useLot } from "../model/use-lot";
 
 import type { Lot } from "@/src/entities/lot";
 
-import { archiveLot, republishLot } from "@/src/entities/lot";
+import { archiveFixtureLot, getLotPath, republishLot } from "@/src/entities/lot";
 import { DeleteLotDialog } from "@/src/features/lot-management";
 import { useNotifications } from "@/src/features/notifications";
 import { Avatar } from "@/src/shared/ui/avatar";
@@ -32,8 +32,8 @@ const LABELS = {
 };
 
 const DELIVERY = { BOTH: "Доставка и самовывоз", DELIVERY: "Доставка", PICKUP: "Самовывоз" };
-export function LotPage({ id, localLot }: { id: number; localLot?: Lot }) {
-  const { lot, setLot, loaded, error, retry, user, router } = useLot(id, false, localLot);
+export function LotPage({ id, localLot, fixture = false }: { id: number; localLot?: Lot; fixture?: boolean }) {
+  const { lot, setLot, loaded, error, retry, user, router } = useLot(id, false, localLot, fixture);
   const { notify } = useToast();
   const { receive } = useNotifications();
   const [deleting, setDeleting] = useState(false);
@@ -44,25 +44,25 @@ export function LotPage({ id, localLot }: { id: number; localLot?: Lot }) {
   }, [lot]);
   const canManage = user?.status === "ACTIVE" && user.emailConfirmed;
 
-  async function change(action: "archive" | "republish") {
+  async function republish() {
     if (localLot || !lot || busy) return;
 
     setBusy(true);
     try {
-      const updated = action === "archive" ? await archiveLot(lot) : await republishLot(lot);
+      const updated = await republishLot(lot);
       setLot(updated);
-      if (action === "republish")
-        receive({
-          id: `republished:${lot.id}:${updated.published_at}`,
-          type: "LOT_REPUBLISHED",
-          lotId: lot.id,
-          lotTitle: lot.title,
-          createdAt: new Date().toISOString(),
-        });
+      receive({
+        id: `republished:${lot.id}:${updated.published_at}`,
+        type: "LOT_REPUBLISHED",
+        lotId: lot.id,
+        lotPath: getLotPath(lot),
+        lotTitle: lot.title,
+        createdAt: new Date().toISOString(),
+      });
 
       notify({
         kind: "success",
-        title: action === "archive" ? "Лот перенесён в архив" : "Лот опубликован заново",
+        title: "Лот опубликован заново",
       });
     } catch (error) {
       notify({
@@ -185,7 +185,7 @@ export function LotPage({ id, localLot }: { id: number; localLot?: Lot }) {
                     <>
                       {["ACTIVE", "DRAFT", "REJECTED"].includes(lot.status) &&
                         (canManage ? (
-                          <Link href={`/lots/${lot.id}/edit`} className={styles.primary}>
+                          <Link href={`${getLotPath(lot)}/edit`} className={styles.primary}>
                             Редактировать
                             {" "}
                             <Icon name="arrow" />
@@ -205,7 +205,7 @@ export function LotPage({ id, localLot }: { id: number; localLot?: Lot }) {
                           type="button"
                           className={styles.primary}
                           disabled={!canManage || busy}
-                          onClick={() => change("republish")}
+                          onClick={() => void republish()}
                         >
                           Опубликовать заново
                           {" "}
@@ -216,8 +216,11 @@ export function LotPage({ id, localLot }: { id: number; localLot?: Lot }) {
                         <button
                           type="button"
                           className={styles.secondary}
-                          disabled={!canManage || busy}
-                          onClick={() => change("archive")}
+                          disabled={!canManage || busy || lot.source !== "fixture"}
+                          onClick={() => {
+                            setLot(archiveFixtureLot(lot));
+                            notify({ kind: "success", title: "Лот перенесён в архив" });
+                          }}
                         >
                           В архив
                         </button>
@@ -226,7 +229,7 @@ export function LotPage({ id, localLot }: { id: number; localLot?: Lot }) {
                         type="button"
                         className={styles.danger}
                         disabled={
-                          busy || lot.status === "IN_EXCHANGE" || lot.status === "COMPLETED"
+                          busy || !canManage || lot.status === "IN_EXCHANGE" || lot.status === "COMPLETED"
                         }
                         onClick={() => setDeleting(true)}
                       >
@@ -240,7 +243,6 @@ export function LotPage({ id, localLot }: { id: number; localLot?: Lot }) {
                         type="button"
                         className={styles.primary}
                         disabled
-                        title="Предложения обмена ещё не подключены"
                       >
                         <Icon name="swap" />
                         Предложить обмен
@@ -249,14 +251,9 @@ export function LotPage({ id, localLot }: { id: number; localLot?: Lot }) {
                         type="button"
                         className={styles.secondary}
                         disabled
-                        title="Переписка ещё не подключена"
                       >
                         Написать владельцу
                       </button>
-                      <p className={styles.muted}>
-                        Предложения и переписка станут доступны после подключения соответствующего
-                        API.
-                      </p>
                     </>
                   )}
                 </div>

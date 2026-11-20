@@ -1,12 +1,12 @@
 export type { Lot, LotStatus } from "./model/lot";
-export { initializeFixtureLots, getFixtureLot, saveFixtureLot } from "./model/fixtures";
+export { initializeFixtureLots, getFixtureLot, saveFixtureLot, getLotPath, archiveFixtureLot } from "./model/fixtures";
 export {
   getLot,
   createLot,
   updateLot,
   deleteLot,
+  deleteLotAttachment,
   republishLot,
-  archiveLot,
   getLotCategories,
   invalidateLotCategories,
 } from "./api/lot-api";

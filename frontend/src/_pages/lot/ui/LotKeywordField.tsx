@@ -14,6 +14,7 @@ type Props = {
   onQuery: (value: string) => void;
   onChange: (tags: string[]) => void;
   onBlur: () => void;
+  lockedTags?: string[];
 };
 
 export function LotKeywordField({
@@ -25,6 +26,7 @@ export function LotKeywordField({
   onQuery,
   onChange,
   onBlur,
+  lockedTags = [],
 }: Props) {
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -43,7 +45,7 @@ export function LotKeywordField({
                 <span>{tag}</span>
                 <button
                   type="button"
-                  disabled={disabled}
+                  disabled={disabled || lockedTags.includes(tag)}
                   aria-label={`Удалить пожелание «${tag}»`}
                   onClick={() => {
                     onChange(tags.filter((item) => item !== tag));

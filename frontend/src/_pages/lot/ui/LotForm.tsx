@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { LotEstimate } from "./LotEstimate";
 import styles from "./LotForm.module.scss";
 import { LotPhotosField } from "./LotPhotosField";
+import { LotSavedAttachments } from "./LotSavedAttachments";
 import { LotStepper } from "./LotStepper";
 import { LotWants } from "./LotWants";
 import {
@@ -13,6 +14,7 @@ import {
   hasFormChanges,
   initialValues,
   readFormValues,
+  restoreLotDraft,
   formWants,
   toMultipart,
   validateLotForm,
@@ -25,7 +27,7 @@ import type { Lot, LotCategory } from "@/src/entities/lot";
 import type { AuthUser } from "@/src/entities/session";
 import type { FormEvent } from "react";
 
-import { createLot, getFixtureLot, getLotCategories, updateLot } from "@/src/entities/lot";
+import { createLot, getLotCategories, updateLot } from "@/src/entities/lot";
 import { getRegions } from "@/src/entities/profile";
 import { ApiError } from "@/src/shared/api/client";
 import { FormField } from "@/src/shared/ui/form-field";
@@ -47,10 +49,12 @@ export function LotForm({
   lot,
   user,
   onSaved,
+  onUpdated,
 }: {
   lot: Lot | null;
   user: AuthUser;
   onSaved: (lot: Lot) => void;
+  onUpdated: (lot: Lot) => void;
 }) {
   const [initial] = useState(() => initialValues(lot, user.region ?? ""));
   const [values, setValues] = useState(initial);
@@ -71,7 +75,6 @@ export function LotForm({
   const draftKey = `exchange.lot-draft.v1.${user.id}.${lot?.id ?? "new"}`;
   const valuesRef = useRef(values);
   valuesRef.current = values;
-  const fixture = Boolean(lot && getFixtureLot(lot.id));
   const errors = validateLotForm(
     values,
     regions,
@@ -79,6 +82,7 @@ export function LotForm({
     photos.length,
   );
 
+  const fixture = lot?.source === "fixture";
   const photoChanges = Boolean(lot && photosChanged(lot, photos));
   const dirty = !lot || photoChanges || hasFormChanges(values, initial);
   const firstValid = !FIRST_FIELDS.some((field) => errors[field]);
@@ -258,9 +262,9 @@ export function LotForm({
             estimated_cost: Number(values.cost.replace(",", ".")),
           },
           wants,
-          fixture && photoChanges ? await serializePhotos(photos) : undefined,
           files,
           !fixture && photoChanges ? photos.map((photo) => photo.kind === "existing" ? photo.photo.id : null) : undefined,
+          fixture && photoChanges ? await serializePhotos(photos) : undefined,
         );
       } else result = await createLot(toMultipart(values, files));
 
@@ -275,6 +279,9 @@ export function LotForm({
       notify({
         kind: "error",
         title: error instanceof Error ? error.message : "Не удалось сохранить лот",
+        description: !lot && error instanceof ApiError && (error.status === 0 || error.status >= 500)
+          ? "Не удалось подтвердить сохранение. Лот мог быть создан; повторная отправка может создать ещё одно объявление."
+          : undefined,
       });
       if (error instanceof ApiError && error.status === 401) window.location.assign("/login");
 
@@ -294,7 +301,7 @@ export function LotForm({
           <button
             type="button"
             onClick={() => {
-              setValues(savedDraft);
+              setValues(restoreLotDraft(savedDraft, lot));
               setSavedDraft(null);
               setSavedAt("Восстановлен сохранённый текст");
             }}
@@ -317,6 +324,7 @@ export function LotForm({
         </section>
       )}
       <LotStepper step={step} />
+      {lot && !fixture && <LotSavedAttachments lot={lot} disabled={busy || dirty || Boolean(savedDraft)} onUpdated={onUpdated} />}
       <div className={styles.layout}>
         <form id="lot-form" className={styles.form} noValidate onSubmit={submit}>
           {step === 1 ? (
@@ -369,6 +377,7 @@ export function LotForm({
                 photos={photos}
                 onChange={setPhotos}
                 disabled={busy}
+                savedPhotosLocked={Boolean(lot && !fixture)}
                 onBlur={() => touch("photos")}
                 error={touched.photos ? errors.photos : undefined}
               />
@@ -421,11 +430,13 @@ export function LotForm({
                 Отметьте один или несколько вариантов. Приоритет между ними не задаётся — все
                 варианты равнозначны.
               </p>
+              {lot && !fixture && <p className={styles.hint}>Сохранённые варианты остаются в лоте. Их можно удалить отдельно в разделе выше; здесь можно добавить новые.</p>}
               <LotWants
                 values={values}
                 categories={categories}
                 userId={user.id}
                 disabled={busy}
+                savedWants={fixture ? undefined : lot?.wants}
                 errors={errors}
                 touched={touched}
                 keywordQuery={keywordQuery}

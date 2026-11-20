@@ -64,6 +64,20 @@ export function initialValues(lot: Lot | null, region: string): LotFormValues {
   };
 }
 
+export function restoreLotDraft(draft: LotFormValues, lot: Lot | null): LotFormValues {
+  if (!lot) return draft;
+
+  const saved = initialValues(lot, "");
+
+  return {
+    ...draft,
+    wantTypes: [...new Set([...saved.wantTypes, ...draft.wantTypes])],
+    keywords: unique([...saved.keywords, ...draft.keywords]),
+    targetCategoryIds: unique([...saved.targetCategoryIds, ...draft.targetCategoryIds]),
+    targetLots: unique([...saved.targetLots, ...draft.targetLots]),
+  };
+}
+
 export function validateLotForm(
   values: LotFormValues,
   regions: string[],

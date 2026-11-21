@@ -94,6 +94,7 @@ public class LotController {
     }
 
     @Operation(description = "Список или поиск активных лотов")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping
     public LotListResponse searchLots(
             @RequestParam(required = false) String q,
@@ -103,6 +104,7 @@ public class LotController {
             @RequestParam(required = false) LotType type,
             @RequestParam(defaultValue = "false") boolean delivery,
             @RequestParam(defaultValue = "false") boolean pickup,
+            @RequestParam(name = "is_mine", required = false) Boolean isMine,
             @RequestParam(name = "min_cost", required = false)
             BigDecimal minCost,
             @RequestParam(name = "max_cost", required = false)
@@ -111,7 +113,13 @@ public class LotController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "per_page", defaultValue = "20")
             @Min(1) @Max(100) int perPage
-    ) throws CategoryNotFound {
+    ) throws CategoryNotFound, UserNotFoundException {
+        Long currentUserId = null;
+        if (isMine != null) {
+            String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
+            User user = userService.getByEmail(authenticatedUserEmail);
+            currentUserId = user.getId();
+        }
 
         Page<Lot> lotPage = lotService.searchLots(
                 q,
@@ -120,6 +128,8 @@ public class LotController {
                 type,
                 delivery,
                 pickup,
+                isMine,
+                currentUserId,
                 minCost,
                 maxCost,
                 sort,

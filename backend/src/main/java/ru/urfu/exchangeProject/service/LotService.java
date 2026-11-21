@@ -35,6 +35,8 @@ public interface LotService {
             LotType type,
             boolean delivery,
             boolean pickup,
+            Boolean isMine,
+            Long currentUserId,
             BigDecimal minCost,
             BigDecimal maxCost,
             String sort,

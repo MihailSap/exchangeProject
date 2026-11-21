@@ -1,4 +1,3 @@
-
 package ru.urfu.exchangeProject.repository;
 
 import org.springframework.data.domain.Page;
@@ -56,6 +55,12 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
                       )
 
                       AND (
+                           :isMine IS NULL
+                           OR (:isMine = true AND u.id = :currentUserId)
+                           OR (:isMine = false AND u.id <> :currentUserId)
+                      )
+
+                      AND (
                           :minCost IS NULL
                           OR l.estimatedCost >= :minCost
                       )
@@ -102,6 +107,12 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
                       )
 
                       AND (
+                           :isMine IS NULL
+                           OR (:isMine = true AND u.id = :currentUserId)
+                           OR (:isMine = false AND u.id <> :currentUserId)
+                      )
+
+                      AND (
                           :minCost IS NULL
                           OR l.estimatedCost >= :minCost
                       )
@@ -122,6 +133,8 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
             @Param("type") LotType type,
             @Param("filterByDeliveryMethod") boolean filterByDeliveryMethod,
             @Param("deliveryMethods") List<DeliveryMethod> deliveryMethods,
+            @Param("isMine") Boolean isMine,
+            @Param("currentUserId") Long currentUserId,
             @Param("minCost") BigDecimal minCost,
             @Param("maxCost") BigDecimal maxCost,
             Pageable pageable

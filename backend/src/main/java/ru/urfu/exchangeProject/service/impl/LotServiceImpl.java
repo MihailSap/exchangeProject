@@ -70,6 +70,8 @@ public class LotServiceImpl implements LotService {
             LotType type,
             boolean delivery,
             boolean pickup,
+            Boolean isMine,
+            Long currentUserId,
             BigDecimal minCost,
             BigDecimal maxCost,
             String sort,
@@ -143,6 +145,8 @@ public class LotServiceImpl implements LotService {
                 type,
                 filterByDeliveryMethod,
                 deliveryMethods,
+                isMine,
+                currentUserId,
                 minCost,
                 maxCost,
                 pageable

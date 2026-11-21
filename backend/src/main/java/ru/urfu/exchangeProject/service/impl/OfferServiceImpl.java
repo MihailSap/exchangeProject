@@ -5,7 +5,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.urfu.exchangeProject.exception.customEx.news.LotNotFoundException;
 import ru.urfu.exchangeProject.model.lot.Lot;
+import ru.urfu.exchangeProject.model.lot.LotStatus;
 import ru.urfu.exchangeProject.model.offer.Offer;
+import ru.urfu.exchangeProject.model.offer.OfferItem;
 import ru.urfu.exchangeProject.model.offer.OfferStatus;
 import ru.urfu.exchangeProject.model.user.User;
 import ru.urfu.exchangeProject.repository.LotRepository;
@@ -16,6 +18,7 @@ import ru.urfu.exchangeProject.service.OfferService;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 public class OfferServiceImpl implements OfferService {
@@ -57,6 +60,62 @@ public class OfferServiceImpl implements OfferService {
         for (Long lotId : lotIds) {
             Lot offeredLot = lotService.getById(lotId);
             offer.addItem(offeredLot);
+        }
+
+        return offerRepository.save(offer);
+    }
+
+    @Transactional
+    @Override
+    public Offer accept(Offer offer, long recipientId) {
+        offer.setStatus(OfferStatus.ACCEPTED);
+
+        List<Lot> lots = new ArrayList<>();
+        lots.add(offer.getTargetLot());
+        offer.getItems().stream()
+                .map(OfferItem::getLot)
+                .forEach(lots::add);
+        for (Lot lot : lots) {
+            lot.setStatus(LotStatus.IN_EXCHANGE);
+        }
+        List<Long> lotIds = lots.stream()
+                .map(Lot::getId)
+                .distinct()
+                .toList();
+        List<Offer> otherOffers = offerRepository.findOtherOffersByLotIds(
+                offer.getId(), List.of(OfferStatus.SENT, OfferStatus.VIEWED), lotIds);
+
+        for (Offer otherOffer : otherOffers) {
+            otherOffer.setStatus(OfferStatus.REJECTED);
+        }
+
+        return offerRepository.save(offer);
+    }
+
+    @Transactional
+    @Override
+    public Offer reject(Offer offer) {
+        offer.setStatus(OfferStatus.REJECTED);
+        return offerRepository.save(offer);
+    }
+
+    @Transactional
+    @Override
+    public Offer cancel(Offer offer) {
+        offer.setStatus(OfferStatus.CANCELLED);
+        return offerRepository.save(offer);
+    }
+
+    @Transactional
+    @Override
+    public Offer fail(Offer offer) {
+        offer.setStatus(OfferStatus.CANCELLED);
+
+        Lot targetLot = offer.getTargetLot();
+        targetLot.setStatus(LotStatus.ACTIVE);
+
+        for (OfferItem offerItem : offer.getItems()) {
+            offerItem.getLot().setStatus(LotStatus.ACTIVE);
         }
 
         return offerRepository.save(offer);

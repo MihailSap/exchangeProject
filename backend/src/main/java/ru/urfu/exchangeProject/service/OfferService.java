@@ -17,4 +17,12 @@ public interface OfferService {
             List<Long> offeredLotIds,
             String message
     ) throws LotNotFoundException;
+
+    Offer accept(Offer offer, long recipientId);
+
+    Offer reject(Offer offer);
+
+    Offer cancel(Offer offer);
+
+    Offer fail(Offer offer);
 }

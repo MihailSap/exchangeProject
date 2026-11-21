@@ -13,6 +13,8 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import ru.urfu.exchangeProject.dto.exceptions.*;
 import ru.urfu.exchangeProject.exception.customEx.InvalidRefreshTokenException;
 import ru.urfu.exchangeProject.exception.customEx.news.*;
+import ru.urfu.exchangeProject.exception.globalEx.ConflictException;
+import ru.urfu.exchangeProject.exception.globalEx.ForbiddenException;
 import ru.urfu.exchangeProject.exception.globalEx.NotFoundException;
 
 import java.util.List;
@@ -133,6 +135,22 @@ public class GlobalExceptionHandler {
         ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
                 ErrorCode.LOT_FORBIDDEN, null, null);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ExceptionResponse> handleForbiddenEx(ForbiddenException ex) {
+        logger.error("ForbiddenException: {}", ex.getMessage(), ex);
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ex.getErrorCode(), null, null);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ExceptionResponse> handleConflictEx(ConflictException ex) {
+        logger.error("ConflictException: {}", ex.getMessage(), ex);
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ex.getErrorCode(), null, null);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ExceptionResponse(exceptionErrorResponse));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -10,4 +10,5 @@ public interface PathsConstants {
     String ADMIN = "/admin";
     String LOTS = "/lots";
     String MODERATION = "/moderation";
+    String OFFERS = "/offers";
 }

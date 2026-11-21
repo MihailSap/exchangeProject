@@ -1,0 +1,103 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-offers-tables
+      author: exchangeProject
+      changes:
+        - createTable:
+            tableName: offers
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_offers
+                    nullable: false
+              - column:
+                  name: initiator_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recipient_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: target_lot_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+              - column:
+                  name: status
+                  type: varchar(20)
+                  defaultValue: sent
+              - column:
+                  name: message
+                  type: text
+              - column:
+                  name: created_at
+                  type: timestamp with time zone
+                  defaultValueComputed: now()
+              - column:
+                  name: viewed_at
+                  type: timestamp with time zone
+              - column:
+                  name: responded_at
+                  type: timestamp with time zone
+              - column:
+                  name: completed_at
+                  type: timestamp with time zone
+
+        - createTable:
+            tableName: offer_items
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    primaryKeyName: pk_offer_items
+                    nullable: false
+              - column:
+                  name: offer_id
+                  type: bigint
+              - column:
+                  name: lot_id
+                  type: bigint
+                  constraints:
+                    nullable: false
+
+        - addForeignKeyConstraint:
+            baseTableName: offers
+            baseColumnNames: initiator_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_offers_initiator
+        - addForeignKeyConstraint:
+            baseTableName: offers
+            baseColumnNames: recipient_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_offers_recipient
+        - addForeignKeyConstraint:
+            baseTableName: offers
+            baseColumnNames: target_lot_id
+            referencedTableName: lots
+            referencedColumnNames: id
+            constraintName: fk_offers_target_lot
+        - addForeignKeyConstraint:
+            baseTableName: offer_items
+            baseColumnNames: offer_id
+            referencedTableName: offers
+            referencedColumnNames: id
+            constraintName: fk_offer_items_offer
+            onDelete: CASCADE
+        - addForeignKeyConstraint:
+            baseTableName: offer_items
+            baseColumnNames: lot_id
+            referencedTableName: lots
+            referencedColumnNames: id
+            constraintName: fk_offer_items_lot

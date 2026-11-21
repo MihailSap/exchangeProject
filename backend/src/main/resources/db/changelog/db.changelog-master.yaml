@@ -21,3 +21,5 @@ databaseChangeLog:
       file: db/changelog/changeset/010-drop-unique-constraint-users-name.yml
   - include:
       file: db/changelog/changeset/011-drop-photo-order.yml
+  - include:
+      file: db/changelog/changeset/012-create-offers.yml

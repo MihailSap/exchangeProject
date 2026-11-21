@@ -6,6 +6,7 @@ import styles from "./LotForm.module.scss";
 import { validatePhotos } from "../model/form";
 
 import type { LotPhotoSelection } from "../model/photos";
+import type { Lot } from "@/src/entities/lot";
 
 import { AssetImage } from "@/src/shared/ui/asset-image";
 import { Icon } from "@/src/shared/ui/icon";
@@ -17,9 +18,11 @@ type Props = {
   onBlur: () => void;
   disabled?: boolean;
   savedPhotosLocked?: boolean;
+  onRemoveSaved: (photo: Lot["photos"][number]) => void;
+  canRemoveSaved: boolean;
 };
 
-export function LotPhotosField({ photos, onChange, error, onBlur, disabled = false, savedPhotosLocked = false }: Props) {
+export function LotPhotosField({ photos, onChange, error, onBlur, disabled = false, savedPhotosLocked = false, onRemoveSaved, canRemoveSaved }: Props) {
   const [previews, setPreviews] = useState<Record<string, string>>({});
   const [fileError, setFileError] = useState("");
   const id = useId();
@@ -77,18 +80,20 @@ export function LotPhotosField({ photos, onChange, error, onBlur, disabled = fal
           return (
             <div className={styles.preview} key={item.key}>
               {src && <AssetImage src={src} alt={`Фото ${index + 1}`} width={140} height={140} />}
-              {(!savedPhotosLocked || item.kind === "file") && (
-                <button
-                  type="button"
-                  aria-label={`Удалить фото ${index + 1}`}
-                  onClick={() => {
-                    onChange(photos.filter((photo) => photo.key !== item.key));
-                    setFileError("");
-                  }}
-                >
-                  <Icon name="close" />
-                </button>
-              )}
+              <button
+                type="button"
+                aria-label={`Удалить фото ${index + 1}`}
+                disabled={disabled || (item.kind === "existing" && !canRemoveSaved)}
+                title={item.kind === "existing" && !canRemoveSaved ? "В лоте должно остаться хотя бы одно сохранённое фото" : undefined}
+                onClick={() => {
+                  if (item.kind === "existing") onRemoveSaved(item.photo);
+                  else onChange(photos.filter((photo) => photo.key !== item.key));
+
+                  setFileError("");
+                }}
+              >
+                <Icon name="close" />
+              </button>
               {index > 0 && !savedPhotosLocked ? (
                 <button
                   type="button"
@@ -106,7 +111,7 @@ export function LotPhotosField({ photos, onChange, error, onBlur, disabled = fal
           );
         })}
       </div>
-      <p id={`${id}-hint`}>{savedPhotosLocked ? "До 10 фото. Новые добавляются в конец. Сохранённые удаляются в разделе выше. Первое фото служит обложкой." : "До 10 фото. Первое станет обложкой лота."}</p>
+      <p id={`${id}-hint`}>{savedPhotosLocked ? "До 10 фото. Новые добавляются в конец. Первое фото служит обложкой." : "До 10 фото. Первое станет обложкой лота."}</p>
       {(fileError || error) && (
         <p id={`${id}-error`} className={styles.error} role="alert">
           {fileError || error}

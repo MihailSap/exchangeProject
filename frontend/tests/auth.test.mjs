@@ -732,12 +732,77 @@ test("admin user pagination validates transport fields and rejects duplicate ide
     createdAt: "2026-10-20T10:00:00Z",
   };
 
-  const page = { content: [user], totalElements: 1, totalPages: 1, page: 0, size: 20 };
+  const page = { data: [user], meta: { page: 1, perPage: 20, total: 1 } };
   assert.equal(parseUsersPage(page).content[0].emailConfirmed, true);
-  assert.throws(() => parseUsersPage({ ...page, content: [{ ...user, role: "ROOT" }] }));
-  assert.throws(() => parseUsersPage({ ...page, content: [user, user], totalElements: 2 }));
-  assert.throws(() => parseUsersPage({ ...page, page: -1 }));
-  assert.throws(() => parseUsersPage({ ...page, content: [{ ...user, createdAt: "wrong" }] }));
+  assert.equal(parseUsersPage(page).page, 0);
+  assert.equal(parseUsersPage({ ...page, meta: { page: 2, perPage: 20, total: 21 } }).totalPages, 2);
+  assert.equal(parseUsersPage({ data: [], meta: { page: 1, perPage: 20, total: 0 } }).totalPages, 0);
+  assert.throws(() => parseUsersPage({ ...page, data: [{ ...user, role: "ROOT" }] }));
+  assert.throws(() => parseUsersPage({ data: [user, user], meta: { ...page.meta, total: 2 } }));
+  assert.throws(() => parseUsersPage({ ...page, meta: { ...page.meta, page: 0 } }));
+  assert.throws(() => parseUsersPage({ ...page, data: [{ ...user, createdAt: "wrong" }] }));
+});
+
+test("admin users and moderation use protected one-based list contracts and propagate decision errors", async () => {
+  const requests = [];
+  const env = environment(async (url, options) => {
+    requests.push({ url, options });
+    if (url.includes("/admin/users?")) return Response.json({ data: [], meta: { page: 3, perPage: 20, total: 0 } });
+
+    if (url.includes("/moderation/lots?")) return Response.json({ data: [], meta: { page: 2, per_page: 20, total: 0 } });
+
+    if (url.endsWith("/reject")) return Response.json({ error: { message: "Лот уже проверен" } }, { status: 400 });
+
+    return new Response(null, { status: 200 });
+  });
+
+  env.load("@/src/entities/session/model/session").writeSession(session);
+  const api = env.load("@/src/features/administration/api/admin-api");
+  assert.equal((await api.getAdminUsers(2, "Анна", "FROZEN")).page, 2);
+  const query = new URL(requests[0].url).searchParams;
+  assert.equal(query.get("page"), "3");
+  assert.equal(query.get("per_page"), "20");
+  assert.equal(query.get("q"), "Анна");
+  assert.equal(query.get("status"), "FROZEN");
+  assert.equal(requests[0].options.headers.get("Authorization"), "Bearer access");
+  assert.equal((await api.getModerationLots(1)).page, 1);
+  assert.ok(requests[1].url.includes("page=2&per_page=20"));
+  await api.moderateLot(42, "approve");
+  assert.equal(requests[2].options.method, "POST");
+  assert.ok(requests[2].url.endsWith("/moderation/lots/42/approve"));
+  await assert.rejects(() => api.moderateLot(42, "reject", "  Нечёткие фото  "), /Лот уже проверен/);
+  assert.deepEqual(JSON.parse(requests[3].options.body), { reason: "Нечёткие фото" });
+});
+
+test("moderation queue rejects malformed and non-moderation lots without fabricating data", () => {
+  const env = environment();
+  const { parseModerationPage } = env.load("@/src/features/administration/model/contracts");
+  const lot = env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[1];
+  const meta = { page: 1, per_page: 20, total: 1 };
+  assert.equal(parseModerationPage({ data: [lot], meta }).content[0].source, "server");
+  assert.throws(() => parseModerationPage({ data: [{ ...lot, status: "ACTIVE" }], meta }));
+  assert.throws(() => parseModerationPage({ data: [lot, lot], meta: { ...meta, total: 2 } }));
+  assert.throws(() => parseModerationPage({ data: [lot], meta: { ...meta, per_page: 0 } }));
+  assert.throws(() => parseModerationPage({ data: [{ ...lot, photos: null }], meta }));
+});
+
+test("immediate wish deletion preserves unsaved text, additions and remaining exchange choices", () => {
+  const env = environment();
+  const { initialValues, removeWantFromValues } = env.load("@/src/_pages/lot/model/form");
+  const lot = env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0];
+  const saved = { id: 7, want_type: "KEYWORDS", keywords: "Объектив", target_category: null, target_lot: null };
+  const values = { ...initialValues({ ...lot, wants: [saved] }, ""), title: "Несохранённое название", description: "Несохранённое описание", keywords: ["Объектив", "Новый вариант"], wantTypes: ["KEYWORDS", "LOT", "ANY"], targetLots: ["123"] };
+  const next = removeWantFromValues(values, saved);
+  assert.equal(next.title, values.title);
+  assert.equal(next.description, values.description);
+  assert.deepEqual([...next.keywords], ["Новый вариант"]);
+  assert.deepEqual([...next.targetLots], ["123"]);
+  assert.deepEqual([...next.wantTypes], ["KEYWORDS", "LOT", "ANY"]);
+  assert.ok(!removeWantFromValues({ ...values, keywords: ["Объектив"] }, saved).wantTypes.includes("KEYWORDS"));
+  const withoutLot = removeWantFromValues(next, { ...saved, want_type: "LOT", keywords: null, target_lot: "/lots/123" });
+  assert.equal(withoutLot.targetLots.length, 0);
+  assert.ok(withoutLot.wantTypes.includes("ANY"));
+  assert.ok(!withoutLot.wantTypes.includes("LOT"));
 });
 
 test("lot categories show each category once when backend repeats child nodes", async () => {
@@ -1618,9 +1683,11 @@ test("restored fixture actions persist locally and never mutate matching server 
   assert.equal(notifications.isNotificationEvent(event), true);
   assert.equal(notifications.notificationHref(event), fixtures.getLotPath(lot));
   assert.equal(notifications.isNotificationEvent({ ...event, lotPath: "https://example.com" }), false);
-  const archived = fixtures.archiveFixtureLot(lot);
-  assert.equal(fixtures.getFixtureLot(lot.id).status, "ARCHIVED");
-  const republished = await api.republishLot(archived);
+  const archived = fixtures.initializeFixtureLots(1, "User", "Москва").find((item) => item.status === "ARCHIVED");
+  const republishedArchive = await api.republishLot(archived);
+  assert.equal(republishedArchive.status, "ACTIVE");
+  assert.equal(fixtures.getFixtureLot(archived.id).status, "ACTIVE");
+  const republished = lot;
   assert.equal(republished.status, "ACTIVE");
   const body = { title: "Изменённое название", description: lot.description, category_id: lot.category.id,
     region: lot.region, type: lot.type, delivery_method: lot.delivery_method, estimated_cost: lot.estimated_cost };

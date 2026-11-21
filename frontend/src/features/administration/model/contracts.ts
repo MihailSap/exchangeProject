@@ -1,3 +1,6 @@
+import type { Lot } from "@/src/entities/lot";
+
+import { isLot } from "@/src/entities/lot";
 import { ApiError } from "@/src/shared/api/client";
 import { isRecord, isNonEmptyString } from "@/src/shared/lib/validation";
 
@@ -44,15 +47,15 @@ function invalid(): never {
 export function parseUsersPage(payload: unknown): UsersPage {
   if (
     !isRecord(payload) ||
-    !Array.isArray(payload.content) ||
-    !nonnegative(payload.totalElements) ||
-    !nonnegative(payload.totalPages) ||
-    !nonnegative(payload.page) ||
-    !positiveId(payload.size)
+    !Array.isArray(payload.data) ||
+    !isRecord(payload.meta) ||
+    !nonnegative(payload.meta.total) ||
+    !positiveId(payload.meta.page) ||
+    !positiveId(payload.meta.perPage)
   )
     return invalid();
 
-  const content = payload.content.map((item): AdminUser => {
+  const content = payload.data.map((item): AdminUser => {
     if (
       !isRecord(item) ||
       !positiveId(item.id) ||
@@ -81,17 +84,34 @@ export function parseUsersPage(payload: unknown): UsersPage {
 
   if (
     new Set(content.map((user) => user.id)).size !== content.length ||
-    content.length > payload.size ||
-    content.length > payload.totalElements
+    content.length > payload.meta.perPage ||
+    content.length > payload.meta.total
   )
     return invalid();
 
   return {
     content,
-    page: payload.page,
-    size: payload.size,
-    totalElements: payload.totalElements,
-    totalPages: payload.totalPages,
+    page: payload.meta.page - 1,
+    size: payload.meta.perPage,
+    totalElements: payload.meta.total,
+    totalPages: Math.ceil(payload.meta.total / payload.meta.perPage),
+  };
+}
+
+export type ModerationPage = { content: Lot[]; page: number; totalPages: number; totalElements: number };
+
+export function parseModerationPage(payload: unknown): ModerationPage {
+  if (!isRecord(payload) || !Array.isArray(payload.data) || !isRecord(payload.meta) ||
+    !positiveId(payload.meta.page) || !positiveId(payload.meta.per_page) || !nonnegative(payload.meta.total) ||
+    !payload.data.every((lot) => isLot(lot) && lot.status === "MODERATION") ||
+    payload.data.length > payload.meta.per_page || payload.data.length > payload.meta.total ||
+    new Set(payload.data.map((lot) => lot.id)).size !== payload.data.length) return invalid();
+
+  return {
+    content: payload.data.map((lot): Lot => ({ ...lot, source: "server" })),
+    page: payload.meta.page - 1,
+    totalPages: Math.ceil(payload.meta.total / payload.meta.per_page),
+    totalElements: payload.meta.total,
   };
 }
 

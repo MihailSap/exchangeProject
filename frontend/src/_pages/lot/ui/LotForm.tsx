@@ -1,12 +1,14 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
+import { LotAttachmentDialog } from "./LotAttachmentDialog";
 import { LotEstimate } from "./LotEstimate";
 import styles from "./LotForm.module.scss";
+import { LotPhotoReview } from "./LotPhotoReview";
 import { LotPhotosField } from "./LotPhotosField";
-import { LotSavedAttachments } from "./LotSavedAttachments";
 import { LotStepper } from "./LotStepper";
 import { LotWants } from "./LotWants";
 import {
@@ -15,12 +17,14 @@ import {
   initialValues,
   readFormValues,
   restoreLotDraft,
+  removeWantFromValues,
   formWants,
   toMultipart,
   validateLotForm,
 } from "../model/form";
 import { initialPhotos, photosChanged, serializePhotos } from "../model/photos";
 
+import type { LotAttachment } from "./LotAttachmentDialog";
 import type { LotField, LotFormValues } from "../model/form";
 import type { LotPhotoSelection } from "../model/photos";
 import type { Lot, LotCategory } from "@/src/entities/lot";
@@ -46,17 +50,18 @@ const FIRST_FIELDS: LotField[] = [
 ];
 
 export function LotForm({
-  lot,
+  lot: originalLot,
   user,
   onSaved,
-  onUpdated,
 }: {
   lot: Lot | null;
   user: AuthUser;
   onSaved: (lot: Lot) => void;
-  onUpdated: (lot: Lot) => void;
 }) {
-  const [initial] = useState(() => initialValues(lot, user.region ?? ""));
+  const [lot, setLot] = useState(originalLot);
+  const [attachment, setAttachment] = useState<LotAttachment | null>(null);
+  const [attachmentsChanged, setAttachmentsChanged] = useState(false);
+  const [initial] = useState(() => initialValues(originalLot, user.region ?? ""));
   const [values, setValues] = useState(initial);
   const [savedDraft, setSavedDraft] = useState<LotFormValues | null>(null);
   const [touched, setTouched] = useState<Partial<Record<LotField, boolean>>>({});
@@ -69,7 +74,8 @@ export function LotForm({
   const [step, setStep] = useState(1);
   const [lotQuery, setLotQuery] = useState("");
   const [keywordQuery, setKeywordQuery] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [submitting, setBusy] = useState(false);
+  const busy = submitting || attachment !== null;
   const [savedAt, setSavedAt] = useState("");
   const { notify } = useToast();
   const draftKey = `exchange.lot-draft.v1.${user.id}.${lot?.id ?? "new"}`;
@@ -84,7 +90,7 @@ export function LotForm({
 
   const fixture = lot?.source === "fixture";
   const photoChanges = Boolean(lot && photosChanged(lot, photos));
-  const dirty = !lot || photoChanges || hasFormChanges(values, initial);
+  const dirty = !lot || attachmentsChanged || photoChanges || hasFormChanges(values, initialValues(lot, user.region ?? ""));
   const firstValid = !FIRST_FIELDS.some((field) => errors[field]);
   const wantsValid = !["wantTypes", "keywords", "targetCategoryIds", "targetLots"].some(
     (field) => errors[field as LotField],
@@ -139,7 +145,7 @@ export function LotForm({
 
       const saved = stored;
 
-      if (lot) {
+      if (originalLot) {
         if (hasFormChanges(saved, initial)) setSavedDraft(saved);
       } else {
         setValues(saved);
@@ -148,7 +154,7 @@ export function LotForm({
     } catch {
       return;
     }
-  }, [draftKey, lot, initial]);
+  }, [draftKey, originalLot, initial]);
   useEffect(() => {
     if (savedDraft) return;
 
@@ -324,7 +330,7 @@ export function LotForm({
         </section>
       )}
       <LotStepper step={step} />
-      {lot && !fixture && <LotSavedAttachments lot={lot} disabled={busy || dirty || Boolean(savedDraft)} onUpdated={onUpdated} />}
+
       <div className={styles.layout}>
         <form id="lot-form" className={styles.form} noValidate onSubmit={submit}>
           {step === 1 ? (
@@ -357,18 +363,20 @@ export function LotForm({
                 />
                 <fieldset className={styles.segmented}>
                   <legend>Тип предложения *</legend>
-                  {(["PRODUCT", "SERVICE"] as const).map((type) => (
-                    <label key={type}>
-                      <input
-                        type="radio"
-                        name="type"
-                        checked={values.type === type}
-                        disabled={busy}
-                        onChange={() => change("type", type)}
-                      />
-                      <span>{type === "PRODUCT" ? "Товар" : "Услуга"}</span>
-                    </label>
-                  ))}
+                  <div className={styles.segments}>
+                    {(["PRODUCT", "SERVICE"] as const).map((type) => (
+                      <label key={type}>
+                        <input
+                          type="radio"
+                          name="type"
+                          checked={values.type === type}
+                          disabled={busy}
+                          onChange={() => change("type", type)}
+                        />
+                        <span>{type === "PRODUCT" ? "Товар" : "Услуга"}</span>
+                      </label>
+                    ))}
+                  </div>
                 </fieldset>
               </div>
               {field("description", "Описание", 1000, true)}
@@ -378,6 +386,8 @@ export function LotForm({
                 onChange={setPhotos}
                 disabled={busy}
                 savedPhotosLocked={Boolean(lot && !fixture)}
+                onRemoveSaved={(photo) => setAttachment({ kind: "photo", id: photo.id, label: "Фотография" })}
+                canRemoveSaved={(lot?.photos.length ?? 0) > 1}
                 onBlur={() => touch("photos")}
                 error={touched.photos ? errors.photos : undefined}
               />
@@ -430,13 +440,15 @@ export function LotForm({
                 Отметьте один или несколько вариантов. Приоритет между ними не задаётся — все
                 варианты равнозначны.
               </p>
-              {lot && !fixture && <p className={styles.hint}>Сохранённые варианты остаются в лоте. Их можно удалить отдельно в разделе выше; здесь можно добавить новые.</p>}
               <LotWants
                 values={values}
                 categories={categories}
                 userId={user.id}
                 disabled={busy}
-                savedWants={fixture ? undefined : lot?.wants}
+                savedWants={lot?.wants}
+                onRemoveSaved={(want) => {
+                  if (want.id !== undefined) setAttachment({ kind: "want", id: want.id, label: want.keywords || want.target_category?.name || (want.target_lot ? `Лот №${want.target_lot}` : "Рассмотрю ваши варианты") });
+                }}
                 errors={errors}
                 touched={touched}
                 keywordQuery={keywordQuery}
@@ -446,13 +458,7 @@ export function LotForm({
                 onChange={setValues}
                 onBlur={touch}
               />
-              <div className={styles.priceSummary}>
-                <span>Ваша оценка</span>
-                <strong>{Number(values.cost.replace(",", ".")).toLocaleString("ru-RU")} ₽</strong>
-                <p>
-                  Стоимость помогает сравнить варианты обмена. Условия вы согласуете с участником.
-                </p>
-              </div>
+
             </>
           ) : (
             <>
@@ -482,7 +488,7 @@ export function LotForm({
                     ))}
                   </ul>
                 </div>
-                <p>Фотографий: {photos.length}</p>
+                <LotPhotoReview photos={photos} />
               </div>
               <p className={styles.hint}>
                 Отправляя лот, вы принимаете
@@ -494,11 +500,18 @@ export function LotForm({
           )}
         </form>
         <aside className={styles.aside}>
-          {step === 1 && (
+          {lot ? (
             <section className={styles.tip}>
-              <Icon name="check" />
+              <h2>Удаление применяется сразу</h2>
+              <p>Сохранённые фото и варианты обмена удаляются после подтверждения, даже если не сохранять остальные правки. Оставьте хотя бы одно фото и один вариант обмена.</p>
+            </section>
+          ) : step === 1 && (
+            <section className={styles.tip}>
+              <span className={styles.tipIcon}>
+                <Image src="/images/lot-estimate/advice-lightbulb.svg" alt="" width={24} height={24} />
+              </span>
               <h2>Совет для хорошего обмена</h2>
-              <p>Добавьте 3–5 фото при хорошем освещении и честно расскажите о состоянии вещи.</p>
+              <p>{values.type === "SERVICE" ? "Добавьте 3–5 фото своих предыдущих работ и укажите, что хотели бы получить взамен." : "Добавьте 3–5 фото при хорошем освещении и укажите, что хотели бы получить взамен."}</p>
             </section>
           )}
           {step === 2 && <LotEstimate price={Number(values.cost.replace(",", "."))} />}
@@ -511,7 +524,7 @@ export function LotForm({
                 step === 3 ? !canPublish : busy || !canContinueLotStep(step, firstValid, wantsValid)
               }
             >
-              {busy ? "Отправляем…" : step === 3 ? "Отправить на модерацию" : "Продолжить"}
+              {submitting ? "Отправляем…" : step === 3 ? "Отправить на модерацию" : "Продолжить"}
               <Icon name="arrow" />
             </button>
             {step > 1 && (
@@ -538,6 +551,33 @@ export function LotForm({
           </section>
         </aside>
       </div>
+      {lot && attachment && <LotAttachmentDialog
+        lot={lot}
+        attachment={attachment}
+        onClose={() => setAttachment(null)}
+        onRemoved={(next) => {
+          if (attachment.kind === "photo") setPhotos((current) => current.filter((photo) => photo.kind !== "existing" || photo.photo.id !== attachment.id));
+          else {
+            const want = lot.wants.find((item) => item.id === attachment.id);
+            if (want) {
+              const nextValues = removeWantFromValues(valuesRef.current, want);
+              setValues(nextValues);
+              try {
+                const stored = readFormValues(JSON.parse(localStorage.getItem(draftKey) || "null"));
+                localStorage.setItem(draftKey, JSON.stringify(stored ? removeWantFromValues(stored, want) : nextValues));
+              } catch {
+                setSavedAt("Не удалось обновить черновик на устройстве");
+              }
+
+              setSavedDraft((current) => current ? removeWantFromValues(current, want) : null);
+            }
+          }
+
+          setLot(next);
+          setAttachmentsChanged(true);
+          setAttachment(null);
+        }}
+      />}
     </>
   );
 }

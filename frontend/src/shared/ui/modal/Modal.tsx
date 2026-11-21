@@ -12,9 +12,10 @@ type ModalProps = {
   onClose: () => void;
   busy?: boolean;
   dismissable?: boolean;
+  size?: "default" | "wide";
 };
 
-export function Modal({ title, children, onClose, busy = false, dismissable = true }: ModalProps) {
+export function Modal({ title, children, onClose, busy = false, dismissable = true, size = "default" }: ModalProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   useEffect(() => {
@@ -33,7 +34,7 @@ export function Modal({ title, children, onClose, busy = false, dismissable = tr
 
   return (
     <dialog
-      className={styles.dialog}
+      className={`${styles.dialog} ${size === "wide" ? styles.wide : ""}`}
       ref={ref}
       aria-labelledby={titleId}
       onCancel={(event) => {

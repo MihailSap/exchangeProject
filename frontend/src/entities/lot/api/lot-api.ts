@@ -21,6 +21,11 @@ export type LotUpdate = {
 export type LotCategory = { id: number; name: string };
 const cache = new Map<string, { lot: Lot; expires: number }>();
 
+export function invalidateLots(): void {
+  cache.clear();
+  invalidateCatalog();
+}
+
 function parseLot(value: unknown): Lot {
   if (!isRecord(value) || !isLot(value.data))
     throw new ApiError("Сервер вернул некорректные данные лота", 0);

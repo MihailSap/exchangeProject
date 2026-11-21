@@ -13,7 +13,7 @@ import { useDismissable } from "@/src/shared/lib/use-dismissable";
 import { AssetImage } from "@/src/shared/ui/asset-image";
 import { Icon } from "@/src/shared/ui/icon";
 
-export type LotAction = "edit" | "delete" | "archive" | "republish" | "view";
+export type LotAction = "edit" | "delete" | "republish" | "view";
 export function LotCard({
   lot,
   own,
@@ -31,7 +31,7 @@ export function LotCard({
   const close = useCallback(() => setOpen(false), []);
   const ref = useDismissable<HTMLDivElement>(open, close);
   const editable =
-    canManage && (lot.status === "ACTIVE" || lot.status === "DRAFT" || lot.status === "REJECTED");
+    canManage && (lot.status === "ACTIVE" || lot.status === "DRAFT" || lot.status === "REJECTED" || lot.status === "MODERATION");
 
   const choose = (action: LotAction) => {
     setOpen(false);
@@ -126,13 +126,6 @@ export function LotCard({
                       Опубликовать заново
                     </button>
                   )}
-                  <button
-                    type="button"
-                    disabled={!canManage || lot.status !== "ACTIVE" || lot.source !== "fixture"}
-                    onClick={() => choose("archive")}
-                  >
-                    В архив
-                  </button>
                   <button type="button" className={styles.danger} disabled={!canManage || ["IN_EXCHANGE", "COMPLETED"].includes(lot.status)} onClick={() => choose("delete")}>
                     Удалить
                   </button>

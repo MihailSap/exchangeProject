@@ -16,8 +16,7 @@ import { Loading } from "@/src/shared/ui/loading";
 import { SiteHeader, SiteFooter } from "@/src/widgets/site-chrome";
 
 export function LotEditorPage({ id, fixture = false }: { id?: number; fixture?: boolean }) {
-  const { lot, setLot, loaded, error, retry, user, router } = useLot(id, true, undefined, fixture);
-  const [revision, setRevision] = useState(0);
+  const { lot, loaded, error, retry, user, router } = useLot(id, true, undefined, fixture);
   const [submittedLot, setSubmittedLot] = useState<Lot | null>(null);
   useEffect(() => {
     document.title = submittedLot
@@ -57,14 +56,10 @@ export function LotEditorPage({ id, fixture = false }: { id?: number; fixture?: 
             />
           ) : (
             <LotForm
-              key={`${lot?.id ?? "new"}:${revision}`}
+              key={lot?.id ?? "new"}
               lot={lot}
               user={user}
               onSaved={setSubmittedLot}
-              onUpdated={(next) => {
-                setLot(next);
-                setRevision((value) => value + 1);
-              }}
             />
           )
         ) : (

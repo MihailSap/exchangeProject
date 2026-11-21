@@ -149,7 +149,7 @@ function readFixtureLots(): Lot[] {
     if (!Array.isArray(value)) return [];
 
     return value.map((entry: unknown) => {
-      if (isLot(entry)) return entry;
+      if (isLot(entry)) return { ...entry, wants: entry.wants.map((want, index) => ({ ...want, id: want.id ?? Math.max(0, ...entry.wants.map((item) => item.id ?? 0)) + index + 1 })) };
 
       if (!isRecord(entry) || !Array.isArray(entry.photos)) return null;
 
@@ -202,13 +202,4 @@ export function getFixtureLot(id: number): Lot | undefined {
 
 export function getLotPath(lot: Lot): string {
   return `/lots/${lot.source === "fixture" ? "demo-" : ""}${lot.id}`;
-}
-
-export function archiveFixtureLot(lot: Lot): Lot {
-  if (lot.source !== "fixture") throw new Error("Не удалось изменить состояние объявления");
-
-  const next: Lot = { ...lot, status: "ARCHIVED" };
-  saveFixtureLot(next);
-
-  return next;
 }

@@ -3,20 +3,21 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
+import { LotExchangeDetails } from "./LotExchangeDetails";
 import { LotGallery } from "./LotGallery";
+import { LotOwner } from "./LotOwner";
 import styles from "./LotPage.module.scss";
+import { LOT_ESTIMATE } from "../model/estimate";
 import { useLot } from "../model/use-lot";
 
 import type { Lot } from "@/src/entities/lot";
 
-import { archiveFixtureLot, getLotPath, republishLot } from "@/src/entities/lot";
+import { getLotPath, republishLot } from "@/src/entities/lot";
 import { DeleteLotDialog } from "@/src/features/lot-management";
 import { useNotifications } from "@/src/features/notifications";
-import { Avatar } from "@/src/shared/ui/avatar";
 import { Breadcrumbs } from "@/src/shared/ui/breadcrumbs";
 import { Icon } from "@/src/shared/ui/icon";
 import { Loading } from "@/src/shared/ui/loading";
-import { Stars } from "@/src/shared/ui/stars";
 import { useToast } from "@/src/shared/ui/toast/ToastProvider";
 import { SiteHeader, SiteFooter } from "@/src/widgets/site-chrome";
 
@@ -107,10 +108,6 @@ export function LotPage({ id, localLot, fixture = false }: { id: number; localLo
             <h1>{lot.title}</h1>
             <div className={styles.meta}>
               <span className={`${styles.status} ${styles[lot.status]}`}>{LABELS[lot.status]}</span>
-              <span>{lot.region}</span>
-              <span>
-                {lot.category.name} · {lot.type === "PRODUCT" ? "Товар" : "Услуга"}
-              </span>
               {lot.published_at && (
                 <time dateTime={lot.published_at}>
                   Опубликован {new Intl.DateTimeFormat("ru-RU").format(new Date(lot.published_at))}
@@ -123,67 +120,47 @@ export function LotPage({ id, localLot, fixture = false }: { id: number; localLo
                 <section className={styles.description}>
                   <h2>Описание</h2>
                   <p>{lot.description || "Описание не добавлено"}</p>
-                  <dl>
-                    <dt>Регион</dt>
-                    <dd>{lot.region}</dd>
-                    <dt>Способ передачи</dt>
-                    <dd>{DELIVERY[lot.delivery_method]}</dd>
-                    {lot.expires_at && (
-                      <>
-                        <dt>Активен до</dt>
-                        <dd>{new Intl.DateTimeFormat("ru-RU").format(new Date(lot.expires_at))}</dd>
-                      </>
-                    )}
-                  </dl>
+
                 </section>
+                <LotExchangeDetails lot={lot} />
               </div>
               <aside className={styles.summary}>
                 <strong className={styles.price}>
                   {lot.estimated_cost.toLocaleString("ru-RU")} ₽
                 </strong>
-                <p className={styles.muted}>Оценочная стоимость</p>
-                <section>
-                  <h2>{own ? "Хочу получить взамен" : "Владелец хочет обменять на"}</h2>
-                  <div className={styles.wants}>
-                    {lot.wants.length ? (
-                      lot.wants.map((want, index) => (
-                        <span key={`${want.want_type}:${index}`}>
-                          {want.keywords ||
-                            want.target_category?.name ||
-                            want.target_lot ||
-                            "Готов рассмотреть варианты"}
-                        </span>
-                      ))
-                    ) : (
-                      <span>Готов рассмотреть варианты</span>
-                    )}
-                  </div>
+                <p className={styles.muted}>
+                  ИИ-оценка:
+                  {" "}
+                  {LOT_ESTIMATE.recommended.toLocaleString("ru-RU")}
+                  {" "}
+                  ₽
+                  <br />
+                  Рыночный диапазон:
+                  {" "}
+                  {LOT_ESTIMATE.minimum.toLocaleString("ru-RU")}
+                  –
+                  {LOT_ESTIMATE.maximum.toLocaleString("ru-RU")}
+                  {" "}
+                  ₽
+                </p>
+                <section className={styles.lotDetails}>
+                  <h2>Детали лота</h2>
+                  <dl>
+                    <dt>Тип предложения</dt>
+                    <dd>{lot.type === "PRODUCT" ? "Товар" : "Услуга"}</dd>
+                    <dt>Категория</dt>
+                    <dd>{lot.category.name}</dd>
+                    <dt>Регион</dt>
+                    <dd>{lot.region}</dd>
+                    <dt>Способ передачи</dt>
+                    <dd>{DELIVERY[lot.delivery_method]}</dd>
+                  </dl>
                 </section>
-                {localLot ? (
-                  <div className={styles.owner}>
-                    <Avatar name={lot.owner.name} />
-                    <div>
-                      <strong>{lot.owner.name}</strong>
-                      <Stars value={lot.owner.rating} />
-                    </div>
-                  </div>
-                ) : (
-                  <Link className={styles.owner} href={own ? "/profile" : `/users/${lot.owner.id}`}>
-                    <Avatar
-                      name={own ? (user?.name ?? lot.owner.name) : lot.owner.name}
-                      src={own ? user?.avatarUrl : undefined}
-                    />
-                    <div>
-                      <strong>{own ? user?.name : lot.owner.name}</strong>
-                      <Stars value={lot.owner.rating} />
-                    </div>
-                    <Icon name="chevron" />
-                  </Link>
-                )}
+                <LotOwner key={lot.owner.id} lot={lot} user={user} own={own} local={Boolean(localLot)} />
                 <div className={styles.buttons}>
                   {own ? (
                     <>
-                      {["ACTIVE", "DRAFT", "REJECTED"].includes(lot.status) &&
+                      {["ACTIVE", "DRAFT", "REJECTED", "MODERATION"].includes(lot.status) &&
                         (canManage ? (
                           <Link href={`${getLotPath(lot)}/edit`} className={styles.primary}>
                             Редактировать
@@ -210,19 +187,6 @@ export function LotPage({ id, localLot, fixture = false }: { id: number; localLo
                           Опубликовать заново
                           {" "}
                           <Icon name="arrow" />
-                        </button>
-                      )}
-                      {lot.status === "ACTIVE" && (
-                        <button
-                          type="button"
-                          className={styles.secondary}
-                          disabled={!canManage || busy || lot.source !== "fixture"}
-                          onClick={() => {
-                            setLot(archiveFixtureLot(lot));
-                            notify({ kind: "success", title: "Лот перенесён в архив" });
-                          }}
-                        >
-                          В архив
                         </button>
                       )}
                       <button
@@ -259,7 +223,7 @@ export function LotPage({ id, localLot, fixture = false }: { id: number; localLo
                 </div>
                 <p className={styles.note}>
                   <Icon name="check" />
-                  Обсудите условия до обмена и проверьте вещь при встрече.
+                  Обсудите условия до обмена
                 </p>
               </aside>
             </div>

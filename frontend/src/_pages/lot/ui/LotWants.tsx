@@ -29,6 +29,7 @@ type Props = {
   onChange: Dispatch<SetStateAction<LotFormValues>>;
   onBlur: (field: LotField) => void;
   savedWants?: Lot["wants"];
+  onRemoveSaved: (want: Lot["wants"][number]) => void;
 };
 
 type ChoiceProps = {
@@ -89,6 +90,7 @@ export function LotWants({
   onChange,
   onBlur,
   savedWants = [],
+  onRemoveSaved,
 }: Props) {
   const [queryTouched, setQueryTouched] = useState(false);
   const [requestError, setRequestError] = useState("");
@@ -122,7 +124,12 @@ export function LotWants({
   }, [values.targetLots, userId]);
 
   function toggle(type: WantType) {
-    if (savedWants.some((want) => want.want_type === type)) return;
+    const saved = savedWants.find((want) => want.want_type === type);
+    if (saved) {
+      if (type === "ANY" && saved.id !== undefined && savedWants.length > 1) onRemoveSaved(saved);
+
+      return;
+    }
 
     onChange({
       ...values,
@@ -271,9 +278,16 @@ export function LotWants({
                   {!disabled && (
                     <button
                       type="button"
-                      disabled={loading || savedWants.some((want) => want.want_type === "LOT" && want.target_lot === id)}
+                      disabled={loading || savedWants.some((want) => want.want_type === "LOT" && parseTargetLot(want.target_lot ?? "") === parseTargetLot(id) && (savedWants.length <= 1 || want.id === undefined))}
                       aria-label={`Убрать лот ${lot?.title ?? id}`}
                       onClick={() => {
+                        const saved = savedWants.find((want) => want.want_type === "LOT" && parseTargetLot(want.target_lot ?? "") === parseTargetLot(id));
+                        if (saved) {
+                          onRemoveSaved(saved);
+
+                          return;
+                        }
+
                         onChange({
                           ...values,
                           targetLots: values.targetLots.filter((item) => item !== id),
@@ -316,21 +330,28 @@ export function LotWants({
                 checked={values.targetCategoryIds.includes(String(category.id))}
                 disabled={
                   disabled ||
-                  savedWants.some((want) => want.want_type === "CATEGORY" && want.target_category?.id === category.id) ||
+                  savedWants.some((want) => want.want_type === "CATEGORY" && want.target_category?.id === category.id && (savedWants.length <= 1 || want.id === undefined)) ||
                   (!values.targetCategoryIds.includes(String(category.id)) &&
                     values.targetCategoryIds.length >= 10)
                 }
-                onChange={() =>
+                onChange={() => {
+                  const saved = savedWants.find((want) => want.want_type === "CATEGORY" && want.target_category?.id === category.id);
+                  if (saved) {
+                    onRemoveSaved(saved);
+
+                    return;
+                  }
+
                   onChange({
                     ...values,
                     targetCategoryIds: values.targetCategoryIds.includes(String(category.id))
                       ? values.targetCategoryIds.filter((id) => id !== String(category.id))
                       : [...values.targetCategoryIds, String(category.id)],
-                  })
-                }
+                  });
+                }}
                 onBlur={() => onBlur("targetCategoryIds")}
               />
-              <span>{category.name}</span>
+              <span>{category.name}{savedWants.some((want) => want.want_type === "CATEGORY" && want.target_category?.id === category.id) && <span aria-hidden="true"> ×</span>}</span>
             </label>
           ))}
           {categories.length > 6 && (
@@ -354,27 +375,32 @@ export function LotWants({
         {...choiceProps}
         disabled={choiceProps.disabled || savedWants.some((want) => want.want_type === "KEYWORDS")}
         type="KEYWORDS"
-        title="Мои пожелания"
-        description="Расскажите, какие вещи или услуги вам интересны"
+        title="Ключевые слова"
+        description="Лоты, в описании которых есть эти слова"
       >
         <LotKeywordField
           tags={values.keywords}
-          lockedTags={savedWants.filter((want) => want.want_type === "KEYWORDS").flatMap((want) => want.keywords === null ? [] : [want.keywords])}
+          lockedTags={savedWants.filter((want) => want.want_type === "KEYWORDS" && (savedWants.length <= 1 || want.id === undefined)).flatMap((want) => want.keywords === null ? [] : [want.keywords])}
           query={keywordQuery}
           disabled={disabled}
           touched={Boolean(touched.keywords)}
           error={errors.keywords}
           onQuery={onKeywordQuery}
+          onRemove={(tag) => {
+            const saved = savedWants.find((want) => want.want_type === "KEYWORDS" && want.keywords === tag);
+            if (saved) onRemoveSaved(saved);
+            else onChange((current) => ({ ...current, keywords: current.keywords.filter((word) => word !== tag) }));
+          }}
           onChange={(keywords) => onChange((current) => ({ ...current, keywords }))}
           onBlur={() => onBlur("keywords")}
         />
       </Choice>
       <Choice
         {...choiceProps}
-        disabled={choiceProps.disabled || savedWants.some((want) => want.want_type === "ANY")}
+        disabled={choiceProps.disabled || savedWants.some((want) => want.want_type === "ANY" && (savedWants.length <= 1 || want.id === undefined))}
         type="ANY"
         title="Готов рассмотреть ваши варианты"
-        description="Другие участники смогут предложить свой вариант обмена"
+        description="Покажем лот всем — вы сами выберете предложение"
       />
       {touched.wantTypes && errors.wantTypes && (
         <p className={styles.error} role="alert">

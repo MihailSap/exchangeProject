@@ -161,9 +161,6 @@ export function ProfileSettings({
   return (
     <section className={styles.panel} aria-labelledby="settings-heading">
       <h2 id="settings-heading">Настройки профиля</h2>
-      <p className={styles.intro}>
-        Расскажите немного о себе — так другим участникам будет проще с вами познакомиться.
-      </p>
       <form onSubmit={submit} noValidate className={styles.form}>
         <fieldset disabled={saving} className={styles.fields}>
           <div className={styles.avatarRow}>

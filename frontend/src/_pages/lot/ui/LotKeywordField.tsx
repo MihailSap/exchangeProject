@@ -13,6 +13,7 @@ type Props = {
   error?: string;
   onQuery: (value: string) => void;
   onChange: (tags: string[]) => void;
+  onRemove: (tag: string) => void;
   onBlur: () => void;
   lockedTags?: string[];
 };
@@ -25,6 +26,7 @@ export function LotKeywordField({
   error,
   onQuery,
   onChange,
+  onRemove,
   onBlur,
   lockedTags = [],
 }: Props) {
@@ -36,7 +38,6 @@ export function LotKeywordField({
 
   return (
     <div className={styles.field}>
-      <label htmlFor={id}>Что хотите получить *</label>
       <div className={`${styles.control} ${message ? styles.invalid : ""}`}>
         {tags.length > 0 && (
           <ul className={styles.tags} aria-label="Добавленные пожелания">
@@ -48,7 +49,7 @@ export function LotKeywordField({
                   disabled={disabled || lockedTags.includes(tag)}
                   aria-label={`Удалить пожелание «${tag}»`}
                   onClick={() => {
-                    onChange(tags.filter((item) => item !== tag));
+                    onRemove(tag);
                     input.current?.focus();
                   }}
                 >
@@ -62,11 +63,12 @@ export function LotKeywordField({
           ref={input}
           id={id}
           name="keyword-query"
+          aria-label="Ключевые слова"
           type="text"
           value={query}
           maxLength={remaining}
           disabled={disabled}
-          placeholder="Добавьте пожелание и нажмите Enter"
+          placeholder="Добавьте слово и нажмите Enter"
           aria-invalid={Boolean(message)}
           aria-describedby={`${id}-hint${message ? ` ${id}-error` : ""}`}
           onChange={(event) => onQuery(event.target.value)}

@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -309,6 +310,24 @@ public class LotServiceImpl implements LotService {
         lot.setStatus(LotStatus.REJECTED);
         lot.setRejectReason(rejectReason);
         return lotRepository.save(lot);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<Lot> getModerationLots(int page, int perPage) {
+        Pageable pageable = PageRequest.of(
+                page - 1,
+                perPage,
+                Sort.by(
+                        Sort.Order.asc("createdAt"),
+                        Sort.Order.asc("id")
+                )
+        );
+
+        return lotRepository.findAllByStatus(
+                LotStatus.MODERATION,
+                pageable
+        );
     }
 
     private Instant getExpiresAt(Instant now){

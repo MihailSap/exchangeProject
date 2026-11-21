@@ -126,4 +126,6 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
             @Param("maxCost") BigDecimal maxCost,
             Pageable pageable
     );
+
+    Page<Lot> findAllByStatus(LotStatus status, Pageable pageable);
 }

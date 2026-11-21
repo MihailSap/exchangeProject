@@ -4,20 +4,27 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.BaseResponse;
+import ru.urfu.exchangeProject.dto.lot.LotListResponse;
+import ru.urfu.exchangeProject.dto.lot.LotResponse;
 import ru.urfu.exchangeProject.dto.moderation.RejectRequest;
 import ru.urfu.exchangeProject.dto.moderation.RejectResponse;
 import ru.urfu.exchangeProject.exception.customEx.news.BadRequestException;
 import ru.urfu.exchangeProject.exception.customEx.news.LotNotFoundException;
+import ru.urfu.exchangeProject.mapper.LotMapper;
 import ru.urfu.exchangeProject.model.lot.Lot;
 import ru.urfu.exchangeProject.model.lot.LotStatus;
 import ru.urfu.exchangeProject.service.LotService;
 
-@Tag(name = "Лоты")
+import java.util.List;
+
+@Tag(name = "Модерация")
 @SecurityRequirement(name = "bearerAuth")
 @PreAuthorize("hasAuthority('ADMIN')")
 @RestController
@@ -25,12 +32,33 @@ import ru.urfu.exchangeProject.service.LotService;
 public class ModerationController {
 
     private final LotService lotService;
+    private final LotMapper lotMapper;
 
     @Autowired
     public ModerationController(
-            LotService lotService
+            LotService lotService,
+            LotMapper lotMapper
     ) {
         this.lotService = lotService;
+        this.lotMapper = lotMapper;
+    }
+
+    @Operation(description = "Получение списка лотов на модерации")
+    @GetMapping("/lots")
+    public LotListResponse getModerationLots(
+            @RequestParam(defaultValue = "1")
+            @Min(1) int page,
+            @RequestParam(name = "per_page", defaultValue = "20")
+            @Min(1) int perPage
+    ) {
+        Page<Lot> lotPage = lotService.getModerationLots(page, perPage);
+
+        List<LotResponse> lotResponses = lotPage
+                .map(lotMapper::mapToLotResponse)
+                .getContent();
+
+        return new LotListResponse(
+                lotResponses, new LotListResponse.Meta(page, perPage, lotPage.getTotalElements()));
     }
 
     @Operation(description = "Одобрение лота")

@@ -1,7 +1,7 @@
 package ru.urfu.exchangeProject.service.impl;
 
 import java.security.SecureRandom;
-import java.util.Base64;
+import java.util.*;
 import java.time.LocalDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -25,7 +25,7 @@ import ru.urfu.exchangeProject.service.FileService;
 import ru.urfu.exchangeProject.service.UserService;
 
 import java.time.Instant;
-import java.util.List;
+import jakarta.persistence.criteria.Predicate;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -225,5 +225,70 @@ public class UserServiceImpl implements UserService {
         user.setPasswordResetToken(null);
         user.setPasswordResetTokenExpiresAt(null);
         userRepository.save(user);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<User> searchUsers(
+            String status,
+            String q,
+            int page,
+            int perPage
+    ) {
+        List<UserStatus> statuses = parseStatuses(status);
+
+        q = q != null ? q.trim() : "";
+
+        if (q.length() > 200) {
+            throw new BadRequestException();
+        }
+
+        String searchQuery = q.toLowerCase(Locale.ROOT);
+
+        Specification<User> specification = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (!statuses.isEmpty()) {
+                predicates.add(root.get("status").in(statuses));
+            }
+
+            if (!searchQuery.isBlank()) {
+                predicates.add(
+                        criteriaBuilder.like(
+                                criteriaBuilder.lower(root.get("name")),
+                                "%" + searchQuery + "%"
+                        )
+                );
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Pageable pageable = PageRequest.of(
+                page - 1,
+                perPage,
+                Sort.by(
+                        Sort.Order.desc("createdAt"),
+                        Sort.Order.desc("id")
+                )
+        );
+
+        return userRepository.findAll(specification, pageable);
+    }
+
+    private List<UserStatus> parseStatuses(String status) {
+        if (status == null || status.isBlank()) {
+            return List.of();
+        }
+
+        try {
+            return Arrays.stream(status.split("\\|"))
+                    .map(String::trim)
+                    .map(value -> UserStatus.valueOf(value.toUpperCase(Locale.ROOT)))
+                    .distinct()
+                    .toList();
+        } catch (IllegalArgumentException exception) {
+            throw new BadRequestException();
+        }
     }
 }

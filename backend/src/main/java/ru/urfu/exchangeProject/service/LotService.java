@@ -41,4 +41,6 @@ public interface LotService {
             int page,
             int perPage
     ) throws CategoryNotFound;
+
+    Page<Lot> getModerationLots(int page, int perPage);
 }

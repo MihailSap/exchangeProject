@@ -37,4 +37,6 @@ public interface UserService {
     boolean isExistsByEmail(String email);
 
     User getByEmailConfirmationToken(String token);
+
+    Page<User> searchUsers(String status, String q, int page, int perPage);
 }

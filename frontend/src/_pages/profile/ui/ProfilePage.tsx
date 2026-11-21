@@ -16,7 +16,7 @@ import type { Lot, LotStatus } from "@/src/entities/lot";
 import type { UserProfile } from "@/src/entities/profile";
 import type { IconName } from "@/src/shared/ui/icon";
 
-import { archiveFixtureLot, getLotPath, republishLot, initializeFixtureLots } from "@/src/entities/lot";
+import { getLotPath, republishLot, initializeFixtureLots } from "@/src/entities/lot";
 import { getPublicProfile, resendConfirmation } from "@/src/entities/profile";
 import { updateSessionProfile, useSession } from "@/src/entities/session";
 import { HelpDialog } from "@/src/features/help";
@@ -215,7 +215,7 @@ export function ProfilePage({ userId }: { userId?: number }) {
 
     if (!own || !canManage) return;
 
-    if ((action === "archive" || action === "republish" || action === "edit") && !canManage) return;
+    if ((action === "republish" || action === "edit") && !canManage) return;
 
     if (action === "edit") {
       router.push(`${getLotPath(lot)}/edit`);
@@ -223,9 +223,9 @@ export function ProfilePage({ userId }: { userId?: number }) {
       return;
     }
 
-    if (action === "archive" || action === "republish") {
+    if (action === "republish") {
       try {
-        const updated = action === "archive" ? archiveFixtureLot(lot) : await republishLot(lot);
+        const updated = await republishLot(lot);
         setLots((current) => current.map((item) => (item.id === lot.id ? updated : item)));
         if (action === "republish")
           receive({
@@ -239,7 +239,7 @@ export function ProfilePage({ userId }: { userId?: number }) {
 
         notify({
           kind: "success",
-          title: action === "archive" ? "Лот перемещён в архив" : "Лот опубликован заново",
+          title: "Лот опубликован заново",
         });
       } catch (error) {
         notify({

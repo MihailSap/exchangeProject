@@ -78,6 +78,15 @@ export function restoreLotDraft(draft: LotFormValues, lot: Lot | null): LotFormV
   };
 }
 
+export function removeWantFromValues(values: LotFormValues, want: Lot["wants"][number]): LotFormValues {
+  const keywords = want.want_type === "KEYWORDS" ? values.keywords.filter((word) => word !== want.keywords) : values.keywords;
+  const targetCategoryIds = want.want_type === "CATEGORY" ? values.targetCategoryIds.filter((id) => id !== String(want.target_category?.id)) : values.targetCategoryIds;
+  const targetLots = want.want_type === "LOT" ? values.targetLots.filter((id) => parseTargetLot(id) !== parseTargetLot(want.target_lot ?? "")) : values.targetLots;
+  const empty = want.want_type === "ANY" || (want.want_type === "KEYWORDS" && keywords.length === 0) || (want.want_type === "CATEGORY" && targetCategoryIds.length === 0) || (want.want_type === "LOT" && targetLots.length === 0);
+
+  return { ...values, keywords, targetCategoryIds, targetLots, wantTypes: empty ? values.wantTypes.filter((type) => type !== want.want_type) : values.wantTypes };
+}
+
 export function validateLotForm(
   values: LotFormValues,
   regions: string[],

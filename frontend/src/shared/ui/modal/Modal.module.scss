@@ -16,6 +16,10 @@
   backdrop-filter: blur(3px);
 }
 
+.wide {
+  width: min(1120px, calc(100% - 32px));
+}
+
 .heading {
   display: flex;
   align-items: flex-start;

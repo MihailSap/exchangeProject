@@ -14,12 +14,14 @@ import { ApiError } from "@/src/shared/api/client";
 import { Avatar } from "@/src/shared/ui/avatar";
 import { Icon } from "@/src/shared/ui/icon";
 import { Loading } from "@/src/shared/ui/loading";
+import { Select } from "@/src/shared/ui/select";
 
 type Props = { userId: number; active: boolean; onDenied: (error: unknown) => boolean };
 
 export function AdminUsers({ userId, active, onDenied }: Props) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("");
+  const [status, setStatus] = useState("");
   const [page, setPage] = useState(0);
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<UsersPage | null>(null);
@@ -32,7 +34,7 @@ export function AdminUsers({ userId, active, onDenied }: Props) {
     let current = true;
     setLoading(true);
     setError(null);
-    void getAdminUsers(page, filter)
+    void getAdminUsers(page, filter, status)
       .then((data) => {
         if (!current) return;
 
@@ -62,7 +64,7 @@ export function AdminUsers({ userId, active, onDenied }: Props) {
     return () => {
       current = false;
     };
-  }, [page, filter, attempt, onDenied, active]);
+  }, [page, filter, status, attempt, onDenied, active]);
 
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,12 +92,32 @@ export function AdminUsers({ userId, active, onDenied }: Props) {
           maxLength={120}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Имя или электронная почта"
+          placeholder="Имя пользователя"
         />
         <button type="submit" className={styles.primary}>
           Найти
         </button>
       </form>
+      <div className={styles.statusFilter}>
+        <span id="admin-user-status-label">Статус:</span>
+        <div className={styles.statusControl}>
+          <Select
+            id="admin-user-status"
+            value={status}
+            variant="filter"
+            labelledBy="admin-user-status-label"
+            options={[
+              { value: "", label: "Все пользователи" },
+              { value: "ACTIVE", label: "Активные" },
+              { value: "FROZEN", label: "Замороженные" },
+            ]}
+            onChange={(value) => {
+              setStatus(value);
+              setPage(0);
+            }}
+          />
+        </div>
+      </div>
       {loading ? (
         <Loading label="Загружаем пользователей…" />
       ) : error ? (
@@ -115,46 +137,64 @@ export function AdminUsers({ userId, active, onDenied }: Props) {
             {result.content.length === 0 ? (
               <p className={styles.state}>Пользователи не найдены</p>
             ) : (
-              <div className={styles.userList}>
-                {result.content.map((user) => (
-                  <article className={styles.userCard} key={user.id}>
-                    <div className={styles.identity}>
-                      <Avatar name={user.name} src={user.avatarUrl} />
-                      <div>
-                        <Link href={user.id === userId ? "/profile" : `/users/${user.id}`}>
-                          {user.name}
-                        </Link>
-                        <span>{user.email}</span>
-                        <small>
-                          Регистрация:{" "}
-                          {new Intl.DateTimeFormat("ru-RU").format(new Date(user.createdAt))}
-                        </small>
-                      </div>
-                    </div>
-                    <div className={styles.badges}>
-                      <span className={user.status === "FROZEN" ? styles.frozen : styles.active}>
-                        {user.status === "FROZEN" ? "Заморожен" : "Активен"}
-                      </span>
-                      <span className={user.role === "ADMIN" ? styles.adminBadge : styles.badge}>
-                        {user.role === "ADMIN" ? "Администратор" : "Пользователь"}
-                      </span>
-                      <small>
-                        {user.emailConfirmed ? "Почта подтверждена" : "Почта не подтверждена"}
-                      </small>
-                    </div>
-                    <button
-                      type="button"
-                      className={user.status === "FROZEN" ? styles.secondary : styles.dangerOutline}
-                      disabled={user.id === userId}
-                      title={
-                        user.id === userId ? "Нельзя заморозить собственный аккаунт" : undefined
-                      }
-                      onClick={() => setSelected(user)}
-                    >
-                      {user.status === "FROZEN" ? "Разморозить" : "Заморозить"}
-                    </button>
-                  </article>
-                ))}
+              <div className={styles.tableScroll} tabIndex={0} role="region" aria-label="Таблица пользователей">
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th scope="col">Пользователь</th>
+                      <th scope="col">Регистрация</th>
+                      <th scope="col">Статус и роль</th>
+                      <th scope="col">Действия</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {result.content.map((user) => (
+                      <tr key={user.id}>
+                        <td>
+                          <div className={styles.identity}>
+                            <Avatar name={user.name} src={user.avatarUrl} />
+                            <div>
+                              <Link href={user.id === userId ? "/profile" : `/users/${user.id}`}>
+                                {user.name}
+                              </Link>
+                              <span>{user.email}</span>
+
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <time dateTime={user.createdAt}>{new Intl.DateTimeFormat("ru-RU").format(new Date(user.createdAt))}</time>
+                        </td>
+                        <td>
+                          <div className={styles.badges}>
+                            <span className={user.status === "FROZEN" ? styles.frozen : styles.active}>
+                              {user.status === "FROZEN" ? "Заморожен" : "Активен"}
+                            </span>
+                            <span className={user.role === "ADMIN" ? styles.adminBadge : styles.badge}>
+                              {user.role === "ADMIN" ? "Администратор" : "Пользователь"}
+                            </span>
+                            <small>
+                              {user.emailConfirmed ? "Почта подтверждена" : "Почта не подтверждена"}
+                            </small>
+                          </div>
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className={user.status === "FROZEN" ? styles.secondary : styles.dangerOutline}
+                            disabled={user.id === userId}
+                            title={
+                              user.id === userId ? "Нельзя заморозить собственный аккаунт" : undefined
+                            }
+                            onClick={() => setSelected(user)}
+                          >
+                            {user.status === "FROZEN" ? "Разморозить" : "Заморозить"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
             {result.totalPages > 1 && (

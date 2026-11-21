@@ -58,7 +58,7 @@ export function useLot(id?: number, edit = false, localLot?: Lot, fixture = fals
             !profile.emailConfirmed ||
             (next &&
               (next.owner.id !== profile.id ||
-                !["DRAFT", "ACTIVE", "REJECTED"].includes(next.status))))
+                !["DRAFT", "ACTIVE", "REJECTED", "MODERATION"].includes(next.status))))
         ) {
           router.replace("/");
 

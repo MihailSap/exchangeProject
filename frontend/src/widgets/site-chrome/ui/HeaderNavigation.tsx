@@ -33,8 +33,8 @@ export function HeaderNavigationLinks({
           >
             <span>Мои лоты</span>
           </Link>
-          <span title="Раздел появится позже">Предложения</span>
-          <span title="Раздел появится позже">Чаты</span>
+          <span>Предложения</span>
+          <span>Чаты</span>
           <Link href="/faq" data-label="FAQ" aria-current={selected.faq ? "page" : undefined}>
             <span>FAQ</span>
           </Link>

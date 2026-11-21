@@ -18,6 +18,7 @@ export async function getPublicProfile(id: number): Promise<UserProfile> {
     !isNonEmptyString(data.name) ||
     typeof data.email_confirmed !== "boolean" ||
     (data.rating != null && (typeof data.rating !== "number" || !Number.isFinite(data.rating) || data.rating < 1 || data.rating > 5)) ||
+    (data.reviews_count !== undefined && (typeof data.reviews_count !== "number" || !Number.isSafeInteger(data.reviews_count) || data.reviews_count < 0)) ||
     ![data.avatar_url, data.region, data.contacts].every(
       (value) => value == null || typeof value === "string",
     ) ||
@@ -34,6 +35,7 @@ export async function getPublicProfile(id: number): Promise<UserProfile> {
     region: typeof data.region === "string" ? data.region : null,
     contacts: typeof data.contacts === "string" ? data.contacts : null,
     emailConfirmed: data.email_confirmed,
+    ...(typeof data.reviews_count === "number" ? { reviewsCount: data.reviews_count } : {}),
     rating: typeof data.rating === "number" ? data.rating : null,
     ...(typeof data.created_at === "string" ? { createdAt: data.created_at } : {}),
   };

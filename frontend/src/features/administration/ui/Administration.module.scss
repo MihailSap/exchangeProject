@@ -242,7 +242,7 @@
 
 .identity span,
 .categoryCard span {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--color-text-secondary);
 }
 
@@ -398,7 +398,7 @@
     flex: 1;
     justify-content: center;
     gap: 7px;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .heading {
@@ -411,7 +411,7 @@
   }
 
   .heading p {
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .search {
@@ -485,4 +485,99 @@
   .pagination button {
     padding-inline: 12px;
   }
+}
+
+.tableScroll {
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+}
+
+.table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.table th,
+.table td {
+  padding: 16px;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.table th {
+  color: var(--color-text-secondary);
+  background: var(--color-input);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.table tr:last-child td {
+  border-bottom: 0;
+}
+
+.table .identity {
+  min-width: 220px;
+}
+
+.table .badges {
+  width: auto;
+  min-width: 160px;
+}
+
+.statusFilter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  font-size: 13px;
+}
+
+.statusControl {
+  width: 240px;
+  max-width: 100%;
+}
+
+.statusControl [role="combobox"] {
+  min-height: 44px;
+  border-color: var(--color-border);
+}
+
+.lotThumb {
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: 9px;
+  flex: 0 0 56px;
+}
+
+.noWrap {
+  white-space: nowrap;
+}
+
+.description {
+  white-space: pre-wrap;
+}
+
+.lotDetails {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 18px;
+  margin: 0;
+  font-size: 13px;
+}
+
+.lotDetails dt {
+  color: var(--color-text-secondary);
+}
+
+.lotDetails dd {
+  margin: 0;
+  overflow-wrap: anywhere;
 }

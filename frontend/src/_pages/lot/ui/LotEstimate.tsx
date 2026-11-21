@@ -38,10 +38,7 @@ export function LotEstimate({ price }: { price: number }) {
           <span className={styles.yourPrice}>Ваша: {format(price)}</span>
         </div>
         <p className={styles.verdict}>
-          <span className={styles.check} aria-hidden="true">
-            <Image src="/images/lot-estimate/check-circle.svg" alt="" width={18} height={18} />
-            <Image src="/images/lot-estimate/check.svg" alt="" width={13.2} height={10.2} />
-          </span>
+          <span className={styles.check} aria-hidden="true" />
           {priceVerdict(price)}
         </p>
         <p className={styles.disclaimer}>

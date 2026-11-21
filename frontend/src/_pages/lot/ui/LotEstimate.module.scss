@@ -49,7 +49,7 @@
 }
 
 .caption {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 20px;
 }
 
@@ -62,7 +62,7 @@
 
 .rangeText {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 20px;
 }
 
@@ -122,7 +122,7 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 12px;
   min-height: 44px;
   margin: 14px 0 0;
   padding: 10px 12px;
@@ -135,16 +135,11 @@
 }
 
 .check {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 18px;
-  height: 18px;
-  flex: 0 0 18px;
-}
-
-.check img:last-child {
-  position: absolute;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  background: var(--color-brand);
+  mask: url("/images/lot-estimate/verdict-check.svg") center / contain no-repeat;
 }
 
 .disclaimer {

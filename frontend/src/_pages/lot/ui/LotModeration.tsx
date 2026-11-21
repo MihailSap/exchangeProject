@@ -165,11 +165,11 @@ export function LotModeration({ lot, onCreateAnother }: { lot: Lot; onCreateAnot
               <li>Статус проверки можно посмотреть на странице отправленного лота.</li>
               <li>После публикации лот появится в каталоге.</li>
             </ol>
-            <p className={styles.note}>Сохраните ссылку на лот, чтобы вернуться к нему позже.</p>
+            <p className={styles.note}>Пока лот на проверке, его можно редактировать. После правок проверка начнётся заново.</p>
           </section>
           <section className={styles.actions} aria-label="Действия после отправки">
-            <Link className={styles.primary} href={getLotPath(lot)}>
-              Открыть отправленный лот
+            <Link className={styles.primary} href="/profile">
+              К моим лотам
               {" "}
               <Icon name="arrow" />
             </Link>

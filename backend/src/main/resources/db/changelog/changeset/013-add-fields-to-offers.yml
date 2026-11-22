@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 13
+      author: SapeginMihail
+      changes:
+        - addColumn:
+            tableName: offers
+            columns:
+              - column:
+                  name: initiator_completed
+                  type: BOOLEAN
+              - column:
+                  name: recipient_completed
+                  type: BOOLEAN

@@ -49,4 +49,6 @@ public interface LotService {
     Page<Lot> getModerationLots(int page, int perPage);
 
     Lot updateToModeration(Lot lot);
+
+    Lot updateToCompleted(Lot lot);
 }

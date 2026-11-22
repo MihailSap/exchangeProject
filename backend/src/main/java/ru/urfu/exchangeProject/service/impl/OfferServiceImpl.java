@@ -3,6 +3,8 @@ package ru.urfu.exchangeProject.service.impl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.urfu.exchangeProject.dto.exceptions.ErrorCode;
+import ru.urfu.exchangeProject.exception.customEx.NotFoundException;
 import ru.urfu.exchangeProject.exception.customEx.news.LotNotFoundException;
 import ru.urfu.exchangeProject.model.lot.Lot;
 import ru.urfu.exchangeProject.model.lot.LotStatus;
@@ -10,7 +12,6 @@ import ru.urfu.exchangeProject.model.offer.Offer;
 import ru.urfu.exchangeProject.model.offer.OfferItem;
 import ru.urfu.exchangeProject.model.offer.OfferStatus;
 import ru.urfu.exchangeProject.model.user.User;
-import ru.urfu.exchangeProject.repository.LotRepository;
 import ru.urfu.exchangeProject.repository.OfferRepository;
 import ru.urfu.exchangeProject.service.LotService;
 import ru.urfu.exchangeProject.service.OfferService;
@@ -24,7 +25,6 @@ import ru.urfu.exchangeProject.model.offer.OfferDirection;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 
 @Service
@@ -78,9 +78,8 @@ public class OfferServiceImpl implements OfferService {
     @Transactional(readOnly = true)
     @Override
     public Offer getById(Long id){
-        //FIXME: Добавить кастомное исключение
         return offerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Оффер не найден"));
+                .orElseThrow(() -> new NotFoundException(ErrorCode.OFFER_NOT_FOUND));
     }
 
     @Transactional
@@ -159,5 +158,37 @@ public class OfferServiceImpl implements OfferService {
         }
 
         return offerRepository.save(offer);
+    }
+
+    @Transactional
+    @Override
+    public Offer complete(Offer managedOffer, User authenticatedUser) {
+        if (authenticatedUser.equals(managedOffer.getInitiator())) {
+            managedOffer.setInitiatorCompleted(true);
+        } else if (authenticatedUser.equals(managedOffer.getRecipient())) {
+            managedOffer.setRecipientCompleted(true);
+        }
+
+        Boolean initiatorCompleted = managedOffer.getInitiatorCompleted();
+        Boolean recipientCompleted = managedOffer.getRecipientCompleted();
+        if((initiatorCompleted != null && initiatorCompleted && (recipientCompleted == null || !recipientCompleted))
+                || ((initiatorCompleted == null || !initiatorCompleted) && recipientCompleted != null && recipientCompleted)){
+            managedOffer.setStatus(OfferStatus.HALF_COMPLETED);
+        }
+
+        if (Boolean.TRUE.equals(managedOffer.getInitiatorCompleted())
+                && Boolean.TRUE.equals(managedOffer.getRecipientCompleted())) {
+            managedOffer.setStatus(OfferStatus.COMPLETED);
+            managedOffer.setCompletedAt(Instant.now());
+
+            List<Lot> lots = new ArrayList<>();
+            lots.add(managedOffer.getTargetLot());
+            managedOffer.getItems().stream()
+                    .map(OfferItem::getLot)
+                    .forEach(lots::add);
+            lots.forEach(lotService::updateToCompleted);
+        }
+
+        return offerRepository.save(managedOffer);
     }
 }

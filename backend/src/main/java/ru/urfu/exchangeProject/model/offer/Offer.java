@@ -32,6 +32,9 @@ public class Offer extends BaseEntity {
     @Column(name = "message", columnDefinition = "text")
     private String message;
 
+    private Boolean initiatorCompleted;
+    private Boolean recipientCompleted;
+
     private Instant createdAt;
     private Instant viewedAt;
     private Instant respondedAt;
@@ -129,5 +132,21 @@ public class Offer extends BaseEntity {
 
     public void setItems(List<OfferItem> items) {
         this.items = items;
+    }
+
+    public Boolean getInitiatorCompleted() {
+        return initiatorCompleted;
+    }
+
+    public void setInitiatorCompleted(Boolean initiatorCompleted) {
+        this.initiatorCompleted = initiatorCompleted;
+    }
+
+    public Boolean getRecipientCompleted() {
+        return recipientCompleted;
+    }
+
+    public void setRecipientCompleted(Boolean recipientCompleted) {
+        this.recipientCompleted = recipientCompleted;
     }
 }

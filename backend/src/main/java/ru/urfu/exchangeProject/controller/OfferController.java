@@ -213,6 +213,23 @@ public class OfferController {
         return new BaseResponse<>(offerResponse);
     }
 
+    @Operation(description = "Завершение лота")
+    @PostMapping("/{id}/complete")
+    public BaseResponse<OfferResponse> complete(@PathVariable("id") Long id){
+        User user = authService.getAuthenticatedUser();
+        validateUser(user);
+
+        Offer offer = offerService.getById(id);
+        validateParticipant(offer, user.getId());
+        if(offer.getStatus() != OfferStatus.ACCEPTED && offer.getStatus() != OfferStatus.HALF_COMPLETED){
+            throw new ConflictException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+
+        Offer updatedOffer = offerService.complete(offer, user);
+        OfferResponse offerResponse = offerMapper.mapToOfferResponse(updatedOffer);
+        return new BaseResponse<>(offerResponse);
+    }
+
     private void validateUser(User user) {
         if(UserStatus.FROZEN.equals(user.getStatus())){
             throw new AccountFrozenException(user.getFrozenReason());

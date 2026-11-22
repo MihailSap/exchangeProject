@@ -130,6 +130,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(new ExceptionResponse(exceptionErrorResponse));
     }
 
+    @ExceptionHandler(ru.urfu.exchangeProject.exception.customEx.NotFoundException.class)
+    public ResponseEntity<ExceptionResponse> handleCustomNotFoundException(
+            ru.urfu.exchangeProject.exception.customEx.NotFoundException ex) {
+        logger.error("ru.urfu.exchangeProject.exception.customEx.NotFoundException: {}", ex.getMessage(), ex);
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ex.getErrorCode(), null, null);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
     @ExceptionHandler(LotForbiddenException.class)
     public ResponseEntity<ExceptionResponse> handleFileInvalidEx(LotForbiddenException ex) {
         logger.error("LotForbiddenException: {}", ex.getMessage(), ex);

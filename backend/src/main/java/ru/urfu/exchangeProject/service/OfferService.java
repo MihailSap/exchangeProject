@@ -37,4 +37,6 @@ public interface OfferService {
     Offer cancel(Offer offer);
 
     Offer fail(Offer offer);
+
+    Offer complete(Offer offer, User authenticatedUser);
 }

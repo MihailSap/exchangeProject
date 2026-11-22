@@ -337,6 +337,13 @@ public class LotServiceImpl implements LotService {
         return lotRepository.save(lot);
     }
 
+    @Transactional
+    @Override
+    public Lot updateToCompleted(Lot lot) {
+        lot.setStatus(LotStatus.COMPLETED);
+        return lotRepository.save(lot);
+    }
+
     @Transactional(readOnly = true)
     @Override
     public Page<Lot> getModerationLots(int page, int perPage) {

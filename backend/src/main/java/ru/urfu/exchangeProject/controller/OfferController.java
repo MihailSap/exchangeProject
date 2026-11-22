@@ -6,16 +6,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.web.server.ResponseStatusException;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.BaseResponse;
 import ru.urfu.exchangeProject.dto.exceptions.ErrorCode;
 import ru.urfu.exchangeProject.dto.offer.OfferCreateRequest;
 import ru.urfu.exchangeProject.dto.offer.OfferResponse;
 import ru.urfu.exchangeProject.exception.customEx.UserNotFoundException;
-import ru.urfu.exchangeProject.exception.customEx.news.AccountFrozenException;
-import ru.urfu.exchangeProject.exception.customEx.news.EmailNotConfirmedException;
-import ru.urfu.exchangeProject.exception.customEx.news.LotConflictException;
-import ru.urfu.exchangeProject.exception.customEx.news.LotNotFoundException;
+import ru.urfu.exchangeProject.exception.customEx.news.*;
 import ru.urfu.exchangeProject.exception.globalEx.ConflictException;
 import ru.urfu.exchangeProject.exception.globalEx.ForbiddenException;
 import ru.urfu.exchangeProject.mapper.OfferMapper;
@@ -28,7 +29,13 @@ import ru.urfu.exchangeProject.model.user.UserStatus;
 import ru.urfu.exchangeProject.service.AuthService;
 import ru.urfu.exchangeProject.service.LotService;
 import ru.urfu.exchangeProject.service.OfferService;
-import ru.urfu.exchangeProject.service.UserService;
+import ru.urfu.exchangeProject.model.offer.OfferDirection;
+
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import java.util.Objects;
 
@@ -54,6 +61,56 @@ public class OfferController {
         this.lotService = lotService;
         this.offerService = offerService;
         this.offerMapper = offerMapper;
+    }
+
+    @Operation(description = "Получение офферов текущего пользователя")
+    @GetMapping
+    public BaseResponse<Page<OfferResponse>> getCurrentUserOffers(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(name = "per_page", defaultValue = "20") int perPage,
+            @RequestParam(required = false) String direction,
+            @RequestParam(required = false) String status
+    ) {
+        if (page < 1 || perPage < 1) {
+            throw new BadRequestException();
+        }
+
+        Set<OfferDirection> directions = parseEnumParameter(direction, OfferDirection.class, "direction");
+        Set<OfferStatus> statuses = parseEnumParameter(status, OfferStatus.class, "status");
+        User user = authService.getAuthenticatedUser();
+        PageRequest pageable = PageRequest.of(page - 1, perPage, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<OfferResponse> offers = offerService.getUserOffers(
+                user.getId(),
+                directions,
+                statuses,
+                pageable
+        ).map(offerMapper::mapToOfferResponse);
+        return new BaseResponse<>(offers);
+    }
+
+    private <T extends Enum<T>> Set<T> parseEnumParameter(
+            String value,
+            Class<T> enumType,
+            String parameterName
+    ) {
+        if (value == null || value.isBlank()) {
+            return Set.of();
+        }
+
+        try {
+            return Arrays.stream(value.split("\\|", -1))
+                    .map(String::trim)
+                    .map(item -> Enum.valueOf(
+                            enumType,
+                            item.toUpperCase(Locale.ROOT)
+                    ))
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+        } catch (IllegalArgumentException exception) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Недопустимое значение параметра '" + parameterName + "'"
+            );
+        }
     }
 
     @Operation(description = "Получение предложения обмена")

@@ -15,10 +15,17 @@ import ru.urfu.exchangeProject.repository.OfferRepository;
 import ru.urfu.exchangeProject.service.LotService;
 import ru.urfu.exchangeProject.service.OfferService;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import jakarta.persistence.criteria.Predicate;
+import ru.urfu.exchangeProject.model.offer.OfferDirection;
+
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class OfferServiceImpl implements OfferService {
@@ -33,6 +40,39 @@ public class OfferServiceImpl implements OfferService {
     ) {
         this.offerRepository = offerRepository;
         this.lotService = lotService;
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Page<Offer> getUserOffers(
+            long userId,
+            Set<OfferDirection> directions,
+            Set<OfferStatus> statuses,
+            Pageable pageable
+    ) {
+        Specification<Offer> specification = (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            List<Predicate> directionPredicates = new ArrayList<>();
+            boolean allDirections = directions == null || directions.isEmpty();
+            if (allDirections || directions.contains(OfferDirection.INCOMING)) {
+                directionPredicates.add(criteriaBuilder.equal(root.get("recipient").get("id"), userId));
+            }
+
+            if (allDirections || directions.contains(OfferDirection.OUTGOING)) {
+                directionPredicates.add(criteriaBuilder.equal(root.get("initiator").get("id"), userId));
+            }
+
+            predicates.add(criteriaBuilder.or(
+                    directionPredicates.toArray(new Predicate[0])));
+
+            if (statuses != null && !statuses.isEmpty()) {
+                predicates.add(root.get("status").in(statuses));
+            }
+
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return offerRepository.findAll(specification, pageable);
     }
 
     @Transactional(readOnly = true)

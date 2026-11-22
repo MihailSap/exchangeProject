@@ -108,6 +108,7 @@ public class OfferServiceImpl implements OfferService {
     @Override
     public Offer accept(Offer offer, long recipientId) {
         offer.setStatus(OfferStatus.ACCEPTED);
+        offer.setRespondedAt(Instant.now());
 
         List<Lot> lots = new ArrayList<>();
         lots.add(offer.getTargetLot());
@@ -135,6 +136,7 @@ public class OfferServiceImpl implements OfferService {
     @Override
     public Offer reject(Offer offer) {
         offer.setStatus(OfferStatus.REJECTED);
+        offer.setRespondedAt(Instant.now());
         return offerRepository.save(offer);
     }
 

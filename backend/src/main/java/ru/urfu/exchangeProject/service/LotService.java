@@ -7,10 +7,12 @@ import ru.urfu.exchangeProject.exception.customEx.news.CategoryNotFound;
 import ru.urfu.exchangeProject.exception.customEx.news.LotNotFoundException;
 import ru.urfu.exchangeProject.model.lot.DeliveryMethod;
 import ru.urfu.exchangeProject.model.lot.Lot;
+import ru.urfu.exchangeProject.model.lot.LotStatus;
 import ru.urfu.exchangeProject.model.lot.LotType;
 import ru.urfu.exchangeProject.model.user.User;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 public interface LotService {
 
@@ -35,8 +37,8 @@ public interface LotService {
             LotType type,
             boolean delivery,
             boolean pickup,
-            Boolean isMine,
-            Long currentUserId,
+            Long byUser,
+            List<LotStatus> statuses,
             BigDecimal minCost,
             BigDecimal maxCost,
             String sort,

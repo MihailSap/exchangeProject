@@ -20,11 +20,10 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
 
     @Query(
             value = """
-                    SELECT l
-                    FROM Lot l
-                    JOIN l.user u
-                    WHERE l.status = :activeStatus
-                      AND u.status <> :frozenStatus
+                SELECT l
+                FROM Lot l
+                JOIN l.user u
+                WHERE u.status <> :frozenStatus
 
                       AND (
                           :q = ''
@@ -54,29 +53,31 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
                           OR l.deliveryMethod IN :deliveryMethods
                       )
 
-                      AND (
-                           :isMine IS NULL
-                           OR (:isMine = true AND u.id = :currentUserId)
-                           OR (:isMine = false AND u.id <> :currentUserId)
-                      )
+                  AND (
+                       :byUser IS NULL
+                       OR u.id = :byUser
+                  )
+
+                  AND (
+                       :filterByStatus = false
+                       OR l.status IN :statuses
+                  )
 
                       AND (
                           :minCost IS NULL
                           OR l.estimatedCost >= :minCost
                       )
 
-                      AND (
-                          :maxCost IS NULL
-                          OR l.estimatedCost <= :maxCost
-                      )
-                    """,
-
+                  AND (
+                       :maxCost IS NULL
+                       OR l.estimatedCost <= :maxCost
+                  )
+                """,
             countQuery = """
-                    SELECT COUNT(l)
-                    FROM Lot l
-                    JOIN l.user u
-                    WHERE l.status = :activeStatus
-                      AND u.status <> :frozenStatus
+                SELECT COUNT(l)
+                FROM Lot l
+                JOIN l.user u
+                WHERE u.status <> :frozenStatus
 
                       AND (
                           :q = ''
@@ -106,11 +107,15 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
                           OR l.deliveryMethod IN :deliveryMethods
                       )
 
-                      AND (
-                           :isMine IS NULL
-                           OR (:isMine = true AND u.id = :currentUserId)
-                           OR (:isMine = false AND u.id <> :currentUserId)
-                      )
+                  AND (
+                       :byUser IS NULL
+                       OR u.id = :byUser
+                  )
+
+                  AND (
+                       :filterByStatus = false
+                       OR l.status IN :statuses
+                  )
 
                       AND (
                           :minCost IS NULL
@@ -124,7 +129,6 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
                     """
     )
     Page<Lot> searchLots(
-            @Param("activeStatus") LotStatus activeStatus,
             @Param("frozenStatus") UserStatus frozenStatus,
             @Param("q") String q,
             @Param("categoryId") Long categoryId,
@@ -133,8 +137,9 @@ public interface LotRepository extends JpaRepository<Lot, Long> {
             @Param("type") LotType type,
             @Param("filterByDeliveryMethod") boolean filterByDeliveryMethod,
             @Param("deliveryMethods") List<DeliveryMethod> deliveryMethods,
-            @Param("isMine") Boolean isMine,
-            @Param("currentUserId") Long currentUserId,
+            @Param("byUser") Long byUser,
+            @Param("filterByStatus") boolean filterByStatus,
+            @Param("statuses") List<LotStatus> statuses,
             @Param("minCost") BigDecimal minCost,
             @Param("maxCost") BigDecimal maxCost,
             Pageable pageable

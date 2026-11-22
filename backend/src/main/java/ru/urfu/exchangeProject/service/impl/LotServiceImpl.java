@@ -70,8 +70,8 @@ public class LotServiceImpl implements LotService {
             LotType type,
             boolean delivery,
             boolean pickup,
-            Boolean isMine,
-            Long currentUserId,
+            Long byUser,
+            List<LotStatus> statuses,
             BigDecimal minCost,
             BigDecimal maxCost,
             String sort,
@@ -138,8 +138,14 @@ public class LotServiceImpl implements LotService {
             );
         }
 
+        boolean filterByStatus = statuses != null && !statuses.isEmpty();
+
+        // Если статусы не переданы, фильтрация по ним не применяется.
+        List<LotStatus> statusesForQuery = filterByStatus
+                ? statuses
+                : List.of(LotStatus.values());
+
         return lotRepository.searchLots(
-                LotStatus.ACTIVE,
                 UserStatus.FROZEN,
                 q,
                 categoryId,
@@ -148,8 +154,9 @@ public class LotServiceImpl implements LotService {
                 type,
                 filterByDeliveryMethod,
                 deliveryMethods,
-                isMine,
-                currentUserId,
+                byUser,
+                filterByStatus,
+                statusesForQuery,
                 minCost,
                 maxCost,
                 pageable

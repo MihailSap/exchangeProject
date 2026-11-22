@@ -33,7 +33,9 @@ import ru.urfu.exchangeProject.model.user.UserStatus;
 import ru.urfu.exchangeProject.service.*;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 @Tag(name = "Лоты")
@@ -42,7 +44,6 @@ import java.util.Objects;
 public class LotController {
 
     private final AuthService authService;
-    private final UserService userService;
     private final LotService lotService;
     private final WantService wantService;
     private final LotPhotoService lotPhotoService;
@@ -51,14 +52,12 @@ public class LotController {
     @Autowired
     public LotController(
             AuthService authService,
-            UserService userService,
             LotService lotService,
             WantService wantService,
             LotPhotoService lotPhotoService,
             LotMapper lotMapper
     ) {
         this.authService = authService;
-        this.userService = userService;
         this.lotService = lotService;
         this.wantService = wantService;
         this.lotPhotoService = lotPhotoService;
@@ -92,7 +91,7 @@ public class LotController {
         return new BaseResponse<>(lotResponse);
     }
 
-    @Operation(description = "Список или поиск активных лотов")
+    @Operation(description = "Список или поиск лотов")
     @SecurityRequirement(name = "bearerAuth")
     @GetMapping
     public LotListResponse searchLots(
@@ -103,7 +102,9 @@ public class LotController {
             @RequestParam(required = false) LotType type,
             @RequestParam(defaultValue = "false") boolean delivery,
             @RequestParam(defaultValue = "false") boolean pickup,
-            @RequestParam(name = "is_mine", required = false) Boolean isMine,
+            @RequestParam(name = "by_user", required = false)
+            @Positive Long byUser,
+            @RequestParam(required = false) String status,
             @RequestParam(name = "min_cost", required = false)
             BigDecimal minCost,
             @RequestParam(name = "max_cost", required = false)
@@ -113,12 +114,7 @@ public class LotController {
             @RequestParam(name = "per_page", defaultValue = "20")
             int perPage
     ) throws CategoryNotFound {
-        Long currentUserId = null;
-        if (isMine != null) {
-            User user = authService.getAuthenticatedUser();
-            currentUserId = user.getId();
-        }
-
+        List<LotStatus> statuses = parseStatuses(status);
         Page<Lot> lotPage = lotService.searchLots(
                 q,
                 categoryId,
@@ -126,8 +122,8 @@ public class LotController {
                 type,
                 delivery,
                 pickup,
-                isMine,
-                currentUserId,
+                byUser,
+                statuses,
                 minCost,
                 maxCost,
                 sort,
@@ -147,6 +143,22 @@ public class LotController {
                         lotPage.getTotalElements()
                 )
         );
+    }
+
+    private List<LotStatus> parseStatuses(String status) {
+        if (status == null || status.isBlank()) {
+            return null;
+        }
+
+        try {
+            return Arrays.stream(status.split("\\|", -1))
+                    .map(String::trim)
+                    .map(value -> LotStatus.valueOf(value.toUpperCase(Locale.ROOT)))
+                    .distinct()
+                    .toList();
+        } catch (IllegalArgumentException exception) {
+            throw new BadRequestException();
+        }
     }
 
     @Operation(description = "Создание лота")

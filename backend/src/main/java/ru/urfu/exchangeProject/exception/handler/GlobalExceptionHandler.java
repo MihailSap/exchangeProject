@@ -16,6 +16,7 @@ import ru.urfu.exchangeProject.exception.customEx.news.*;
 import ru.urfu.exchangeProject.exception.globalEx.ConflictException;
 import ru.urfu.exchangeProject.exception.globalEx.ForbiddenException;
 import ru.urfu.exchangeProject.exception.globalEx.NotFoundException;
+import ru.urfu.exchangeProject.exception.globalEx.UnauthorizedException;
 
 import java.util.List;
 
@@ -143,6 +144,14 @@ public class GlobalExceptionHandler {
         ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
                 ex.getErrorCode(), null, null);
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ExceptionResponse(exceptionErrorResponse));
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ExceptionResponse> handleUnauthorizedEx(UnauthorizedException ex) {
+        logger.error("UnauthorizedException: {}", ex.getMessage(), ex);
+        ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
+                ex.getErrorCode(), null, null);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ExceptionResponse(exceptionErrorResponse));
     }
 
     @ExceptionHandler(ConflictException.class)

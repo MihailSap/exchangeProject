@@ -10,6 +10,8 @@ import ru.urfu.exchangeProject.model.user.User;
 
 public interface AuthService {
 
+    User getAuthenticatedUser();
+
     boolean isCredentialsValid(LoginRequest authRequest, User user);
 
     JwtToken getAccessTokenForUser(User user);

@@ -32,10 +32,10 @@ public class WantMapper {
         return new WantResponse(
                 want.getId(),
                 wantType,
-                WantType.KEYWORDS.equals(wantType) || WantType.ANY.equals(wantType) ? want.getKeywords() : null,
-                WantType.CATEGORY.equals(wantType) || WantType.ANY.equals(wantType)
+                WantType.KEYWORDS.equals(wantType) ? want.getKeywords() : null,
+                WantType.CATEGORY.equals(wantType)
                         ? categoryMapper.mapToCategoryShortResponse(want.getCategory()) : null,
-                WantType.LOT.equals(wantType) || WantType.ANY.equals(wantType) ? want.getTargetLot() : null
+                WantType.LOT.equals(wantType) ? want.getTargetLot() : null
         );
     }
 }

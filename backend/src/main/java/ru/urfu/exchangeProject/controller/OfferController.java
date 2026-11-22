@@ -39,7 +39,6 @@ import java.util.Objects;
 public class OfferController {
 
     private final AuthService authService;
-    private final UserService userService;
     private final LotService lotService;
     private final OfferService offerService;
     private final OfferMapper offerMapper;
@@ -47,13 +46,11 @@ public class OfferController {
     @Autowired
     public OfferController(
             AuthService authService,
-            UserService userService,
             LotService lotService,
             OfferService offerService,
             OfferMapper offerMapper
     ) {
         this.authService = authService;
-        this.userService = userService;
         this.lotService = lotService;
         this.offerService = offerService;
         this.offerMapper = offerMapper;
@@ -62,8 +59,7 @@ public class OfferController {
     @Operation(description = "Получение предложения обмена")
     @GetMapping("/{id}")
     public BaseResponse<OfferResponse> getById(@PathVariable("id") Long id) throws UserNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User authenticatedUser = userService.getByEmail(authenticatedUserEmail);
+        User authenticatedUser = authService.getAuthenticatedUser();
 
         Offer offer = offerService.getById(id);
         if(!offer.getRecipient().equals(authenticatedUser)
@@ -80,8 +76,7 @@ public class OfferController {
     public BaseResponse<OfferResponse> create(
             @RequestBody OfferCreateRequest request
     ) throws UserNotFoundException, LotNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User initiator = userService.getByEmail(authenticatedUserEmail);
+        User initiator = authService.getAuthenticatedUser();
         validateUser(initiator);
 
         Lot targetLot = lotService.getById(request.targetLotId());
@@ -102,8 +97,7 @@ public class OfferController {
     @PostMapping("/{id}/accept")
     public BaseResponse<OfferResponse> accept(@PathVariable("id") long id)
             throws UserNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
+        User user = authService.getAuthenticatedUser();
         validateUser(user);
 
         Offer offer = offerService.getById(id);
@@ -119,7 +113,7 @@ public class OfferController {
     @PostMapping("/{id}/reject")
     public BaseResponse<OfferResponse> reject(@PathVariable("id") long id) throws UserNotFoundException {
         String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
+        User user = authService.getAuthenticatedUser();
         validateUser(user);
 
         Offer offer = offerService.getById(id);
@@ -134,8 +128,7 @@ public class OfferController {
     @Operation(description = "Отмена оффера")
     @PostMapping("/{id}/cancel")
     public BaseResponse<OfferResponse> cancel(@PathVariable("id") long id) throws UserNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
+        User user = authService.getAuthenticatedUser();
         validateUser(user);
 
         Offer offer = offerService.getById(id);
@@ -151,8 +144,7 @@ public class OfferController {
     @PostMapping("/{id}/fail")
     public BaseResponse<OfferResponse> fail(@PathVariable("id") long id)
             throws UserNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
+        User user = authService.getAuthenticatedUser();
         validateUser(user);
 
         Offer offer = offerService.getById(id);

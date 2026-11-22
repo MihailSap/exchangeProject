@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.BaseResponse;
+import ru.urfu.exchangeProject.dto.exceptions.ErrorCode;
 import ru.urfu.exchangeProject.dto.lot.LotCreateRequest;
 import ru.urfu.exchangeProject.dto.lot.LotListResponse;
 import ru.urfu.exchangeProject.dto.lot.LotResponse;
@@ -23,6 +24,7 @@ import ru.urfu.exchangeProject.dto.lot.LotUpdateRequest;
 import ru.urfu.exchangeProject.dto.lot.want.WantCreateRequest;
 import ru.urfu.exchangeProject.exception.customEx.UserNotFoundException;
 import ru.urfu.exchangeProject.exception.customEx.news.*;
+import ru.urfu.exchangeProject.exception.globalEx.UnauthorizedException;
 import ru.urfu.exchangeProject.mapper.LotMapper;
 import ru.urfu.exchangeProject.model.lot.*;
 import ru.urfu.exchangeProject.model.lot.want.Want;
@@ -32,6 +34,7 @@ import ru.urfu.exchangeProject.service.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 
 @Tag(name = "Лоты")
 @RestController
@@ -63,30 +66,21 @@ public class LotController {
     }
 
     @Operation(description = "Получение лота по id")
+    @SecurityRequirement(name = "bearerAuth")
     @GetMapping("/{id}")
     public BaseResponse<LotResponse> getById(@PathVariable("id") long id) throws LotNotFoundException, UserNotFoundException {
         Lot lot = lotService.getById(id);
         LotStatus lotStatus = lot.getStatus();
         if(lotStatus == LotStatus.ARCHIVED || lotStatus == LotStatus.DRAFT || lotStatus == LotStatus.DELETED
                 || lotStatus == LotStatus.MODERATION || lotStatus == LotStatus.REJECTED){
-            try{
-                String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-                User user = userService.getByEmail(authenticatedUserEmail);
-                validateOwner(user, lot.getUser());
-            } catch (Exception e){
-                throw new LotForbiddenException();
-            }
+            User user = authService.getAuthenticatedUser();
+            validateOwner(user, lot.getUser());
         }
 
         User lotOwner = lot.getUser();
         if(lotOwner.getStatus() == UserStatus.FROZEN){
-            try{
-                String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-                User user = userService.getByEmail(authenticatedUserEmail);
-                validateOwner(user, lotOwner);
-            } catch (Exception e){
-                throw new LotForbiddenException();
-            }
+            User user = authService.getAuthenticatedUser();
+            validateOwner(user, lotOwner);
         }
 
         LotResponse lotResponse = lotMapper.mapToLotResponse(lot);
@@ -113,11 +107,10 @@ public class LotController {
             @RequestParam(defaultValue = "1") @Min(1) int page,
             @RequestParam(name = "per_page", defaultValue = "20")
             @Min(1) @Max(100) int perPage
-    ) throws CategoryNotFound, UserNotFoundException {
+    ) throws CategoryNotFound {
         Long currentUserId = null;
         if (isMine != null) {
-            String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-            User user = userService.getByEmail(authenticatedUserEmail);
+            User user = authService.getAuthenticatedUser();
             currentUserId = user.getId();
         }
 
@@ -157,8 +150,7 @@ public class LotController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<LotResponse> create(@Valid @ModelAttribute LotCreateRequest lotCreateRequest)
             throws UserNotFoundException, CategoryNotFound {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
+        User user = authService.getAuthenticatedUser();
         validateUser(user);
 
         String region;
@@ -189,8 +181,7 @@ public class LotController {
     public BaseResponse<LotResponse> update(
             @PathVariable("id") long id, @Valid @ModelAttribute LotUpdateRequest lotUpdateRequest)
             throws UserNotFoundException, CategoryNotFound, LotNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
+        User user = authService.getAuthenticatedUser();
         validateUser(user);
 
         Lot lot = lotService.getById(id);
@@ -216,8 +207,7 @@ public class LotController {
     @SecurityRequirement(name = "bearerAuth")
     @DeleteMapping("/{lotId}")
     public void softDelete(@PathVariable("lotId") long lotId) throws LotNotFoundException, UserNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
+        User user = authService.getAuthenticatedUser();
         validateUser(user);
 
         Lot lot = lotService.getById(lotId);
@@ -229,8 +219,7 @@ public class LotController {
     @PatchMapping("/{lotId}/republicate")
     public BaseResponse<LotResponse> republicateLot(@PathVariable("lotId") long lotId)
             throws LotNotFoundException, UserNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
+        User user = authService.getAuthenticatedUser();
         validateUser(user);
 
         Lot lot = lotService.getById(lotId);
@@ -250,8 +239,7 @@ public class LotController {
     @DeleteMapping("/{lotId}/photo/{photoId}")
     public void deletePhoto(@PathVariable("lotId") long lotId, @PathVariable("photoId") long photoId)
             throws LotPhotoNotFoundException, LotNotFoundException, UserNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
+        User user = authService.getAuthenticatedUser();
         validateUser(user);
 
         Lot lot = lotService.getById(lotId);
@@ -270,8 +258,7 @@ public class LotController {
     @DeleteMapping("/{lotId}/want/{wantId}")
     public void deleteWant(@PathVariable("lotId") long lotId, @PathVariable("wantId") long wantId)
             throws WantNotFoundException, LotNotFoundException, UserNotFoundException {
-        String authenticatedUserEmail = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(authenticatedUserEmail);
+        User user = authService.getAuthenticatedUser();
         validateUser(user);
 
         Lot lot = lotService.getById(lotId);
@@ -286,7 +273,7 @@ public class LotController {
     }
 
     private void validateOwner(User authenticatedUser, User owner) {
-        if(!authenticatedUser.equals(owner)){
+        if(!authenticatedUser.equals(owner)) {
             throw new LotForbiddenException();
         }
     }

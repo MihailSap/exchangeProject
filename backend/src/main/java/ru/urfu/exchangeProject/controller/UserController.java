@@ -40,8 +40,7 @@ public class UserController {
     @Operation(description = "Получение профиля текущего пользователя")
     @GetMapping("/me")
     public BaseResponse<UserProfileResponse> getCurrentUser() throws UserNotFoundException {
-        String email = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(email);
+        User user = authService.getAuthenticatedUser();
         UserProfileResponse userProfileResponse = userMapper.mapToUserProfileResponse(user);
         return new BaseResponse<>(userProfileResponse);
     }
@@ -50,8 +49,7 @@ public class UserController {
     @PatchMapping(value = "/me", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public BaseResponse<UserProfileResponse> updateCurrentUser(@Valid @ModelAttribute UserUpdateRequest userUpdateRequest)
             throws UserNotFoundException {
-        String email = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(email);
+        User user = authService.getAuthenticatedUser();
         User updatedUser = userService.update(userUpdateRequest, user);
         UserProfileResponse userProfileResponse = userMapper.mapToUserProfileResponse(updatedUser);
         return new BaseResponse<>(userProfileResponse);
@@ -60,8 +58,7 @@ public class UserController {
     @Operation(description = "Удаление аватара текущего пользователя")
     @DeleteMapping("/me/avatar")
     public BaseResponse<UserProfileResponse> deleteAvatar() throws UserNotFoundException {
-        String email = authService.getAuthenticatedUserEmail();
-        User user = userService.getByEmail(email);
+        User user = authService.getAuthenticatedUser();
         User updatedUser = userService.deleteAvatar(user);
         UserProfileResponse userProfileResponse = userMapper.mapToUserProfileResponse(updatedUser);
         return new BaseResponse<>(userProfileResponse);

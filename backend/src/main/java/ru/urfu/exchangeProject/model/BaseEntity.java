@@ -1,6 +1,7 @@
 package ru.urfu.exchangeProject.model;
 
 import jakarta.persistence.*;
+import org.hibernate.proxy.HibernateProxy;
 
 import java.util.Objects;
 
@@ -19,12 +20,32 @@ public abstract class BaseEntity {
         this.id = id;
     }
 
+    private static Class<?> getPersistentClass(Object entity) {
+        if (entity instanceof HibernateProxy proxy) {
+            return proxy.getHibernateLazyInitializer().getPersistentClass();
+        }
+
+        return entity.getClass();
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        BaseEntity that = (BaseEntity) o;
-        return Objects.equals(id, that.id);
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || !(o instanceof BaseEntity that)) {
+            return false;
+        }
+
+        if (getPersistentClass(this) != getPersistentClass(that)) {
+            return false;
+        }
+
+        Long thisId = getId();
+        Long thatId = that.getId();
+
+        return thisId != null && thisId.equals(thatId);
     }
 
     @Override

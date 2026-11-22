@@ -1,9 +1,11 @@
 package ru.urfu.exchangeProject.service.impl;
 
 import ru.urfu.exchangeProject.dto.auth.*;
+import ru.urfu.exchangeProject.dto.exceptions.ErrorCode;
 import ru.urfu.exchangeProject.exception.customEx.news.EmailConfirmationTokenExpiredException;
 import ru.urfu.exchangeProject.exception.customEx.news.EmailConfirmationTokenInvalidException;
 import ru.urfu.exchangeProject.exception.customEx.news.RateLimitExceededException;
+import ru.urfu.exchangeProject.exception.globalEx.UnauthorizedException;
 import ru.urfu.exchangeProject.model.jwt.JwtToken;
 import ru.urfu.exchangeProject.service.AuthService;
 
@@ -54,6 +56,17 @@ public class AuthServiceImpl implements AuthService {
         this.jwtProvider = jwtProvider;
         this.refreshTokenService = refreshTokenService;
         this.passwordEncoder = passwordEncoder;
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public User getAuthenticatedUser(){
+        try {
+            String authenticatedUserEmail = getAuthenticatedUserEmail();
+            return userService.getByEmail(authenticatedUserEmail);
+        } catch (UserNotFoundException userNotFoundException){
+            throw new UnauthorizedException(ErrorCode.UNAUTHORIZED);
+        }
     }
 
     @Transactional

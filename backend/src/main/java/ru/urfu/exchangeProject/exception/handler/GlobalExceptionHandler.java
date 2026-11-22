@@ -123,11 +123,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ExceptionResponse> handleFileInvalidExByMaxUploadSizeExceededException(
-            FileInvalidException ex) {
-        logger.error("FileInvalidException: {}", ex.getMessage(), ex);
+            MaxUploadSizeExceededException ex) {
+        logger.error("MaxUploadSizeExceededException: {}", ex.getMessage(), ex);
         ExceptionErrorResponse exceptionErrorResponse = new ExceptionErrorResponse(
-                ErrorCode.INVALID_EXCEPTION, null, null);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ExceptionResponse(exceptionErrorResponse));
+                ErrorCode.PAYLOAD_TOO_LARGE, null, null);
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(new ExceptionResponse(exceptionErrorResponse));
     }
 
     @ExceptionHandler(LotForbiddenException.class)

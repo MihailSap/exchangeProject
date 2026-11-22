@@ -83,6 +83,11 @@ public class LotController {
             validateOwner(user, lotOwner);
         }
 
+        if(lotStatus == LotStatus.IN_EXCHANGE){
+            User authenticatedUser = authService.getAuthenticatedUser();
+            //TODO: Доделать
+        }
+
         LotResponse lotResponse = lotMapper.mapToLotResponse(lot);
         return new BaseResponse<>(lotResponse);
     }
@@ -104,9 +109,9 @@ public class LotController {
             @RequestParam(name = "max_cost", required = false)
             BigDecimal maxCost,
             @RequestParam(defaultValue = "date_desc") String sort,
-            @RequestParam(defaultValue = "1") @Min(1) int page,
+            @RequestParam(defaultValue = "1") int page,
             @RequestParam(name = "per_page", defaultValue = "20")
-            @Min(1) @Max(100) int perPage
+            int perPage
     ) throws CategoryNotFound {
         Long currentUserId = null;
         if (isMine != null) {
@@ -251,6 +256,7 @@ public class LotController {
             throw new LotConflictException();
         }
         lotPhotoService.delete(lotPhoto);
+        lotService.updateToModeration(lot);
     }
 
     @Operation(description = "Удаление пожелания из лота")
@@ -270,6 +276,7 @@ public class LotController {
             throw new LotConflictException();
         }
         wantService.delete(want);
+        lotService.updateToModeration(lot);
     }
 
     private void validateOwner(User authenticatedUser, User owner) {

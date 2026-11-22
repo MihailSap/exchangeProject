@@ -28,7 +28,8 @@ public class OfferMapper {
                 mapToOfferLotResponse(offer.getTargetLot()),
                 offerLots,
                 offer.getStatus(),
-                offer.getCreatedAt()
+                offer.getCreatedAt(),
+                offer.getMessage()
         );
     }
 

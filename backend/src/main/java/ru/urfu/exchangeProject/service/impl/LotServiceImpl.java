@@ -82,7 +82,10 @@ public class LotServiceImpl implements LotService {
         if (minCost != null && maxCost != null && minCost.compareTo(maxCost) > 0
                 || (minCost != null && minCost.compareTo(BigDecimal.ZERO) < 0)
                 || (maxCost != null && maxCost.compareTo(BigDecimal.ZERO) < 0)
-                || (q != null && q.length() > 200)) {
+                || (q != null && q.length() > 200)
+                || page < 1
+                || perPage < 1 || perPage > 100
+        ) {
             throw new BadRequestException();
         }
 
@@ -274,6 +277,7 @@ public class LotServiceImpl implements LotService {
 
         createWantsForLot(lotUpdateRequest.wants(), lot);
 
+        lot.setRejectReason(null);
         lot.setStatus(LotStatus.MODERATION);
         lot.setUpdatedAt(Instant.now());
 
@@ -283,6 +287,7 @@ public class LotServiceImpl implements LotService {
     @Transactional
     @Override
     public Lot republicateLot(Lot lot) {
+        lot.setRejectReason(null);
         lot.setStatus(LotStatus.ACTIVE);
         lot.setPublishedAt(Instant.now());
         lot.setExpiresAt(Instant.now().plus(30, ChronoUnit.DAYS));
@@ -301,6 +306,7 @@ public class LotServiceImpl implements LotService {
     @Override
     public Lot approve(Lot lot){
         lot.setStatus(LotStatus.ACTIVE);
+        lot.setRejectReason(null);
 
         Instant now = Instant.now();
         lot.setPublishedAt(now);
@@ -313,6 +319,14 @@ public class LotServiceImpl implements LotService {
     public Lot reject(Lot lot, String rejectReason){
         lot.setStatus(LotStatus.REJECTED);
         lot.setRejectReason(rejectReason);
+        return lotRepository.save(lot);
+    }
+
+    @Transactional
+    @Override
+    public Lot updateToModeration(Lot lot){
+        lot.setStatus(LotStatus.MODERATION);
+        lot.setUpdatedAt(Instant.now());
         return lotRepository.save(lot);
     }
 

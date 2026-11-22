@@ -16,6 +16,7 @@ public record OfferResponse(
         List<OfferLotResponse> offerLots,
         OfferStatus status,
         @JsonProperty("created_at")
-        Instant createdAt
+        Instant createdAt,
+        String message
 ) {
 }

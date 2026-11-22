@@ -6,6 +6,7 @@ import ru.urfu.exchangeProject.dto.lot.LotPhotoDataResponse;
 import ru.urfu.exchangeProject.dto.lot.LotResponse;
 import ru.urfu.exchangeProject.model.lot.Lot;
 import ru.urfu.exchangeProject.model.lot.LotPhoto;
+import ru.urfu.exchangeProject.model.lot.LotStatus;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -44,7 +45,8 @@ public class LotMapper {
                 wantMapper.mapToWantResponses(lot.getWants()),
                 lot.getStatus(),
                 lot.getPublishedAt(),
-                lot.getExpiresAt()
+                lot.getExpiresAt(),
+                lot.getStatus().equals(LotStatus.REJECTED) ? lot.getRejectReason() : null
         );
     }
 

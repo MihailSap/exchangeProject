@@ -30,6 +30,8 @@ public record LotResponse(
         @JsonProperty("published_at")
         Instant publishedAt,
         @JsonProperty("expires_at")
-        Instant expiresAt
+        Instant expiresAt,
+        @JsonProperty("reject_reason")
+        String rejectReason
 ) {
 }

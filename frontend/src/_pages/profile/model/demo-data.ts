@@ -14,6 +14,7 @@ export type Review = {
 export type CompletedExchange = {
   id: number;
   lotId: number;
+  sent: { title: string; image: string; cost: number };
   receivedCost: number;
   receivedTitle: string;
   receivedImage: string;
@@ -90,6 +91,7 @@ export const DEMO_SENT_REVIEWS: Review[] = [
 export const DEMO_EXCHANGES: CompletedExchange[] = [
   {
     id: 70001,
+    sent: { title: "Камера моментальной печати", image: "/images/profile/camera.svg", cost: 7500 },
     receivedCost: 7000,
     lotId: 90009,
     receivedTitle: "Объектив Helios 44-2",
@@ -100,6 +102,7 @@ export const DEMO_EXCHANGES: CompletedExchange[] = [
   },
   {
     id: 70002,
+    sent: { title: "Кресло для чтения", image: "/images/profile/chair.png", cost: 10000 },
     receivedCost: 9500,
     lotId: 90010,
     receivedTitle: "Кофеварка для дома",
@@ -110,6 +113,7 @@ export const DEMO_EXCHANGES: CompletedExchange[] = [
   },
   {
     id: 70003,
+    sent: { title: "Кофемашина для эспрессо", image: "/images/profile/coffee.svg", cost: 18000 },
     receivedCost: 17500,
     lotId: 90011,
     receivedTitle: "Плёночный фотоаппарат",

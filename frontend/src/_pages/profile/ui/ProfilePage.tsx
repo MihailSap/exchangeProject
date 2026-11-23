@@ -10,13 +10,15 @@ import { LotCard } from "./LotCard";
 import styles from "./ProfilePage.module.scss";
 import { ReviewsPanel } from "./ReviewsPanel";
 import { DEMO_EXCHANGES, DEMO_REVIEWS, DEMO_SENT_REVIEWS, ratingOf } from "../model/demo-data";
+import { useProfileLots } from "../model/use-profile-lots";
 
 import type { LotAction } from "./LotCard";
-import type { Lot, LotStatus } from "@/src/entities/lot";
+import type { ProfileLotFilter } from "../model/use-profile-lots";
+import type { Lot } from "@/src/entities/lot";
 import type { UserProfile } from "@/src/entities/profile";
 import type { IconName } from "@/src/shared/ui/icon";
 
-import { getLotPath, republishLot, initializeFixtureLots } from "@/src/entities/lot";
+import { getLotPath, republishLot } from "@/src/entities/lot";
 import { getPublicProfile, resendConfirmation } from "@/src/entities/profile";
 import { updateSessionProfile, useSession } from "@/src/entities/session";
 import { HelpDialog } from "@/src/features/help";
@@ -37,9 +39,7 @@ type LoadState =
 
 type Section = "lots" | "reviews" | "settings";
 
-type Filter = "all" | "ACTIVE" | "MODERATION" | "ARCHIVED" | "COMPLETED";
-
-const FILTERS: { value: Filter; label: string }[] = [
+const FILTERS: { value: ProfileLotFilter; label: string }[] = [
   { value: "all", label: "Все лоты" },
   { value: "ACTIVE", label: "Активные" },
   { value: "MODERATION", label: "На модерации" },
@@ -57,7 +57,6 @@ export function ProfilePage({ userId }: { userId?: number }) {
   const { notify } = useToast();
   const { receive } = useNotifications();
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [lots, setLots] = useState<Lot[]>([]);
   const [attempt, setAttempt] = useState(0);
   const [help, setHelp] = useState(false);
   const [dialog, setDialog] = useState<{ action: LotAction; lot: Lot } | null>(null);
@@ -72,12 +71,9 @@ export function ProfilePage({ userId }: { userId?: number }) {
         ? "settings"
         : "lots";
 
+  const filters = own ? FILTERS : FILTERS.filter(({ value }) => value === "all" || value === "COMPLETED");
   const requestedFilter = search.get("status");
-  const filter: Filter =
-    FILTERS.some((item) => item.value === requestedFilter) &&
-    (own || requestedFilter === "COMPLETED")
-      ? (requestedFilter as Filter)
-      : "all";
+  const filter = filters.find(({ value }) => value === requestedFilter)?.value ?? "all";
 
   useEffect(() => {
     if (!ready) return;
@@ -108,7 +104,6 @@ export function ProfilePage({ userId }: { userId?: number }) {
         if (!active) return;
 
         setState({ status: "ready", profile });
-        setLots(initializeFixtureLots(profile.id, profile.name, profile.region || "Москва"));
       })
       .catch((error: unknown) => {
         if (!active) return;
@@ -136,7 +131,7 @@ export function ProfilePage({ userId }: { userId?: number }) {
     return () => window.clearInterval(timer);
   }, [resendAt]);
 
-  function navigate(nextSection: Section, nextFilter: Filter = filter) {
+  function navigate(nextSection: Section, nextFilter: ProfileLotFilter = filter) {
     const query = new URLSearchParams();
     if (nextSection !== "lots") query.set("section", nextSection);
 
@@ -172,39 +167,36 @@ export function ProfilePage({ userId }: { userId?: number }) {
     state.status === "ready"
       ? own && user
         ? { ...user, emailConfirmed: user.emailConfirmed ?? false }
-        : state.profile
+        : state.profile.id === userId ? state.profile : null
       : null;
 
   useEffect(() => {
     if (profile) document.title = own ? "Меняемся - Личный кабинет" : `Меняемся - ${profile.name}`;
   }, [own, profile?.name]);
   const canManage = own && user?.status === "ACTIVE" && profile?.emailConfirmed === true;
-  const visibleLots = lots.filter(
-    (lot) => lot.status !== "DELETED" && (own || lot.status === "ACTIVE"),
-  );
+  const lotOwnerId = profile && section === "lots" && (own ? profile.id === viewerId : viewerId !== userId)
+    ? profile.id
+    : undefined;
 
-  const filteredLots =
-    filter === "all" ? visibleLots : visibleLots.filter((lot) => lot.status === filter);
+  const lotList = useProfileLots(lotOwnerId, own, section === "lots" ? filter : null);
+  const accessError = lotList.error?.status;
 
-  const count = (status: LotStatus) => lots.filter((lot) => lot.status === status).length;
-  const reviews = DEMO_REVIEWS.map((review) => ({
-    ...review,
-    lotId: review.lotId + Math.max(0, (profile?.id ?? 1) - 1) * 100,
-  })).filter((review) => lots.some((lot) => lot.id === review.lotId));
+  useEffect(() => {
+    if (accessError === 401 && own) router.replace("/login");
 
+    if (accessError === 403) router.replace("/");
+  }, [accessError, own, router]);
+
+  const reviews = DEMO_REVIEWS;
   const sentReviews = DEMO_SENT_REVIEWS.map((review) => ({
     ...review,
     authorId: profile?.id ?? 1,
     authorName: profile?.name ?? review.authorName,
-    lotId: review.lotId + Math.max(0, (profile?.id ?? 1) - 1) * 100,
-  })).filter((review) => lots.some((lot) => lot.id === review.lotId && lot.status === "COMPLETED"));
+  }));
 
-  const exchanges = DEMO_EXCHANGES.map((exchange) => ({
-    ...exchange,
-    lotId: exchange.lotId + Math.max(0, (profile?.id ?? 1) - 1) * 100,
-  })).filter((exchange) =>
-    lots.some((lot) => lot.id === exchange.lotId && lot.status === "COMPLETED"),
-  );
+  const exchanges = DEMO_EXCHANGES;
+  const count = (status: ProfileLotFilter) =>
+    status === "COMPLETED" ? exchanges.length : lotList.counts[status] ?? "—";
 
   async function onAction(action: LotAction, lot: Lot) {
     if (action === "view") {
@@ -226,7 +218,7 @@ export function ProfilePage({ userId }: { userId?: number }) {
     if (action === "republish") {
       try {
         const updated = await republishLot(lot);
-        setLots((current) => current.map((item) => (item.id === lot.id ? updated : item)));
+        lotList.reload();
         if (action === "republish")
           receive({
             id: `republished:${lot.id}:${updated.published_at}`,
@@ -392,10 +384,10 @@ export function ProfilePage({ userId }: { userId?: number }) {
                     {(
                       [
                         {
-                          label: "Активные",
-                          status: "ACTIVE",
+                          label: own ? "Активные" : "Все лоты",
+                          status: own ? "ACTIVE" : "all",
                           icon: "active",
-                          value: count("ACTIVE"),
+                          value: count(own ? "ACTIVE" : "all"),
                         },
                         ...(own
                           ? [
@@ -419,7 +411,7 @@ export function ProfilePage({ userId }: { userId?: number }) {
                           icon: "completed",
                           value: exchanges.length,
                         },
-                      ] as { label: string; status: Filter; icon: string; value: number }[]
+                      ] as { label: string; status: ProfileLotFilter; icon: string; value: number | string }[]
                     ).map((item) => (
                       <button
                         type="button"
@@ -439,9 +431,7 @@ export function ProfilePage({ userId }: { userId?: number }) {
                     ))}
                   </div>
                   <nav className={styles.filters} aria-label="Фильтры лотов">
-                    {FILTERS.filter(
-                      (item) => own || item.value === "all" || item.value === "COMPLETED",
-                    ).map((item) => (
+                    {filters.map((item) => (
                       <button
                         type="button"
                         key={item.value}
@@ -451,39 +441,51 @@ export function ProfilePage({ userId }: { userId?: number }) {
                       >
                         {item.label}
                         <span>
-                          {item.value === "all"
-                            ? visibleLots.length
-                            : item.value === "COMPLETED"
-                              ? exchanges.length
-                              : count(item.value)}
+                          {count(item.value)}
                         </span>
                       </button>
                     ))}
                   </nav>
                   {filter === "COMPLETED" ? (
-                    <CompletedPanel lots={lots} exchanges={exchanges} />
-                  ) : filteredLots.length ? (
-                    <div className={styles.lots}>
-                      {filteredLots.map((lot, index) => (
-                        <LotCard
-                          key={lot.id}
-                          eager={index === 0}
-                          lot={lot}
-                          own={own}
-                          canManage={canManage}
-                          onAction={onAction}
-                        />
-                      ))}
+                    <CompletedPanel exchanges={exchanges} />
+                  ) : lotList.lots.length ? (
+                    <>
+                      <div className={styles.lots} aria-busy={lotList.loading}>
+                        {lotList.lots.map((lot, index) => (
+                          <LotCard
+                            key={lot.id}
+                            eager={index === 0}
+                            lot={lot}
+                            own={own}
+                            canManage={canManage}
+                            onAction={onAction}
+                          />
+                        ))}
+                      </div>
+                      {!lotList.error && lotList.hasMore && (
+                        <div className={styles.empty}>
+                          {lotList.loading ? <Loading compact label="Загружаем лоты…" /> : (
+                            <button type="button" onClick={lotList.loadMore}>Загрузить ещё</button>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  ) : lotList.loading ? (
+                    <div className={styles.loading} aria-live="polite">
+                      <Loading label="Загружаем лоты…" />
                     </div>
-                  ) : (
-                    <div className={styles.empty}>
-                      <h3>{visibleLots.length === 0 ? own ? "У вас пока нет лотов" : "У пользователя пока нет лотов" : "Нет лотов с выбранным статусом"}</h3>
-                      <p>{visibleLots.length === 0 ? "Разместите первое объявление, чтобы найти свой обмен." : "Выберите другой статус или посмотрите все объявления."}</p>
-                      {visibleLots.length === 0 && own && canManage ? (
+                  ) : !lotList.error ? (
+                    <div className={own && filter !== "all" ? `${styles.empty} ${styles.emptyStatus}` : styles.empty}>
+                      <h3>{filter === "all" ? own ? "У вас пока нет лотов" : "У пользователя пока нет лотов" : "Нет лотов с выбранным статусом"}</h3>
+                      {filter === "all" && own && canManage ? (
                         <Link className={styles.newLot} href="/lots/new">Разместить лот</Link>
-                      ) : visibleLots.length > 0 ? (
-                        <button type="button" onClick={() => navigate("lots", "all")}>Показать все лоты</button>
                       ) : null}
+                    </div>
+                  ) : null}
+                  {filter !== "COMPLETED" && lotList.error && (
+                    <div className={styles.empty} role="status">
+                      <p>{lotList.error.message}</p>
+                      <button type="button" onClick={lotList.reload}>Повторить</button>
                     </div>
                   )}
                 </>
@@ -499,10 +501,8 @@ export function ProfilePage({ userId }: { userId?: number }) {
           key={`${dialog.lot.id}:${dialog.action}`}
           {...dialog}
           onClose={() => setDialog(null)}
-          onDelete={(id) => {
-            setLots((current) =>
-              current.map((item) => (item.id === id ? { ...item, status: "DELETED" } : item)),
-            );
+          onDelete={() => {
+            lotList.reload();
             setDialog(null);
             notify({ kind: "success", title: "Лот удалён" });
           }}

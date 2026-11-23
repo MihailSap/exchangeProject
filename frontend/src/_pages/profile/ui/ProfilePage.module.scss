@@ -350,7 +350,11 @@
 .lots {
   display: grid;
   gap: 18px;
-  margin-top: 18px;
+}
+
+.lots,
+.emptyStatus {
+  margin-block-start: 18px;
 }
 
 .empty,
@@ -365,6 +369,17 @@
 .empty h3 {
   color: var(--color-text);
   margin-top: 0;
+}
+
+.emptyStatus {
+  display: grid;
+  min-block-size: 7rem;
+  place-items: center;
+  text-align: center;
+}
+
+.emptyStatus h3 {
+  margin: 0;
 }
 
 .empty button,

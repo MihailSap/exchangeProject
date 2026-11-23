@@ -66,7 +66,7 @@ export function readCatalogQuery(
     pickup: params.get("pickup") === "1",
     q: (params.get("q") ?? "").trim().slice(0, 200),
     sort: SORT_OPTIONS.find((item) => item.value === sort)?.value ?? "newest",
-    page: Number.isSafeInteger(page) && page > 0 && page <= 100 ? page : 1,
+    page: Number.isSafeInteger(page) && page > 0 ? page : 1,
   };
 }
 export function catalogParams(query: CatalogQuery): string {

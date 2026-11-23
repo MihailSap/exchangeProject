@@ -1,4 +1,4 @@
-import { invalidateCatalog } from "./catalog-api";
+import { invalidateLotLists } from "./lot-list-api";
 import { saveFixtureLot } from "../model/fixtures";
 import { isLot } from "../model/validation";
 import { sameWants, wantKey } from "../model/wants";
@@ -18,12 +18,12 @@ export type LotUpdate = {
   delivery_method: Lot["delivery_method"];
   estimated_cost: number;
 };
-export type LotCategory = { id: number; name: string };
+export type LotCategory = { id: number; name: string; depth?: number };
 const cache = new Map<string, { lot: Lot; expires: number }>();
 
 export function invalidateLots(): void {
   cache.clear();
-  invalidateCatalog();
+  invalidateLotLists();
 }
 
 function parseLot(value: unknown): Lot {
@@ -63,7 +63,7 @@ export async function createLot(body: FormData): Promise<Lot> {
   );
 
   cache.clear();
-  invalidateCatalog();
+  invalidateLotLists();
 
   return lot;
 }
@@ -93,7 +93,7 @@ export async function updateLot(
   const wantsChanged = !sameWants(lot.wants, wants);
   const reconcile = wantsChanged || photoOrder !== undefined;
   cache.clear();
-  invalidateCatalog();
+  invalidateLotLists();
   const current = reconcile ? await readServerLot(lot.id) : lot;
   const retainedWants = new Set(wants.map(wantKey));
   const currentWants = new Set(current.wants.map(wantKey));
@@ -143,7 +143,7 @@ export async function updateLot(
   );
 
   cache.clear();
-  invalidateCatalog();
+  invalidateLotLists();
 
   if (updated.id !== lot.id) throw new ApiError("Сервер вернул данные другого лота", 502);
 
@@ -185,7 +185,7 @@ export async function deleteLotAttachment(lot: Lot, kind: "photo" | "want", id: 
     });
   } finally {
     cache.clear();
-    invalidateCatalog();
+    invalidateLotLists();
   }
 }
 
@@ -214,7 +214,7 @@ export async function deleteLot(lot: Lot): Promise<void> {
     fallbackMessage: "Не удалось удалить лот",
   });
   cache.clear();
-  invalidateCatalog();
+  invalidateLotLists();
 }
 export async function republishLot(lot: Lot): Promise<Lot> {
   if (lot.source === "fixture") {
@@ -239,7 +239,7 @@ export async function republishLot(lot: Lot): Promise<Lot> {
   );
 
   cache.clear();
-  invalidateCatalog();
+  invalidateLotLists();
 
   return updated;
 }
@@ -271,16 +271,23 @@ async function fetchLotCategories(): Promise<LotCategory[]> {
   if (!isRecord(payload) || !Array.isArray(payload.data))
     throw new ApiError("Сервер вернул некорректный список категорий", 0);
 
-  const flatten = (nodes: unknown[]): LotCategory[] =>
+  const flatten = (nodes: unknown[], depth = 0): LotCategory[] =>
     nodes.flatMap((node) => {
       if (!isRecord(node) || !Number.isSafeInteger(node.id) || typeof node.name !== "string")
         throw new ApiError("Сервер вернул некорректную категорию", 0);
 
       return [
-        { id: Number(node.id), name: node.name },
-        ...(Array.isArray(node.children) ? flatten(node.children) : []),
+        { id: Number(node.id), name: node.name, depth },
+        ...(Array.isArray(node.children) ? flatten(node.children, depth + 1) : []),
       ];
     });
 
-  return [...new Map(flatten(payload.data).map((category) => [category.id, category])).values()];
+  const categories = new Map<number, LotCategory>();
+  for (const category of flatten(payload.data)) {
+    const previous = categories.get(category.id);
+    if (!previous || (category.depth ?? 0) > (previous.depth ?? 0))
+      categories.set(category.id, category);
+  }
+
+  return [...categories.values()];
 }

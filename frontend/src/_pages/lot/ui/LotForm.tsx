@@ -108,11 +108,8 @@ export function LotForm({
         const failures: string[] = [];
         if (categoryResult.status === "fulfilled")
           setCategories(
-            lot
-              ? [
-                ...categoryResult.value.filter((item) => item.id !== lot.category.id),
-                lot.category,
-              ]
+            lot && !categoryResult.value.some((item) => item.id === lot.category.id)
+              ? [...categoryResult.value, lot.category]
               : categoryResult.value,
           );
         else
@@ -358,7 +355,11 @@ export function LotForm({
                   onBlur={() => touch("categoryId")}
                   options={[
                     { value: "", label: "Выберите категорию" },
-                    ...categories.map((item) => ({ value: String(item.id), label: item.name })),
+                    ...categories.map((item) => ({
+                      value: String(item.id),
+                      label: item.name,
+                      prefix: "• ".repeat(item.depth ?? 0),
+                    })),
                   ]}
                 />
                 <fieldset className={styles.segmented}>

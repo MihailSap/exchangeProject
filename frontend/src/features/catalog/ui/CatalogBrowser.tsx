@@ -19,9 +19,10 @@ import { useServerCatalog } from "../model/use-server-catalog";
 import type { CatalogQuery } from "../model/catalog";
 
 import { useCategories } from "@/src/entities/category/client";
-import { CATALOG_ITEMS, RECOMMENDED_ITEMS } from "@/src/entities/lot";
+import { RECOMMENDED_ITEMS } from "@/src/entities/lot";
 import { CatalogLotCard } from "@/src/entities/lot/ui";
 import { getRegions } from "@/src/entities/profile";
+import { useSession } from "@/src/entities/session";
 import { Icon } from "@/src/shared/ui/icon";
 import { Loading } from "@/src/shared/ui/loading";
 import { Select } from "@/src/shared/ui/select";
@@ -37,7 +38,8 @@ export function CatalogBrowser({
   const pathname = usePathname();
   const router = useRouter();
   const pageSize = useCatalogPageSize();
-  const server = useServerCatalog(query, pageSize, !recommendations);
+  const { ready, user } = useSession();
+  const server = useServerCatalog(query, pageSize, ready && !recommendations, user?.id);
   const [pending, startTransition] = useTransition();
   const [navigationKind, setNavigationKind] = useState<"replace" | "append">("replace");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -87,11 +89,12 @@ export function CatalogBrowser({
     depth: item.depth,
   }));
 
-  const source = recommendations ? RECOMMENDED_ITEMS : CATALOG_ITEMS;
-  const items = recommendations ? selectCatalogItems(source, query, categoryTree) : server.items;
+  const items = recommendations ? selectCatalogItems(RECOMMENDED_ITEMS, query, categoryTree) : server.items;
   const visible = recommendations ? items.slice(0, query.page * (pageSize ?? 0)) : items;
   const total = recommendations ? items.length : server.total;
-  const replacing = (pending && navigationKind === "replace") || (!recommendations && server.loading && !server.appending);
+  const showTotal = recommendations || !user;
+  const hasMore = recommendations ? visible.length < total : server.hasMore;
+  const replacing = (pending && navigationKind === "replace") || (!recommendations && (!ready || (server.loading && !server.appending)));
   const appending = (pending && navigationKind === "append") || (!recommendations && server.appending);
   const filterKey = JSON.stringify([
     query.type,
@@ -117,7 +120,7 @@ export function CatalogBrowser({
         <span aria-live="polite">
           {replacing || categoryPending || pageSize === null
             ? "Обновляем предложения…"
-            : resultLabel(total)}
+            : showTotal ? resultLabel(total) : `Показано ${visible.length}`}
         </span>
         <div className={styles.sort}>
           <label id="catalog-sort-label" htmlFor="catalog-sort">
@@ -243,13 +246,13 @@ export function CatalogBrowser({
               )}
               <div className={styles.pagination}>
                 <span aria-live="polite">
-                  Показано {visible.length} из {total}
+                  Показано {visible.length}{showTotal ? ` из ${total}` : ""}
                 </span>
                 <div className={styles.loadMoreSlot}>
                   {appending ? (
                     <Loading compact label="Загружаем лоты…" />
                   ) : (
-                    visible.length < total && (recommendations || !server.error) && (
+                    hasMore && (recommendations || !server.error) && (
                       <button
                         type="button"
                         className={styles.secondaryButton}

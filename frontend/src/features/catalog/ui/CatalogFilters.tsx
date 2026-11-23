@@ -89,7 +89,8 @@ export function CatalogFilters({
                 : []),
               ...categories.map((category) => ({
                 value: category.id,
-                label: `${"• ".repeat(category.depth ?? 0)}${category.name}`,
+                label: category.name,
+                prefix: "• ".repeat(category.depth ?? 0),
               })),
             ]}
           />

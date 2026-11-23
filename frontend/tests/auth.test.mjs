@@ -816,6 +816,7 @@ test("lot categories show each category once when backend repeats child nodes", 
     [3, 2, 1],
   );
   assert.equal(categories.find((category) => category.id === 3).name, "Фото");
+  assert.deepEqual(Array.from(categories, (category) => category.depth), [2, 1, 0]);
 });
 
 test("lot category picker requests the active tree and flattens descendants", async () => {
@@ -1149,6 +1150,7 @@ test("catalog query validates URL values and preserves applied filters", () => {
     "price-asc",
   );
   assert.equal(catalogQueryFromParams({ q: ["лампа", "кресло"] }).q, "лампа");
+  assert.equal(readCatalogQuery(new URLSearchParams("page=101")).page, 101);
   const invalid = readCatalogQuery(
     new URLSearchParams("category=-4&type=INVALID&min=-1&max=abc&page=Infinity&sort=unknown"),
   );
@@ -1449,27 +1451,55 @@ test("public catalog maps the real paginated DTO, caches pages and rejects malfo
     const params = new URL(url).searchParams;
     assert.equal(params.get("category_id"), "2");
     assert.equal(params.get("sort"), "cost_asc");
+    assert.equal(params.get("status"), "ACTIVE");
     assert.equal(params.get("page"), "1");
     assert.equal(params.get("per_page"), "6");
     assert.equal(options.headers.has("Authorization"), false);
 
-    return Response.json({ data: [lot], meta: { page: 1, per_page: 6, total: 1 } });
+    return Response.json({ data: [lot], meta: { page: 1, per_page: 6, total: 7 } });
   });
 
   const lot = { ...env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[0], id: 42 };
   const api = env.load("@/src/entities/lot/api/catalog-api");
   const query = { category_id: "2", sort: "cost_asc", page: 1, per_page: 6 };
   const page = await api.getCatalogPage(query);
-  assert.equal(page.total, 1);
+  assert.equal(page.total, 7);
   assert.equal(page.items[0].id, "42");
   assert.equal(page.items[0].image, lot.photos[0].name);
-  await api.getCatalogPage(query);
+  const ownFiltered = await api.getCatalogPage(query, lot.owner.id);
+  assert.equal(ownFiltered.items.length, 0);
+  assert.equal(ownFiltered.hasMore, true);
   assert.equal(calls, 1);
-  api.invalidateCatalog();
+  env.load("@/src/entities/lot/api/lot-list-api").invalidateLotLists();
   await api.getCatalogPage(query);
   assert.equal(calls, 2);
   const invalid = environment(async () => Response.json({ data: [lot], meta: { page: 0, per_page: 6, total: 1 } }));
   await assert.rejects(invalid.load("@/src/entities/lot/api/catalog-api").getCatalogPage(query));
+});
+
+test("profile lot list uses the real owner and status filters and isolates authenticated cache", async () => {
+  let calls = 0;
+  const env = environment(async (url, options) => {
+    calls++;
+    const params = new URL(url).searchParams;
+    assert.equal(params.get("by_user"), "1");
+    assert.equal(params.get("status"), "ACTIVE|MODERATION");
+    assert.equal(params.has("is_mine"), false);
+    assert.equal(options.headers.has("Authorization"), calls === 1);
+
+    return Response.json({ data: [{ ...lot, owner: { ...lot.owner, id: calls === 1 ? 1 : 2 } }], meta: { page: 1, per_page: 12, total: 1 } });
+  });
+
+  const lot = env.load("@/src/entities/lot/model/fixtures").createDemoLots(1, "User", "Москва")[1];
+  env.load("@/src/entities/session/model/session").writeSession(session);
+  const { getLotList } = env.load("@/src/entities/lot/api/lot-list-api");
+  const query = { by_user: 1, statuses: ["ACTIVE", "MODERATION"], page: 1, per_page: 12 };
+  const result = await getLotList(query, 1);
+  assert.equal(result.lots[0].source, "server");
+  assert.equal(result.total, 1);
+  assert.equal(await getLotList(query, 1), result);
+  await assert.rejects(getLotList(query), { status: 502 });
+  assert.equal(calls, 2);
 });
 
 test("server profile role overrides a stale administrative token and rejects unknown roles", async () => {

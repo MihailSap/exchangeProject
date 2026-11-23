@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import styles from "./Administration.module.scss";
 import { saveAdminCategory } from "../api/admin-api";
+import { categoryRows } from "../model/category-tree";
 import { allowedParents, categoryErrors } from "../model/contracts";
 
 import type { AdminCategory } from "../model/contracts";
@@ -30,10 +31,10 @@ export function CategoryDialog({ category, categories, onClose, onSaved, onDenie
   const [busy, setBusy] = useState(false);
   const { notify } = useToast();
   const errors = categoryErrors(name, slug, visibility);
-  const parents = allowedParents(categories, category?.id);
+  const parents = categoryRows(allowedParents(categories, category?.id));
   const valid =
     Object.values(errors).every((error) => !error) &&
-    (!parent || parents.some((item) => item.id === Number(parent)));
+    (!parent || parents.some(({ category }) => category.id === Number(parent)));
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -100,7 +101,11 @@ export function CategoryDialog({ category, categories, onClose, onSaved, onDenie
           disabled={busy}
           options={[
             { value: "", label: "Без родителя" },
-            ...parents.map((item) => ({ value: String(item.id), label: item.name })),
+            ...parents.map(({ category, depth }) => ({
+              value: String(category.id),
+              label: category.name,
+              prefix: "• ".repeat(depth),
+            })),
           ]}
         />
         <FormField

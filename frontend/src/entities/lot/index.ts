@@ -1,6 +1,6 @@
 export type { Lot, LotStatus } from "./model/lot";
 export { isLot } from "./model/validation";
-export { initializeFixtureLots, getFixtureLot, saveFixtureLot, getLotPath } from "./model/fixtures";
+export { getFixtureLot, saveFixtureLot, getLotPath } from "./model/fixtures";
 export {
   getLot,
   createLot,
@@ -18,3 +18,4 @@ export { CATALOG_ITEMS, RECOMMENDED_ITEMS, getCatalogLot } from "./model/discove
 
 export { getCatalogPage } from "./api/catalog-api";
 export type { CatalogRequest } from "./api/catalog-api";
+export { getLotList } from "./api/lot-list-api";

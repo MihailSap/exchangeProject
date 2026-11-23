@@ -8,7 +8,12 @@ import type { KeyboardEvent } from "react";
 
 import { Icon } from "@/src/shared/ui/icon";
 
-export type SelectOption = { value: string; label: string; disabled?: boolean };
+export type SelectOption = {
+  value: string;
+  label: string;
+  prefix?: string;
+  disabled?: boolean;
+};
 
 type Props = {
   id?: string;
@@ -298,7 +303,10 @@ export function Select({
             }}
             onClick={() => choose(index)}
           >
-            <span>{option.label}</span>
+            <span>
+              {option.prefix && <span aria-hidden="true">{option.prefix}</span>}
+              {option.label}
+            </span>
             {option.value === value && <Icon name="check" />}
           </div>
         ))}

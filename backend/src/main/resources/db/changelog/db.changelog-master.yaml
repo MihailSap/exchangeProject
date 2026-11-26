@@ -25,3 +25,5 @@ databaseChangeLog:
       file: db/changelog/changeset/012-create-offers.yml
   - include:
       file: db/changelog/changeset/013-add-fields-to-offers.yml
+  - include:
+      file: db/changelog/changeset/014-add-reviews.yml

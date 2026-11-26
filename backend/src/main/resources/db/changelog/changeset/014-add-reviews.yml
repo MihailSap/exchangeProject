@@ -1,0 +1,80 @@
+databaseChangeLog:
+  - changeSet:
+      id: 14
+      author: SapeginMihail
+      changes:
+        - createTable:
+            tableName: reviews
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: author_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recipient_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: lot_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: offer_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: rating
+                  type: SMALLINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: text
+                  type: TEXT
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: updated_at
+                  type: TIMESTAMP WITH TIME ZONE
+              - column:
+                  name: locked_at
+                  type: TIMESTAMP WITH TIME ZONE
+        - addUniqueConstraint:
+            tableName: reviews
+            columnNames: author_id, offer_id
+            constraintName: uk_reviews_author_offer
+        - addForeignKeyConstraint:
+            baseTableName: reviews
+            baseColumnNames: author_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_reviews_author
+        - addForeignKeyConstraint:
+            baseTableName: reviews
+            baseColumnNames: recipient_id
+            referencedTableName: users
+            referencedColumnNames: id
+            constraintName: fk_reviews_recipient
+        - addForeignKeyConstraint:
+            baseTableName: reviews
+            baseColumnNames: lot_id
+            referencedTableName: lots
+            referencedColumnNames: id
+            constraintName: fk_reviews_lot
+        - addForeignKeyConstraint:
+            baseTableName: reviews
+            baseColumnNames: offer_id
+            referencedTableName: offers
+            referencedColumnNames: id
+            constraintName: fk_reviews_offer

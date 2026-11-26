@@ -11,4 +11,5 @@ public interface PathsConstants {
     String LOTS = "/lots";
     String MODERATION = "/moderation";
     String OFFERS = "/offers";
+    String REVIEWS = "/reviews";
 }

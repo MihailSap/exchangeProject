@@ -21,6 +21,7 @@ import ru.urfu.exchangeProject.mapper.LotMapper;
 import ru.urfu.exchangeProject.model.lot.Lot;
 import ru.urfu.exchangeProject.model.lot.LotStatus;
 import ru.urfu.exchangeProject.service.LotService;
+import ru.urfu.exchangeProject.service.ReviewService;
 
 import java.util.List;
 
@@ -33,14 +34,17 @@ public class ModerationController {
 
     private final LotService lotService;
     private final LotMapper lotMapper;
+    private final ReviewService reviewService;
 
     @Autowired
     public ModerationController(
             LotService lotService,
-            LotMapper lotMapper
+            LotMapper lotMapper,
+            ReviewService reviewService
     ) {
         this.lotService = lotService;
         this.lotMapper = lotMapper;
+        this.reviewService = reviewService;
     }
 
     @Operation(description = "Получение списка лотов на модерации")
@@ -54,7 +58,8 @@ public class ModerationController {
         Page<Lot> lotPage = lotService.getModerationLots(page, perPage);
 
         List<LotResponse> lotResponses = lotPage
-                .map(lotMapper::mapToLotResponse)
+                .map(lot -> lotMapper.mapToLotResponse(lot, reviewService.getReviewStatistics(lot.getUser().getId())))
+//                .map(lotMapper::mapToLotResponse)
                 .getContent();
 
         return new LotListResponse(

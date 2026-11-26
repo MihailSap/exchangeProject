@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import ru.urfu.exchangeProject.dto.lot.LotPhotoDataResponse;
 import ru.urfu.exchangeProject.dto.lot.LotResponse;
+import ru.urfu.exchangeProject.dto.review.ReviewStatistics;
 import ru.urfu.exchangeProject.model.lot.Lot;
 import ru.urfu.exchangeProject.model.lot.LotPhoto;
 import ru.urfu.exchangeProject.model.lot.LotStatus;
@@ -30,7 +31,7 @@ public class LotMapper {
         this.wantMapper = wantMapper;
     }
 
-    public LotResponse mapToLotResponse(Lot lot) {
+    public LotResponse mapToLotResponse(Lot lot, ReviewStatistics reviewStatistics) {
         return new LotResponse(
                 lot.getId(),
                 lot.getTitle(),
@@ -41,7 +42,7 @@ public class LotMapper {
                 categoryMapper.mapToCategoryShortResponse(lot.getCategory()),
                 lot.getRegion(),
                 mapToLotPhotoDataResponses(lot.getLotPhotoDataList()),
-                userMapper.mapToUserShortResponse(lot.getUser()),
+                userMapper.mapToUserShortResponse(lot.getUser(), reviewStatistics),
                 wantMapper.mapToWantResponses(lot.getWants()),
                 lot.getStatus(),
                 lot.getPublishedAt(),

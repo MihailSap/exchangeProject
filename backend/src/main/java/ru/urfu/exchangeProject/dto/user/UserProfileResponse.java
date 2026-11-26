@@ -2,6 +2,7 @@ package ru.urfu.exchangeProject.dto.user;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import ru.urfu.exchangeProject.dto.review.ReviewStatistics;
 import ru.urfu.exchangeProject.model.user.Role;
 import ru.urfu.exchangeProject.model.user.UserStatus;
 
@@ -19,9 +20,8 @@ public record UserProfileResponse(
         @JsonProperty("email_confirmed")
         boolean emailConfirmed,
         UserStatus status,
-        Double rating,
-        @JsonProperty("reviews_count")
-        int reviewsCount,
+        @JsonProperty("review_statistics")
+        ReviewStatistics reviewStatistics,
         @JsonProperty("created_at")
         Instant createdAt,
         Role role

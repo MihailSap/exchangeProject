@@ -2,6 +2,7 @@ package ru.urfu.exchangeProject.dto.user;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
+import ru.urfu.exchangeProject.dto.review.ReviewStatistics;
 
 import java.time.Instant;
 import java.util.List;
@@ -16,9 +17,8 @@ public record UserPublicProfileResponse(
         String contacts,
         @JsonProperty("email_confirmed")
         boolean emailConfirmed,
-        Double rating,
-        @JsonProperty("reviews_count")
-        int reviewsCount,
+        @JsonProperty("review_statistics")
+        ReviewStatistics reviewStatistics,
         @JsonProperty("created_at")
         Instant createdAt,
         @JsonProperty("active_lots")

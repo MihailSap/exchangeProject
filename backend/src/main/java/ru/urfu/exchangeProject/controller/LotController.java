@@ -22,6 +22,7 @@ import ru.urfu.exchangeProject.dto.lot.LotListResponse;
 import ru.urfu.exchangeProject.dto.lot.LotResponse;
 import ru.urfu.exchangeProject.dto.lot.LotUpdateRequest;
 import ru.urfu.exchangeProject.dto.lot.want.WantCreateRequest;
+import ru.urfu.exchangeProject.dto.review.ReviewStatistics;
 import ru.urfu.exchangeProject.exception.customEx.UserNotFoundException;
 import ru.urfu.exchangeProject.exception.customEx.news.*;
 import ru.urfu.exchangeProject.exception.globalEx.UnauthorizedException;
@@ -48,6 +49,7 @@ public class LotController {
     private final WantService wantService;
     private final LotPhotoService lotPhotoService;
     private final LotMapper lotMapper;
+    private final ReviewService reviewService;
 
     @Autowired
     public LotController(
@@ -55,13 +57,15 @@ public class LotController {
             LotService lotService,
             WantService wantService,
             LotPhotoService lotPhotoService,
-            LotMapper lotMapper
+            LotMapper lotMapper,
+            ReviewService reviewService
     ) {
         this.authService = authService;
         this.lotService = lotService;
         this.wantService = wantService;
         this.lotPhotoService = lotPhotoService;
         this.lotMapper = lotMapper;
+        this.reviewService = reviewService;
     }
 
     @Operation(description = "Получение лота по id")
@@ -87,7 +91,8 @@ public class LotController {
             //TODO: Доделать
         }
 
-        LotResponse lotResponse = lotMapper.mapToLotResponse(lot);
+        ReviewStatistics ownerReviewStatistics = reviewService.getReviewStatistics(lotOwner.getId());
+        LotResponse lotResponse = lotMapper.mapToLotResponse(lot, ownerReviewStatistics);
         return new BaseResponse<>(lotResponse);
     }
 
@@ -132,7 +137,7 @@ public class LotController {
         );
 
         List<LotResponse> lotResponses = lotPage
-                .map(lotMapper::mapToLotResponse)
+                .map(l -> lotMapper.mapToLotResponse(l, reviewService.getReviewStatistics(l.getUser().getId())))
                 .getContent();
 
         return new LotListResponse(
@@ -188,7 +193,8 @@ public class LotController {
         }
 
         Lot lot = lotService.create(lotCreateRequest, region, user);
-        LotResponse lotResponse = lotMapper.mapToLotResponse(lot);
+        ReviewStatistics reviewStatistics = reviewService.getReviewStatistics(user.getId());
+        LotResponse lotResponse = lotMapper.mapToLotResponse(lot, reviewStatistics);
         return new BaseResponse<>(lotResponse);
     }
 
@@ -216,7 +222,8 @@ public class LotController {
         }
 
         Lot updatedLot = lotService.update(lotUpdateRequest, lot);
-        LotResponse lotResponse = lotMapper.mapToLotResponse(updatedLot);
+        ReviewStatistics reviewStatistics = reviewService.getReviewStatistics(user.getId());
+        LotResponse lotResponse = lotMapper.mapToLotResponse(updatedLot, reviewStatistics);
         return new BaseResponse<>(lotResponse);
     }
 
@@ -240,14 +247,16 @@ public class LotController {
         validateUser(user);
 
         Lot lot = lotService.getById(lotId);
-        validateOwner(user, lot.getUser());
+        User lotOwner = lot.getUser();
+        validateOwner(user, lotOwner);
 
         if(!LotStatus.ARCHIVED.equals(lot.getStatus())){
             throw new LotConflictException();
         }
 
         Lot republicatedLot = lotService.republicateLot(lot);
-        LotResponse lotResponse = lotMapper.mapToLotResponse(republicatedLot);
+        ReviewStatistics ownerReviewStatistics = reviewService.getReviewStatistics(lotOwner.getId());
+        LotResponse lotResponse = lotMapper.mapToLotResponse(republicatedLot, ownerReviewStatistics);
         return new BaseResponse<>(lotResponse);
     }
 

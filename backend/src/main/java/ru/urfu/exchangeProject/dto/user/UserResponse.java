@@ -8,7 +8,7 @@ import ru.urfu.exchangeProject.model.user.UserStatus;
 
 import java.time.Instant;
 
-@Schema(name = "Запрос с данными пользователя")
+@Schema(name = "Ответ с данными пользователя")
 public record UserResponse(
         long id,
         String email,

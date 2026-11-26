@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import ru.urfu.exchangeProject.model.BaseEntity;
 import ru.urfu.exchangeProject.model.jwt.RefreshToken;
 import ru.urfu.exchangeProject.model.lot.Lot;
+import ru.urfu.exchangeProject.model.review.Review;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -35,6 +36,10 @@ public class User extends BaseEntity {
     private RefreshToken refreshToken;
     @OneToMany(mappedBy = "user")
     private List<Lot> lots = new ArrayList<>();
+    @OneToMany(mappedBy = "recipient", fetch = FetchType.LAZY)
+    private List<Review> receivedReviews = new ArrayList<>();
+    @OneToMany(mappedBy = "author", fetch = FetchType.LAZY)
+    private List<Review> writtenReviews = new ArrayList<>();
     private String emailConfirmationToken;
     private Instant emailConfirmationTokenExpiry;
     private Instant emailConfirmationLastSentAt;
@@ -215,5 +220,21 @@ public class User extends BaseEntity {
 
     public void setEmailConfirmationLastSentAt(Instant emailConfirmationLastSentAt) {
         this.emailConfirmationLastSentAt = emailConfirmationLastSentAt;
+    }
+
+    public List<Review> getReceivedReviews() {
+        return receivedReviews;
+    }
+
+    public void setReceivedReviews(List<Review> receivedReviews) {
+        this.receivedReviews = receivedReviews;
+    }
+
+    public List<Review> getWrittenReviews() {
+        return writtenReviews;
+    }
+
+    public void setWrittenReviews(List<Review> writtenReviews) {
+        this.writtenReviews = writtenReviews;
     }
 }

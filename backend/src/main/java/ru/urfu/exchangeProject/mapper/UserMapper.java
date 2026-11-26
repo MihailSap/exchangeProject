@@ -2,6 +2,7 @@ package ru.urfu.exchangeProject.mapper;
 
 import org.springframework.stereotype.Component;
 import ru.urfu.exchangeProject.dto.auth.UserLoginResponse;
+import ru.urfu.exchangeProject.dto.review.ReviewStatistics;
 import ru.urfu.exchangeProject.dto.user.*;
 import ru.urfu.exchangeProject.model.user.User;
 
@@ -34,7 +35,7 @@ public class UserMapper {
         );
     }
 
-    public UserProfileResponse mapToUserProfileResponse(User user){
+    public UserProfileResponse mapToUserProfileResponse(User user, ReviewStatistics reviewStatistics){
         return new UserProfileResponse(
                 user.getId(),
                 user.getEmail(),
@@ -44,14 +45,13 @@ public class UserMapper {
                 user.getContacts(),
                 user.isEmailConfirmed(),
                 user.getStatus(),
-                null, //TODO
-                0, //TODO
+                reviewStatistics,
                 user.getCreatedAt(),
                 user.getRole()
         );
     }
 
-    public UserPublicProfileResponse mapToUserPublicProfileResponse(User user){
+    public UserPublicProfileResponse mapToUserPublicProfileResponse(User user, ReviewStatistics reviewStatistics){
         return new UserPublicProfileResponse(
                 user.getId(),
                 user.getName(),
@@ -59,8 +59,7 @@ public class UserMapper {
                 user.getRegion(),
                 user.getContacts(),
                 user.isEmailConfirmed(),
-                null, //TODO
-                0, //TODO
+                reviewStatistics,
                 user.getCreatedAt(),
                 List.of(),
                 List.of()
@@ -75,11 +74,11 @@ public class UserMapper {
         );
     }
 
-    public UserShortResponse mapToUserShortResponse(User user) {
+    public UserShortResponse mapToUserShortResponse(User user, ReviewStatistics reviewStatistics) {
         return new UserShortResponse(
                 user.getId(),
                 user.getName(),
-                null //TODO
+                reviewStatistics
         );
     }
 }

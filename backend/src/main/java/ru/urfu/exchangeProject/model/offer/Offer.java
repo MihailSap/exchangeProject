@@ -16,36 +16,25 @@ public class Offer extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "initiator_id", nullable = false)
     private User initiator;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "recipient_id", nullable = false)
     private User recipient;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "target_lot_id", nullable = false)
     private Lot targetLot;
-
+    @OneToMany(mappedBy = "offer", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OfferItem> items = new ArrayList<>();
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
     private OfferStatus status;
-
     @Column(name = "message", columnDefinition = "text")
     private String message;
-
     private Boolean initiatorCompleted;
     private Boolean recipientCompleted;
-
     private Instant createdAt;
     private Instant viewedAt;
     private Instant respondedAt;
     private Instant completedAt;
-
-    @OneToMany(
-            mappedBy = "offer",
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-    private List<OfferItem> items = new ArrayList<>();
 
     public void addItem(Lot lot) {
         OfferItem offerItem = new OfferItem();

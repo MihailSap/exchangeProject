@@ -12,4 +12,5 @@ public interface PathsConstants {
     String MODERATION = "/moderation";
     String OFFERS = "/offers";
     String REVIEWS = "/reviews";
+    String NOTIFICATIONS = "/notifications";
 }

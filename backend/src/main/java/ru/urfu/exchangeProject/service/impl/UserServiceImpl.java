@@ -177,17 +177,6 @@ public class UserServiceImpl implements UserService {
         return userRepository.existsByName(name);
     }
 
-//    @Transactional
-//    @Override
-//    public String setPasswordResetToken(User user) {
-//        //FIXME: токен должен быть истекающим и корректным
-//        String token = UUID.randomUUID().toString();
-//        user.setPasswordResetToken(token);
-//        user.setPasswordResetTokenExpiresAt(LocalDateTime.now().plusHours(1));
-//        userRepository.save(user);
-//        return token;
-//    }
-
     @Transactional
     @Override
     public String setPasswordResetToken(User user) {
@@ -253,12 +242,16 @@ public class UserServiceImpl implements UserService {
             }
 
             if (!searchQuery.isBlank()) {
-                predicates.add(
-                        criteriaBuilder.like(
-                                criteriaBuilder.lower(root.get("name")),
-                                "%" + searchQuery + "%"
-                        )
+                String pattern = "%" + searchQuery + "%";
+                Predicate namePredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("name")),
+                        pattern
                 );
+                Predicate emailPredicate = criteriaBuilder.like(
+                        criteriaBuilder.lower(root.get("email")),
+                        pattern
+                );
+                predicates.add(criteriaBuilder.or(namePredicate, emailPredicate));
             }
 
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));

@@ -88,6 +88,7 @@ public class LotController {
 
         if(lotStatus == LotStatus.IN_EXCHANGE){
             User authenticatedUser = authService.getAuthenticatedUser();
+
             //TODO: Доделать
         }
 
@@ -236,6 +237,9 @@ public class LotController {
 
         Lot lot = lotService.getById(lotId);
         validateOwner(user, lot.getUser());
+        if(lot.getStatus() == LotStatus.DELETED || lot.getStatus() == LotStatus.COMPLETED){
+            throw new LotConflictException();
+        }
         lotService.softDelete(lot);
     }
 

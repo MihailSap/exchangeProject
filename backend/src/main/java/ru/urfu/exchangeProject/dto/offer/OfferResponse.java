@@ -15,8 +15,13 @@ public record OfferResponse(
         @JsonProperty("offer_lots")
         List<OfferLotResponse> offerLots,
         OfferStatus status,
+        Boolean initiatorCompleted,
+        Boolean recipientCompleted,
         @JsonProperty("created_at")
         Instant createdAt,
+        Instant viewedAt,
+        Instant completedAt,
+        Instant respondedAt,
         String message
 ) {
 }

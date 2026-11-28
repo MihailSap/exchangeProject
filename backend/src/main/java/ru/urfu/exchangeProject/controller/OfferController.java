@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
-import org.springframework.web.server.ResponseStatusException;
 import ru.urfu.exchangeProject.PathsConstants;
 import ru.urfu.exchangeProject.dto.BaseResponse;
 import ru.urfu.exchangeProject.dto.exceptions.ErrorCode;
@@ -23,6 +22,7 @@ import ru.urfu.exchangeProject.mapper.OfferMapper;
 import ru.urfu.exchangeProject.model.lot.Lot;
 import ru.urfu.exchangeProject.model.lot.LotStatus;
 import ru.urfu.exchangeProject.model.offer.Offer;
+import ru.urfu.exchangeProject.model.offer.OfferItem;
 import ru.urfu.exchangeProject.model.offer.OfferStatus;
 import ru.urfu.exchangeProject.model.user.User;
 import ru.urfu.exchangeProject.model.user.UserStatus;
@@ -31,13 +31,8 @@ import ru.urfu.exchangeProject.service.LotService;
 import ru.urfu.exchangeProject.service.OfferService;
 import ru.urfu.exchangeProject.model.offer.OfferDirection;
 
-import java.util.Arrays;
-import java.util.LinkedHashSet;
-import java.util.Locale;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-
-import java.util.Objects;
 
 @Tag(name = "Офферы")
 @SecurityRequirement(name = "bearerAuth")
@@ -71,12 +66,12 @@ public class OfferController {
             @RequestParam(required = false) String direction,
             @RequestParam(required = false) String status
     ) {
-        if (page < 1 || perPage < 1) {
+        if (page < 1 || perPage < 1 || perPage > 100_000) {
             throw new BadRequestException();
         }
 
-        Set<OfferDirection> directions = parseEnumParameter(direction, OfferDirection.class, "direction");
-        Set<OfferStatus> statuses = parseEnumParameter(status, OfferStatus.class, "status");
+        Set<OfferDirection> directions = parseEnumParameter(direction, OfferDirection.class);
+        Set<OfferStatus> statuses = parseEnumParameter(status, OfferStatus.class);
         User user = authService.getAuthenticatedUser();
         PageRequest pageable = PageRequest.of(page - 1, perPage, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<OfferResponse> offers = offerService.getUserOffers(
@@ -90,8 +85,7 @@ public class OfferController {
 
     private <T extends Enum<T>> Set<T> parseEnumParameter(
             String value,
-            Class<T> enumType,
-            String parameterName
+            Class<T> enumType
     ) {
         if (value == null || value.isBlank()) {
             return Set.of();
@@ -106,10 +100,7 @@ public class OfferController {
                     ))
                     .collect(Collectors.toCollection(LinkedHashSet::new));
         } catch (IllegalArgumentException exception) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Недопустимое значение параметра '" + parameterName + "'"
-            );
+            throw new BadRequestException();
         }
     }
 
@@ -145,7 +136,26 @@ public class OfferController {
             throw new LotConflictException();
         }
 
-        Offer offer = offerService.create(initiator, targetLot, request.offeredLotIds(), request.message());
+        List<Long> offeredLotIds = request.offeredLotIds();
+        if (offeredLotIds == null){
+            throw new BadRequestException();
+        }
+
+        List<Long> offeredLotIdsFiltered = offeredLotIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if(offeredLotIdsFiltered.isEmpty()){
+            throw new BadRequestException();
+        }
+        for(Long offeredLotId : offeredLotIdsFiltered){
+            Lot lot = lotService.getById(offeredLotId);
+            if(!initiator.equals(lot.getUser())){
+                throw new LotForbiddenException();
+            }
+        }
+
+        Offer offer = offerService.create(initiator, targetLot, offeredLotIdsFiltered, request.message());
         OfferResponse offerResponse = offerMapper.mapToOfferResponse(offer);
         return new BaseResponse<>(offerResponse);
     }
@@ -160,6 +170,7 @@ public class OfferController {
         Offer offer = offerService.getById(id);
         validateRecipient(offer.getRecipient().getId(), user.getId());
         validateOfferStatus(offer);
+        validateOfferLots(offer);
 
         Offer acceptedOffer = offerService.accept(offer, user.getId());
         OfferResponse offerResponse = offerMapper.mapToOfferResponse(acceptedOffer);
@@ -206,7 +217,7 @@ public class OfferController {
 
         Offer offer = offerService.getById(id);
         validateParticipant(offer, user.getId());
-        validateAcceptedOfferStatus(offer);
+        validateOfferStatusToFail(offer);
 
         Offer failedOffer = offerService.fail(offer);
         OfferResponse offerResponse = offerMapper.mapToOfferResponse(failedOffer);
@@ -258,8 +269,8 @@ public class OfferController {
         }
     }
 
-    private void validateAcceptedOfferStatus(Offer offer) {
-        if (offer.getStatus() != OfferStatus.ACCEPTED) {
+    private void validateOfferStatusToFail(Offer offer) {
+        if (offer.getStatus() != OfferStatus.ACCEPTED && offer.getStatus() != OfferStatus.HALF_COMPLETED) {
             throw new ConflictException(ErrorCode.INVALID_STATUS_TRANSITION);
         }
     }
@@ -268,6 +279,18 @@ public class OfferController {
         OfferStatus offerStatus = offer.getStatus();
         if(offerStatus != OfferStatus.SENT && offerStatus != OfferStatus.VIEWED){
             throw new ConflictException(ErrorCode.INVALID_STATUS_TRANSITION);
+        }
+    }
+
+    private void validateOfferLots(Offer offer){
+        if(offer.getTargetLot().getStatus() == LotStatus.ACTIVE){
+            throw new LotConflictException();
+        }
+
+        for(OfferItem offerItem : offer.getItems()) {
+            if(offerItem.getLot().getStatus() != LotStatus.ACTIVE){
+                throw new LotConflictException();
+            }
         }
     }
 }

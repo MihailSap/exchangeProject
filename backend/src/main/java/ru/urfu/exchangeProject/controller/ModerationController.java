@@ -83,7 +83,7 @@ public class ModerationController {
         if(lot.getStatus() != LotStatus.MODERATION){
             throw new BadRequestException();
         }
-        String rejectReason = request.reason();
+        String rejectReason = request.reason().trim();
         lotService.reject(lot, rejectReason);
         return new BaseResponse<>(new RejectResponse(rejectReason));
     }
